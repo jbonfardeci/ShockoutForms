@@ -28,6 +28,17 @@
     <TypeScriptCompile Include="app\koHandlers.ts" />
     <TypeScriptCompile Include="app\templates.ts" />
     <TypeScriptCompile Include="app\viewModel.ts" />
+    <TypeScriptCompile Include="typings\accounting.d.ts" />
+    <TypeScriptCompile Include="typings\jquery.d.ts" />
+    <TypeScriptCompile Include="typings\jquery.ui.datetimepicker.d.ts" />
+    <TypeScriptCompile Include="typings\jqueryui.d.ts" />
+    <TypeScriptCompile Include="typings\knockout.d.ts" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="ShockoutForms.js" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="ShockoutForms.js.map" />
   </ItemGroup>
   <PropertyGroup>
     <VisualStudioVersion Condition="'$(VisualStudioVersion)' == ''">12.0</VisualStudioVersion>
