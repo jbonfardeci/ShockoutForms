@@ -10,12 +10,6 @@
         public static historyDescriptionKey: string = 'description';
         public static historyDateKey: string = 'date';
 
-        public static BRANDING = '<div class="company-branding">' +
-        '<img src="/StyleLibrary/Webster/Images/CDSLogo.png" alt="CDS in Texas" />' +
-        '<img src="/StyleLibrary/Webster/Images/DSSWLogo.png" alt="DSSW" />' +
-        '<img src="/StyleLibrary/Webster/Images/LifeSpanLogo.png" alt="LifeSpan" />' +
-        '</div>';
-
         public static getFileUploadTemplate(): string {
             return '<div class="qq-uploader">' +
                 '<div class="qq-upload-drop-area"><span>Drop files here to upload</span></div>' +

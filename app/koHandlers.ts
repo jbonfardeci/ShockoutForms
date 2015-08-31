@@ -4,12 +4,18 @@
     (function bindKoHandlers(ko) {
 
         //http://stackoverflow.com/questions/7904522/knockout-content-editable-custom-binding?lq=1
-        ko.bindingHandlers['htmlValue'] = {
+        ko.bindingHandlers['spContentHtml'] = {
             init: function (element, valueAccessor, allBindingsAccessor) {
-                ko.utils.registerEventHandler(element, "blur", update);
-                ko.utils.registerEventHandler(element, "keydown", update);
-                ko.utils.registerEventHandler(element, "change", update);
-                ko.utils.registerEventHandler(element, "mousedown", update);
+                //ko.utils.registerEventHandler(element, "blur", update);
+                //ko.utils.registerEventHandler(element, "keydown", update);
+                //ko.utils.registerEventHandler(element, "change", update);
+                //ko.utils.registerEventHandler(element, "mousedown", update);
+
+                $(element).on('blur', update)
+                    .on('keydown', update)
+                    .on('change', update)
+                    .on('mousedown', update);
+
                 function update() {
                     var modelValue = valueAccessor();
                     var elementValue = element.innerHTML;
@@ -18,13 +24,13 @@
                     }
                     else { //handle non-observable one-way binding
                         var allBindings = allBindingsAccessor();
-                        if (allBindings['_ko_property_writers'] && allBindings['_ko_property_writers'].htmlValue) {
-                            allBindings['_ko_property_writers'].htmlValue(elementValue);
+                        if (allBindings['_ko_property_writers'] && allBindings['_ko_property_writers']['spContentHtml']) {
+                            allBindings['_ko_property_writers']['spContentHtml'](elementValue);
                         }
                     }
                 }
             },
-            update: function (element, valueAccessor) {
+            update: function(element, valueAccessor) {
                 var value = ko.utils.unwrapObservable(valueAccessor()) || "";
                 if (element.innerHTML !== value) {
                     element.innerHTML = value;
@@ -32,11 +38,41 @@
             }
         };
 
+        ko.bindingHandlers['spContentEditor'] = {
+            init: function (element, valueAccessor, allBindings, bindingContext) {
+                // This will be called when the binding is first applied to an element
+                // Set up any initial state, event handlers, etc. here
+                var viewModel = bindingContext.$data
+                    , modelValue = valueAccessor()
+                    , person = ko.unwrap(modelValue)
+                    , $element = $(element)
+                    ;
+
+                var key = Utils.observableNameFromControl(element);
+                if (!!!key) { return; }
+
+                var $rte = $('<div>', {
+                    'data-bind': 'spContentHtml: ' + key,
+                    'class': 'content-editable',
+                    'contenteditable': true
+                });
+
+                if (!!$element.attr('required') && !!!$element.hasClass('required')) {
+                    $rte.attr('required', '');
+                    $rte.addClass('required');
+                }
+
+                $rte.insertBefore($element);
+
+                $element.hide();
+            }
+        }
+
         /* SharePoint People Picker */
         ko.bindingHandlers['spPerson'] = {
             init: function (element, valueAccessor, allBindings, bindingContext) {
                 try {
-                    if (element.tagName.toLowerCase() != "input" || $(element).attr("type") == "hidden") { return; }/*stop if not an editable field */
+                    if (element.tagName.toLowerCase() != 'input' || $(element).attr('type') == 'hidden') { return; }/*stop if not an editable field */
 
                     // This will be called when the binding is first applied to an element
                     // Set up any initial state, event handlers, etc. here
@@ -45,37 +81,31 @@
                         , person = ko.unwrap(modelValue)
                         ;
 
-                    $(element).attr("placeholder", "Employee Account Name").addClass("people-picker-control");
+                    $(element).attr('placeholder', 'Employee Account Name').addClass('people-picker-control');
 
                     //create wrapper for control
                     var $parent = $(element).parent();
 
                     //controls
-                    var $spValidate = $("<button>", { "html": "<span>Validate</span>", "class": "sp-validate-person", "title": "Validate the employee account name." }).on("click", function () {
-                        if ($.trim($(element).val()) == "") {
-                            $(element).removeClass("invalid").removeClass("valid");
+                    var $spValidate = $('<button>', { 'html': '<span>Validate</span>', 'class': 'sp-validate-person', 'title': 'Validate the employee account name.' }).on('click', function () {
+                        if ($.trim($(element).val()) == '') {
+                            $(element).removeClass('invalid').removeClass('valid');
                             return false;
                         }
 
-                        if (!validateSpPerson(modelValue())) {
-                            $spError.text("Invalid").addClass("error");
-                            $(element).addClass("invalid").removeClass("valid");
+                        if (!Utils.validateSpPerson(modelValue())) {
+                            $spError.text('Invalid').addClass('error');
+                            $(element).addClass('invalid').removeClass('valid');
                         }
                         else {
-                            $spError.text("Valid").removeClass("error");
-                            $(element).removeClass("invalid").addClass("valid");
+                            $spError.text('Valid').removeClass('error');
+                            $(element).removeClass('invalid').addClass('valid');
                         }
                         return false;
                     });
                     $parent.append($spValidate);
 
-                    /*var $spLookup = $("<button>", { "html": "<span>Lookup</span>", "class": "sp-lookup-person" }).on("click", function () {
-                        return false;
-                    });
-                    $parent.append($spLookup);
-                    */
-
-                    var $spError = $("<span>", { "class": "sp-validation person" });
+                    var $spError = $('<span>', { 'class': 'sp-validation person' });
                     $parent.append($spError);
 
                     var $desc = $('<div>', { 'class': 'no-print', 'html': '<em>Enter the employee name. The auto-suggest menu will appear below the field. Select the account name.</em>' });
@@ -83,48 +113,43 @@
 
                     $(element).autocomplete({
                         source: function (request, response) {
-                            $.ajax({
-                                url: "/_layouts/webster/SPUserAutoComplete.ashx",
-                                dataType: "json",
-                                data: { term: request.term },
-                                success: function (data) {
-                                    response($.map(data, function (item) {
-                                        return {
-                                            label: item.name,
-                                            value: item.id + ';#' + item.name
-                                        }
-                                    }));
-                                }
+                            Utils.peopleSearch(request.term, function (data: Array<ISpPersonSearchResult>) {
+                                response($.map(data, function (item) {
+                                    return {
+                                        label: item.Name + ' (' + item.WorkEMail + ')',
+                                        value: item.Id + ';#' + item.Account
+                                    }
+                                }));
                             });
                         },
                         minLength: 3,
                         select: function (event, ui) {
                             modelValue(ui.item.value);
                         }
-                    })
-                        .on("focus", function () { $(this).removeClass("valid"); })
-                        .on("blur", function () { onChangeSpPersonEvent(this, modelValue); })
-                        .on("mouseout", function () { onChangeSpPersonEvent(this, modelValue); })
-                    ;
+                    }).on('focus', function () { $(this).removeClass('valid'); })
+                    .on('blur', function () { onChangeSpPersonEvent(this, modelValue); })
+                    .on('mouseout', function () { onChangeSpPersonEvent(this, modelValue); });
                 }
                 catch (e) {
-
+                    var msg = 'Error in Knockout handler spPerson init(): ' + JSON.stringify(e);
+                    Utils.logError(msg, ShockoutForm.errorLogListName);
+                    throw msg;
                 }
 
                 function onChangeSpPersonEvent(self, modelValue) {
                     var value = $.trim($(self).val());
-                    if (value == "") {
+                    if (value == '') {
                         modelValue(null);
-                        $(self).removeClass("valid").removeClass("invalid");
+                        $(self).removeClass('valid').removeClass('invalid');
                         return;
                     }
 
-                    if (validateSpPerson(modelValue())) {
+                    if (Utils.validateSpPerson(modelValue())) {
                         $(self).val(modelValue().split('#')[1]);
-                        $(self).addClass("valid").removeClass("invalid");
+                        $(self).addClass('valid').removeClass('invalid');
                     }
                     else {
-                        $(self).removeClass("valid").addClass("invalid");
+                        $(self).removeClass('valid').addClass('invalid');
                     }
                 };
             },
@@ -143,7 +168,7 @@
 
                     // Now manipulate the DOM element
                     var displayName = "";
-                    if (validateSpPerson(person)) {
+                    if (Utils.validateSpPerson(person)) {
                         displayName = person.split('#')[1];
                         $(element).addClass("valid");
                     }
@@ -153,10 +178,11 @@
                     } else {
                         $(element).text(displayName);
                     }
-
                 }
                 catch (e) {
-
+                    var msg = 'Error in Knockout handler spPerson update(): ' + JSON.stringify(e);
+                    Utils.logError(msg, ShockoutForm.errorLogListName);
+                    throw msg;
                 }
             }
         };
@@ -164,15 +190,15 @@
         ko.bindingHandlers['spDate'] = {
             init: function (element, valueAccessor, allBindings, bindingContext) {
                 var modelValue = valueAccessor();
-                if (element.tagName.toLowerCase() != "input" || $(element).attr("type") == "hidden") { return; }/*stop if not an editable field */
-                $(element).datepicker().addClass("datepicker med").on("blur", onDateChange).on("change", onDateChange);
-                $(element).attr("placeholder", "MM/DD/YYYY");
+                if (element.tagName.toLowerCase() != 'input' || $(element).attr('type') == 'hidden') { return; }/*stop if not an editable field */
+                $(element).datepicker().addClass('datepicker med').on('blur', onDateChange).on('change', onDateChange);
+                $(element).attr('placeholder', 'MM/DD/YYYY');
 
                 function onDateChange() {
                     try {
-                        if ($.trim(this.value) == "") { modelValue(null); return; }
+                        if ($.trim(this.value) == '') { modelValue(null); return; }
                         modelValue(new Date(this.value));
-                    } catch (e) { modelValue(null); this.value = ""; }
+                    } catch (e) { modelValue(null); this.value = ''; }
                 };
             },
             update: function (element, valueAccessor, allBindings, bindingContext) {
@@ -183,7 +209,7 @@
 
                 if (value && value != null) {
                     var d = new Date(value);
-                    dateStr = dateToLocaleString(d);
+                    dateStr = Utils.dateToLocaleString(d);
                 }
 
                 if ('value' in element) {
@@ -196,7 +222,7 @@
 
         ko.bindingHandlers['spDateTime'] = {
             init: function (element, valueAccessor, allBindings, bindingContext) {
-                if (element.tagName.toLowerCase() != "input" || $(element).attr("type") == "hidden") { return; }/*stop if not an editable field */
+                if (element.tagName.toLowerCase() != 'input' || $(element).attr('type') == 'hidden') { return; }/*stop if not an editable field */
 
                 var viewModel = bindingContext.$data
                     , modelValue = valueAccessor()
@@ -215,7 +241,7 @@
                     element.$display = $display;
                     element.$error = $error;
 
-                    required = $element.hasClass("required") || $element.attr("required") != null;
+                    required = $element.hasClass('required') || $element.attr('required') != null;
 
                     $element.attr({
                         'placeholder': 'MM/DD/YYYY',
@@ -224,7 +250,7 @@
                     }).datepicker().on('change', function () {
                         try {
                             $error.hide();
-                            if (!isDate(this.value)) {
+                            if (!Utils.isDate(this.value)) {
                                 $error.show();
                                 return;
                             }
@@ -238,7 +264,7 @@
                             date.setDate(d);
                             date.setYear(y);
                             modelValue(date);
-                            $display.html(toDateTimeLocaleString(date));
+                            $display.html(Utils.toDateTimeLocaleString(date));
                         }
                         catch (e) {
                             $error.show();
@@ -251,8 +277,7 @@
                         'style': 'width:6em;',
                         'class': (required ? 'required' : ''),
                         'placeholder': 'HH:MM PM'
-                    })
-                        .insertAfter($element)
+                    }).insertAfter($element)
                         .on('change', function () {
                             try {
                                 $error.hide();
@@ -263,7 +288,7 @@
                                     return;
                                 }
 
-                                if (!isTime(time)) {
+                                if (!Utils.isTime(time)) {
                                     $error.show();
                                     return;
                                 }
@@ -285,7 +310,7 @@
                                 d.setMinutes(m);
                                 modelValue(d);
 
-                                $display.html(toDateTimeLocaleString(d));
+                                $display.html(Utils.toDateTimeLocaleString(d));
                                 $error.hide();
                             }
                             catch (e) {
@@ -305,7 +330,8 @@
 
                 }
                 catch (e) {
-
+                    var msg = 'Error in Knockout handler spDateTime init(): ' + JSON.stringify(e);
+                    Utils.logError(msg, ShockoutForm.errorLogListName);
                 }
             },
             update: function (element, valueAccessor, allBindings, bindingContext) {
@@ -317,10 +343,10 @@
                 try {
                     if (value && value != null) {
                         var d = new Date(value);
-                        var dateStr = dateToLocaleString(d);
-                        var timeStr = toTimeLocaleString(d);
+                        var dateStr = Utils.dateToLocaleString(d);
+                        var timeStr = Utils.toTimeLocaleString(d);
 
-                        if (element.tagName.toLowerCase() == "input") {
+                        if (element.tagName.toLowerCase() == 'input') {
                             element.value = dateStr;
                             element.$time.val(timeStr);
                             element.$display.html(dateStr + ' ' + timeStr);
@@ -329,7 +355,10 @@
                         }
                     }
                 }
-                catch (e) { }
+                catch (e) {
+                    var msg = 'Error in Knockout handler spDateTime update(): ' + JSON.stringify(e);
+                    Utils.logError(msg, ShockoutForm.errorLogListName);
+                }
             }
         };
 
@@ -337,13 +366,13 @@
             'init': function (element, valueAccessor, allBindings, viewModel, bindingContext) {
 
                 /* stop if not an editable field */
-                if (element.tagName.toLowerCase() != "input" || $(element).attr("type") == "hidden") { return; }
+                if (element.tagName.toLowerCase() != 'input' || $(element).attr('type') == 'hidden') { return; }
 
                 viewModel = bindingContext.$data;
                 var value = valueAccessor();
                 var valueUnwrapped = ko.unwrap(value);
 
-                $(element).on("blur", onChange).on("change", onChange);
+                $(element).on('blur', onChange).on('change', onChange);
 
                 function onChange() {
                     var val = this.value.toString().replace(/[^\d\.\-]/g, '');
@@ -358,16 +387,16 @@
 
                 if (valueUnwrapped != null) {
                     if (valueUnwrapped < 0) {
-                        $(element).addClass("negative");
+                        $(element).addClass('negative');
                     } else {
-                        $(element).removeClass("negative");
+                        $(element).removeClass('negative');
                     }
                 } else {
                     valueUnwrapped = 0;
                 }
 
-                var formattedValue = accounting.formatMoney(valueUnwrapped);
-                updateKoField(element, formattedValue);
+                var formattedValue = Utils.formatMoney(valueUnwrapped);
+                Utils.updateKoField(element, formattedValue);
             }
         };
 
@@ -375,13 +404,13 @@
             'init': function (element, valueAccessor, allBindings, viewModel, bindingContext) {
 
                 // stop if not an editable field 
-                if (element.tagName.toLowerCase() != "input" || $(element).attr("type") == "hidden") { return; }
+                if (element.tagName.toLowerCase() != 'input' || $(element).attr('type') == 'hidden') { return; }
 
                 viewModel = bindingContext.$data;
                 var value = valueAccessor();
                 var valueUnwrapped = ko.unwrap(value);
 
-                $(element).on("blur", onChange).on("change", onChange);
+                $(element).on('blur', onChange).on('change', onChange);
 
                 function onChange() {
                     var val = this.value.toString().replace(/[^\d\-\.]/g, '');
@@ -395,19 +424,19 @@
                 var valueUnwrapped = ko.unwrap(value);
                 var precision = allBindings.get('precision') || 2;
 
-                var formattedValue = accounting.toFixed(valueUnwrapped, precision);
+                var formattedValue = Utils.toFixed(valueUnwrapped, precision);
 
                 if (valueUnwrapped != null) {
                     if (valueUnwrapped < 0) {
-                        $(element).addClass("negative");
+                        $(element).addClass('negative');
                     } else {
-                        $(element).removeClass("negative");
+                        $(element).removeClass('negative');
                     }
                 } else {
                     valueUnwrapped = 0;
                 }
 
-                updateKoField(element, formattedValue);
+                Utils.updateKoField(element, formattedValue);
             }
         };
 
@@ -416,13 +445,13 @@
             init: function (element, valueAccessor, allBindings, viewModel, bindingContext) {
 
                 /* stop if not an editable field */
-                if (element.tagName.toLowerCase() != "input" || $(element).attr("type") == "hidden") { return; }
+                if (element.tagName.toLowerCase() != 'input' || $(element).attr('type') == 'hidden') { return; }
 
                 viewModel = bindingContext.$data;
                 var value = valueAccessor();
                 var valueUnwrapped = ko.unwrap(value);
 
-                $(element).on("blur", onChange).on("change", onChange);
+                $(element).on('blur', onChange).on('change', onChange);
 
                 function onChange() {
                     var val = this.value.toString().replace(/[^\d\-]/g, '');
@@ -439,100 +468,13 @@
                 valueUnwrapped = valueUnwrapped == null ? 0 : valueUnwrapped;
                 valueUnwrapped = valueUnwrapped.constructor == String ? valueUnwrapped = valueUnwrapped.replace(/\D/g) - 0 : valueUnwrapped;
 
-                updateKoField(element, valueUnwrapped);
+                Utils.updateKoField(element, valueUnwrapped);
 
-                if (typeof (value) == "function") {
+                if (value.constructor == Function) {
                     value(valueUnwrapped);
                 }
             }
         };
 
-    })(ko);
-
-
-    /* update a KO observable whether it's an update or text field */
-    function updateKoField(el, val) {
-        if (el.tagName.toLowerCase() == "input") {
-            $(el).val(val);
-        } else {
-            $(el).html(val);
-        }
-    }
-
-    //validate format ID;#UserName
-    function validateSpPerson(person) {
-        return person != null && person.toString().match(/^\d*;#/) != null;
-    }
-
-    function isTime(val) {
-        var rx = new RegExp("\\d{1,2}:\\d{2}\\s{0,1}(AM|PM)");
-        return rx.test(val);
-    }
-
-    function isDate(val) {
-        var rx = new RegExp("\\d{1,2}\/\\d{1,2}\/\\d{4}");
-        return rx.test(val.toString());
-    }
-
-    function dateToLocaleString(d) {
-        try {
-            var dd = d.getDate();
-            dd = dd < 10 ? "0" + dd : dd;
-            var mo = d.getMonth() + 1;
-            mo = mo < 10 ? "0" + mo : mo;
-            return mo + '/' + dd + '/' + d.getFullYear();
-        }
-        catch (e) {
-            return 'Invalid Date';
-        }
-    }
-
-    function toTimeLocaleObject(d) {
-        var hours: number = 0;
-        var minutes: any;
-        var tt: string;
-
-        hours = d.getHours();
-        minutes = d.getMinutes();
-        tt = hours > 11 ? 'PM' : 'AM';
-
-        if (minutes < 10) {
-            minutes = '0' + minutes;
-        }
-
-        if (hours > 12) {
-            hours -= 12;
-        }
-
-        return {
-            hours: hours,
-            minutes: minutes,
-            tt: tt
-        };
-    }
-
-    function toTimeLocaleString(d) {
-        var str = '12:00 AM';
-        var hours = d.getHours();
-        var minutes = d.getMinutes();
-        var tt = hours > 11 ? 'PM' : 'AM';
-
-        if (minutes < 10) {
-            minutes = '0' + minutes;
-        }
-
-        if (hours > 12) {
-            hours -= 12;
-        }
-        else if (hours == 0) {
-            hours = 12;
-        }
-
-        return hours + ':' + minutes + ' ' + tt;
-    }
-
-    function toDateTimeLocaleString(d) {
-        var time = toTimeLocaleString(d);
-        return dateToLocaleString(d) + ' ' + time;
-    }
+    })(ko);  
 }

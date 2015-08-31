@@ -2,18 +2,9 @@
 /// <reference path="../typings/jquery.d.ts" />
 /// <reference path="../typings/jquery.ui.datetimepicker.d.ts" />
 /// <reference path="../typings/jqueryui.d.ts" />
-/// <reference path="../typings/accounting.d.ts" />
 'use strict';
 var Shockout;
 (function (Shockout) {
-    // This method for finding specific nodes in the returned XML was developed by Steve Workman. See his blog post
-    // http://www.steveworkman.com/html5-2/javascript/2011/improving-javascript-xml-node-finding-performance-by-2000/
-    // for performance details.
-    jQuery.fn.SPFilterNode = function (name) {
-        return this.find('*').filter(function () {
-            return this.nodeName === name;
-        });
-    }; // End $.fn.SPFilterNode
     var ShockoutForm = (function () {
         function ShockoutForm(options) {
             this.allowDelete = false;
@@ -26,20 +17,15 @@ var Shockout;
             this.enableErrorLog = true;
             this.errorLogListName = 'Error Log';
             this.fileHandlerUrl = '/_layouts/webster/SPFormFileHandler.ashx';
-            this.fileUploader = null;
-            this.form = null;
             this.hasAttachments = true;
-            this.itemId = null;
-            this.listId = null;
-            this.listName = null;
             this.requireAttachments = false;
-            this.rootUrl = '//' + window.location.hostname;
+            this.rootUrl = window.location.protocol + '//' + window.location.hostname + (!!window.location.port ? ':' + window.location.port : '');
             this.siteUrl = '/';
             this.includeUserProfiles = true;
             this.includeWorkflowHistory = true;
-            this.version = 1.0;
             this.viewModelIsBound = false;
             this.workflowHistoryListName = 'Workflow History';
+            this.version = '0.0.1';
             var self = this;
             if (!(this instanceof ShockoutForm)) {
                 var error = "You must declare an instance of this class with 'new'.";
@@ -47,13 +33,13 @@ var Shockout;
                 throw error;
                 return;
             }
-            if (!!this.getQueryParam("id")) {
-                this.itemId = parseInt(this.getQueryParam("id"));
+            if (!!Shockout.Utils.getQueryParam("id")) {
+                this.itemId = parseInt(Shockout.Utils.getQueryParam("id"));
             }
-            if (!!this.getQueryParam("formid")) {
-                this.itemId = parseInt(this.getQueryParam("formid"));
+            if (!!Shockout.Utils.getQueryParam("formid")) {
+                this.itemId = parseInt(Shockout.Utils.getQueryParam("formid"));
             }
-            this.sourceUrl = this.getQueryParam("source"); //if accessing the form from a SP list, take user back to the list on close
+            this.sourceUrl = Shockout.Utils.getQueryParam("source"); //if accessing the form from a SP list, take user back to the list on close
             if (!!this.sourceUrl) {
                 this.sourceUrl = decodeURIComponent(this.sourceUrl);
             }
@@ -70,10 +56,25 @@ var Shockout;
                 return;
             }
             // get the form container element
-            this.form = (arguments['form'].constructor == String
-                ? document.getElementById(arguments['form'])
-                : arguments['form']);
+            this.form = (options['formId'].constructor == String
+                ? document.getElementById(options['formId'])
+                : options['formId']);
             this.$form = $(this.form);
+            self.$formStatus = $('<div>', { 'class': 'form-status' }).appendTo(self.$form);
+            self.$dialog = $('<div>', { 'id': 'formdialog' })
+                .appendTo(self.$form)
+                .dialog({
+                autoOpen: false,
+                show: {
+                    effect: "blind",
+                    duration: 1000
+                },
+                hide: {
+                    effect: "explode",
+                    duration: 1000
+                }
+            });
+            ShockoutForm.errorLogListName = this.errorLogListName;
             this.viewModel = new Shockout.ViewModel(this);
             //Cascading Asynchronous Function Execution (CAFE) Array
             this.asyncFns = [
@@ -98,7 +99,7 @@ var Shockout;
                 }
             ];
             //start CAFE
-            this.nextAsync();
+            this.nextAsync(true, 'Begin initialization...');
         }
         ShockoutForm.prototype.nextAsync = function (success, msg, args) {
             if (success === void 0) { success = undefined; }
@@ -119,28 +120,13 @@ var Shockout;
                 return;
             }
             // execute the next function in the array
-            this.asyncFns.shift()(this, args);
+            this.asyncFns.shift()(self, args);
         };
         ShockoutForm.prototype.initFormAsync = function (self, args) {
             if (args === void 0) { args = undefined; }
             try {
                 self.updateStatus("Initializing dynamic form features...");
-                self.$form.prepend(Shockout.Templates.BRANDING);
-                self.$createdInfo = this.$form.find(".created-info");
-                self.$formStatus = $('<div>', { 'class': 'form-status' }).appendTo(this.$form);
-                self.$dialog = $('<div>', { 'id': 'formdialog' })
-                    .appendTo(self.$form)
-                    .dialog({
-                    autoOpen: false,
-                    show: {
-                        effect: "blind",
-                        duration: 1000
-                    },
-                    hide: {
-                        effect: "explode",
-                        duration: 1000
-                    }
-                });
+                self.$createdInfo = self.$form.find(".created-info");
                 // append action buttons
                 self.$formAction = $(Shockout.Templates.getFormAction(self.allowSave, self.allowDelete, self.allowPrint)).appendTo(self.$form);
                 //append Created/Modified info to predefined section or append to form
@@ -151,15 +137,15 @@ var Shockout;
                         self.$form.append(Shockout.Templates.getHistoryTemplate());
                     }
                 }
-                if (this.editableFields.length == 0) {
+                if (self.editableFields.length == 0) {
                     //make array of SP field names and those that are editable from elements w/ data-bind attribute
-                    self.$form.find("[data-bind]").each(function (i, e) {
-                        var key = self.observableNameFromControl(e);
+                    self.$form.find('[data-bind]').each(function (i, e) {
+                        var key = Shockout.Utils.observableNameFromControl(e);
                         //skip observable keys that have already been added or begins with an underscore '_' or dollar sign '$'
                         if (!!!key || self.editableFields.indexOf(key) > -1 || key.match(/^(_|\$)/) != null) {
                             return;
                         }
-                        if (e.tagName == "INPUT" || e.tagName == "SELECT" || e.tagName == "TEXTAREA" || $(e).attr("contenteditable") == "true") {
+                        if (e.tagName == 'INPUT' || e.tagName == 'SELECT' || e.tagName == 'TEXTAREA' || $(e).attr('contenteditable') == 'true') {
                             self.editableFields.push(key);
                         }
                     });
@@ -167,7 +153,7 @@ var Shockout;
                 }
                 self.fileUploaderSettings = {
                     element: null,
-                    action: self.siteUrl + self.fileHandlerUrl,
+                    action: self.fileHandlerUrl,
                     debug: self.debug,
                     multiple: false,
                     maxConnections: 3,
@@ -196,32 +182,14 @@ var Shockout;
                     self.fileUploaderSettings.element = document.getElementById(id);
                     self.fileUploader = new Shockout.qq.FileUploader(self.fileUploaderSettings);
                 });
-                //setup HTML fields
-                // deprecated
-                self.$form.find("textarea.rte").each(function (i, el) {
-                    var key = self.observableNameFromControl(el);
-                    if (!!!key) {
-                        return;
-                    }
-                    var $rte = $("<div>", {
-                        "data-bind": "htmlValue: " + key,
-                        "class": "content-editable",
-                        "contenteditable": true
-                    });
-                    if ($(el).attr("required") != null || $(el).hasClass("required")) {
-                        $rte.attr("required", "");
-                        $rte.addClass("required");
-                    }
-                    $rte.insertBefore(el);
-                    if (!self.debug) {
-                        el.style.display = "none";
-                    }
-                });
                 self.$form.find('[required]').addClass('required');
                 self.nextAsync(true, "Form initialized.");
             }
             catch (e) {
-                self.logError("initForm: " + e);
+                if (self.debug) {
+                    console.warn(e);
+                }
+                self.logError("initFormAsync: " + e);
                 self.nextAsync(false, "Failed to initialize form. " + e);
             }
         };
@@ -229,9 +197,9 @@ var Shockout;
             if (args === void 0) { args = undefined; }
             try {
                 var currentUser;
-                var query = '<Where><Eq><FieldRef Name="ID" /><Value Type="Counter"><UserID /></Value></Eq></Where>';
-                var viewFields = '<FieldRef Name="ID" /><FieldRef Name="Name" /><FieldRef Name="EMail" /><FieldRef Name="Department" /><FieldRef Name="JobTitle" /><FieldRef Name="UserName" /><FieldRef Name="Office" />';
-                self.getListItemsSoap(self.siteUrl, 'User Information List', viewFields, query, function (xData, Sstatus) {
+                var query = '<Query><Where><Eq><FieldRef Name="ID" /><Value Type="Counter"><UserID /></Value></Eq></Where></Query>';
+                var viewFields = '<ViewFields><FieldRef Name="ID" /><FieldRef Name="Name" /><FieldRef Name="EMail" /><FieldRef Name="Department" /><FieldRef Name="JobTitle" /><FieldRef Name="UserName" /><FieldRef Name="Office" /></ViewFields>';
+                self.getListItemsSoap('', 'User Information List', viewFields, query, function (xData, Sstatus) {
                     var user = {
                         id: null,
                         title: null,
@@ -242,15 +210,16 @@ var Shockout;
                         department: null,
                         groups: []
                     };
-                    var $res = $(xData.responseXML);
-                    $res.SPFilterNode("z:row").each(function (i, node) {
-                        user.id = parseInt($(node).attr("ows_ID"));
-                        user.title = $(node).attr("ows_Name");
-                        user.login = $(node).attr("ows_UserName");
-                        user.email = $(node).attr("ows_EMail");
+                    $(xData.responseXML).find('*').filter(function () {
+                        return this.nodeName === 'z:row';
+                    }).each(function (i, node) {
+                        user.id = parseInt($(node).attr('ows_ID'));
+                        user.title = $(node).attr('ows_Name');
+                        user.login = $(node).attr('ows_UserName');
+                        user.email = $(node).attr('ows_EMail');
+                        user.jobtitle = $(node).attr('ows_JobTitle');
+                        user.department = $(node).attr('ows_Department');
                         user.account = user.id + ';#' + user.login;
-                        user.jobtitle = $(node).attr("ows_JobTitle");
-                        user.department = $(node).attr("ows_Department");
                     });
                     self.currentUser = user;
                     self.viewModel.currentUser(user);
@@ -258,8 +227,11 @@ var Shockout;
                 });
             }
             catch (e) {
-                self.logError("getCurrentUserAsync:" + e);
-                self.nextAsync(false, "Failed to retrieve your account.");
+                if (self.debug) {
+                    console.warn(e);
+                }
+                self.logError('getCurrentUserAsync():' + e);
+                self.nextAsync(false, 'Failed to retrieve your account.');
             }
         };
         ShockoutForm.prototype.getUsersGroupsAsync = function (self, args) {
@@ -301,6 +273,9 @@ var Shockout;
                 self.updateStatus("Retrieving your groups...");
             }
             catch (e) {
+                if (self.debug) {
+                    console.warn(e);
+                }
                 self.logError("getUsersGroupsAsync: " + e);
                 self.nextAsync(false, "Failed to retrieve your groups.");
             }
@@ -332,21 +307,31 @@ var Shockout;
                 self.nextAsync(true, "Retrieved your permissions.");
             }
             catch (e) {
+                if (self.debug) {
+                    console.warn(e);
+                }
                 self.logError("restrictSpGroupElementsAsync: " + e);
                 self.nextAsync(true, "Failed to retrieve your permissions.");
             }
         };
         ShockoutForm.prototype.getListItemAsync = function (self, args) {
             if (args === void 0) { args = undefined; }
-            var model = self.viewModel;
-            self.updateStatus("Retrieving form values...");
-            if (!!!self.itemId) {
-                self.nextAsync(true, "This is a New form.");
-                return;
+            try {
+                var model = self.viewModel;
+                self.updateStatus("Retrieving form values...");
+                if (!!!self.itemId) {
+                    self.nextAsync(true, "This is a New form.");
+                    return;
+                }
+                var uri = self.rootUrl + self.siteUrl + '/_vti_bin/listdata.svc/' + self.listName.replace(/\s/g, '') + '(' + self.itemId + ')';
+                // get the list item data
+                self.getListItemsRest(uri, bindValues, fail);
             }
-            var uri = self.rootUrl + self.siteUrl + '/_vti_bin/listdata.svc/' + self.listName.replace(/\s/g, '') + '(' + self.itemId + ')';
-            // get the list item data
-            self.getListItemsRest(uri, bindValues, fail);
+            catch (e) {
+                if (self.debug) {
+                    console.warn(e);
+                }
+            }
             function bindValues(data, status, jqXhr) {
                 self.bindListItemValues(self, model, data.d);
                 self.nextAsync(true, "Retrieved form data.");
@@ -374,7 +359,7 @@ var Shockout;
                     "?$filter=ListID eq '" + self.listId + "' and PrimaryItemID eq " + self.itemId + "&$select=Description,DateOccurred&$orderby=DateOccurred asc";
                 self.getListItemsRest(uri, function (data, status, jqXhr) {
                     $(data.d).each(function (i, item) {
-                        historyItems.push(new Shockout.HistoryItem(item.Description, self.parseJsonDate(item.DateOccurred)));
+                        historyItems.push(new Shockout.HistoryItem(item.Description, Shockout.Utils.parseJsonDate(item.DateOccurred)));
                     });
                     self.viewModel.history(historyItems);
                     self.nextAsync(true, "Retrieved workflow history.");
@@ -382,12 +367,13 @@ var Shockout;
             }
             catch (ex) {
                 var wfUrl = self.rootUrl + self.siteUrl + '/Lists/' + self.workflowHistoryListName.replace(/\s/g, '%20');
-                self.logError('The Workflow History list may be full at <a href="{url}">{url}</a>. Failed to retrieve workflow history in method, getHistoryAsync(). Error: '.replace(/\{url\}/g, wfUrl) + JSON.stringify(ex));
+                self.logError('The Workflow History list may be full at <a href="{url}">{url}</a>. Failed to retrieve workflow history in method, getHistoryAsync(). Error: '
+                    .replace(/\{url\}/g, wfUrl) + JSON.stringify(ex));
                 self.nextAsync(true, 'Failed to retrieve workflow history.');
             }
         };
         ShockoutForm.prototype.bindListItemValues = function (self, model, item) {
-            self.listItem = self.clone(item, self); //store copy of the original SharePoint list item
+            self.listItem = Shockout.Utils.clone(item); //store copy of the original SharePoint list item
             // Exclude these read-only metadata fields from the Knockout view model.
             var rxExclude = new RegExp("^(__metadata|ContentTypeID|ContentType|CreatedBy|ModifiedBy|Owshiddenversion|Version|Attachments|Path)");
             for (var key in item) {
@@ -397,7 +383,7 @@ var Shockout;
                 // Object types will have a corresponding key name plus the suffix `Value` or `Id` for lookups.
                 // For example: `SupervisorApproval` is an object container for `__deferred` that corresponds to `SupervisorApprovalValue` 
                 // which is an ID or string value.
-                if (item[key].constructor === Object && item[key]['__deferred']) {
+                if (item[key] != null && item[key].constructor === Object && item[key]['__deferred']) {
                     if (item[key + 'Value']) {
                         model[key] = ko.observable(item[key + 'Value']);
                     }
@@ -405,9 +391,9 @@ var Shockout;
                         model[key] = ko.observable(item[key + 'Id']);
                     }
                 }
-                else if (self.isJsonDate(item[key])) {
+                else if (item[key] != null && Shockout.Utils.isJsonDate(item[key])) {
                     // parse JSON dates
-                    model[key] = ko.observable(self.parseJsonDate(item[key]));
+                    model[key] = ko.observable(Shockout.Utils.parseJsonDate(item[key]));
                 }
                 else {
                     // if there is a boolean field for storing the state of a form's submission status 
@@ -482,7 +468,7 @@ var Shockout;
                 return;
             }
             // prepare data to post
-            $.each(this.editableFields, function (i, key) {
+            $.each(self.editableFields, function (i, key) {
                 postData[key] = model[key]();
             });
             //Only update IsSubmitted if it's != true -- if it was already submitted.
@@ -545,11 +531,23 @@ var Shockout;
         ShockoutForm.prototype.getAttachmentsAsync = function (self) {
             if (self === void 0) { self = undefined; }
             self = self || this;
-            self.getListItemsRest(self.listItem.Attachments.__deferred.uri, function (data, status, jqXhr) {
-                $.each(data.d.results, function (i, att) {
-                    self.viewModel.attachments().push(new Shockout.Attachment(att));
+            if (self.listItem == undefined) {
+                self.nextAsync(true);
+                return;
+            }
+            try {
+                self.getListItemsRest(self.listItem.Attachments.__deferred.uri, function (data, status, jqXhr) {
+                    $.each(data.d.results, function (i, att) {
+                        self.viewModel.attachments().push(new Shockout.Attachment(att));
+                    });
+                    self.nextAsync(true, 'Retrieved attachments.');
                 });
-            });
+            }
+            catch (e) {
+                if (self.debug) {
+                    console.warn(e);
+                }
+            }
         };
         ShockoutForm.prototype.deleteAttachment = function (att) {
             var self = this, model = self.viewModel;
@@ -600,7 +598,7 @@ var Shockout;
                     '</soap:Body>' +
                     '</soap:Envelope>';
                 var $jqXhr = $.ajax({
-                    url: self.rootUrl + siteUrl + '/_vti_bin/lists.asmx',
+                    url: siteUrl + '/_vti_bin/lists.asmx',
                     type: 'POST',
                     dataType: 'xml',
                     data: packet,
@@ -618,82 +616,6 @@ var Shockout;
                 self.logError(e);
             }
         };
-        /**
-        * Extract the Knockout observable name from a field with `data-bind` attribute
-        * @param control: HTMLElement
-        * @return string
-        */
-        ShockoutForm.prototype.observableNameFromControl = function (control) {
-            var attr = $(control).attr("data-bind");
-            if (!!!attr) {
-                return null;
-            }
-            var rx = new RegExp("\\b:(\\s+|)\\w*\\b");
-            var exec = rx.exec(attr);
-            var result = !!exec ? exec[0].replace(/:(\s+|)/gi, "") : null;
-            return result;
-        };
-        ShockoutForm.prototype.logError = function (msg) {
-            var self = this;
-            //a dictionary lookup for known error messages from server
-            var errors = [
-                {
-                    "message": "An error occurred. Invalid data has been used to update the list item. The field you are trying to update may be read only.",
-                    "definition": "An Employee Account Name field contains an invalid company employee account name/ID. Please inspect each field for a valid account name/ID.",
-                    "action": function (o) {
-                        var labels = [];
-                        //display labels of fields to correct
-                        $("input.people-picker-control", self.form).each(function (el) {
-                            var $parent = $(this).parent();
-                            var label = $parent.first().html();
-                            labels.push(label);
-                        });
-                        return o.definition += '<div><strong>' + labels.join('<br />') + '</strong></div>';
-                    }
-                }
-            ];
-            //lookup [from errors] and display a friendly error message for known issues to interpret canned server responses            
-            for (var i = 0; i < errors.length; i++) {
-                var rx = new RegExp(errors[i].message, "i");
-                if (rx.test(msg)) {
-                    if ("action" in errors[i]) {
-                        msg = errors[i].action(errors[i]);
-                    }
-                    else {
-                        msg = errors[i].definition;
-                    }
-                    break;
-                }
-            }
-            if (this.debug) {
-                this.log(msg);
-                return;
-            }
-            var loc = window.location.href;
-            var errorMsg = '<p>An error occurred at <a href="' + loc + '" target="_blank">' + loc + '</a></p>' +
-                '<p>List Site URL: ' + self.rootUrl + self.siteUrl + '<br />' +
-                'List Name: ' + self.listName + '<br />' +
-                'Message: ' + msg + '</p>';
-            if (!this.enableErrorLog) {
-                return;
-            }
-            $.ajax({
-                url: self.rootUrl + "/_vti_bin/listdata.svc/" + self.errorLogListName.replace(/\s/g, ''),
-                type: "POST",
-                processData: false,
-                contentType: "application/json;odata=verbose",
-                data: JSON.stringify({ "Title": "Web Form Error: " + this.listName, "Error": errorMsg }),
-                headers: {
-                    "Accept": "application/json;odata=verbose"
-                },
-                success: function (data) {
-                    self.showDialog('<p>An error has occurred and the web administrator has been notified. They will be in touch with you soon.</p><p>Error Details: <pre>' + msg + '</pre></p>');
-                },
-                error: function (data) {
-                    throw data.responseJSON.error;
-                }
-            });
-        };
         ShockoutForm.prototype.log = function (msg) {
             if (this.debug) {
                 console.log(msg);
@@ -705,16 +627,17 @@ var Shockout;
             this.$formStatus
                 .html(msg)
                 .css('color', (success ? "#ff0" : "$f00"))
-                .slideup();
+                .slideUp();
         };
         ShockoutForm.prototype.showDialog = function (msg, title, timeout) {
             if (title === void 0) { title = undefined; }
             if (timeout === void 0) { timeout = undefined; }
+            var self = this;
             title = title || "Form Dialog";
             msg = (msg).toString().match(/<\w>\w*/) == null ? '<p>' + msg + '</p>' : msg; //wrap non-html in <p>
-            this.$dialog.html(msg).dialog('open');
+            self.$dialog.html(msg).dialog('open');
             if (timeout) {
-                setTimeout(function () { this.$dialog.dialog.close(); }, timeout);
+                setTimeout(function () { self.$dialog.dialog.close(); }, timeout);
             }
         };
         ShockoutForm.prototype.getListItemsRest = function (uri, done, fail, always) {
@@ -746,50 +669,6 @@ var Shockout;
                 $jqXhr.always(always);
             }
         };
-        ShockoutForm.prototype.parseJsonDate = function (d) {
-            if (!this.isJsonDate(d)) {
-                return null;
-            }
-            return new Date(parseInt(d.replace(/\d/g, '')));
-        };
-        ShockoutForm.prototype.isJsonDate = function (val) {
-            return /\/Date\(\d+\)\//.test(val.toString());
-        };
-        ShockoutForm.prototype.getQueryParam = function (p) {
-            var escape = window["escape"], unescape = window["unescape"];
-            p = escape(unescape(p));
-            var regex = new RegExp("[?&]" + p + "(?:=([^&]*))?", "i");
-            var match = regex.exec(window.location.search);
-            return match != null ? match[1] : null;
-        };
-        // https://developer.mozilla.org/en-US/docs/Web/Guide/API/DOM/The_structured_clone_algorithm
-        ShockoutForm.prototype.clone = function (objectToBeCloned, self) {
-            if (self === void 0) { self = undefined; }
-            self = self || this;
-            // Basis.
-            if (!(objectToBeCloned instanceof Object)) {
-                return objectToBeCloned;
-            }
-            var objectClone;
-            // Filter out special objects.
-            var Constructor = objectToBeCloned.constructor;
-            switch (Constructor) {
-                // Implement other special objects here.
-                case RegExp:
-                    objectClone = new Constructor(objectToBeCloned);
-                    break;
-                case Date:
-                    objectClone = new Constructor(objectToBeCloned.getTime());
-                    break;
-                default:
-                    objectClone = new Constructor();
-            }
-            // Clone each property.
-            for (var prop in objectToBeCloned) {
-                objectClone[prop] = this.clone(objectToBeCloned[prop]);
-            }
-            return objectClone;
-        };
         /**
         * Validate the View Model's required fields
         * @returns: bool
@@ -798,7 +677,7 @@ var Shockout;
             var self = model.parent, labels = [], errorCount = 0, invalidCount = 0, invalidLabels = [];
             try {
                 self.$form.find('.required, [required]').each(function checkRequired(i, n) {
-                    var p = self.observableNameFromControl(n);
+                    var p = Shockout.Utils.observableNameFromControl(n);
                     if (!!p && model[p]) {
                         var val = model[p]();
                         if (val == null) {
@@ -837,6 +716,15 @@ var Shockout;
                 self.logError("Form validation error at formIsValid(): " + JSON.stringify(e));
                 return false;
             }
+        };
+        ShockoutForm.prototype.getVersion = function () {
+            return this.version;
+        };
+        ShockoutForm.prototype.logError = function (msg, self) {
+            if (self === void 0) { self = undefined; }
+            self = self || this;
+            self.showDialog('<p>An error has occurred and the web administrator has been notified. They will be in touch with you soon.</p><p>Error Details: <pre>' + msg + '</pre></p>');
+            Shockout.Utils.logError(msg, self.errorLogListName, self.rootUrl, self.debug);
         };
         return ShockoutForm;
     })();
@@ -1968,12 +1856,16 @@ var Shockout;
     /* Knockout Custom handlers */
     (function bindKoHandlers(ko) {
         //http://stackoverflow.com/questions/7904522/knockout-content-editable-custom-binding?lq=1
-        ko.bindingHandlers['htmlValue'] = {
+        ko.bindingHandlers['spContentHtml'] = {
             init: function (element, valueAccessor, allBindingsAccessor) {
-                ko.utils.registerEventHandler(element, "blur", update);
-                ko.utils.registerEventHandler(element, "keydown", update);
-                ko.utils.registerEventHandler(element, "change", update);
-                ko.utils.registerEventHandler(element, "mousedown", update);
+                //ko.utils.registerEventHandler(element, "blur", update);
+                //ko.utils.registerEventHandler(element, "keydown", update);
+                //ko.utils.registerEventHandler(element, "change", update);
+                //ko.utils.registerEventHandler(element, "mousedown", update);
+                $(element).on('blur', update)
+                    .on('keydown', update)
+                    .on('change', update)
+                    .on('mousedown', update);
                 function update() {
                     var modelValue = valueAccessor();
                     var elementValue = element.innerHTML;
@@ -1982,8 +1874,8 @@ var Shockout;
                     }
                     else {
                         var allBindings = allBindingsAccessor();
-                        if (allBindings['_ko_property_writers'] && allBindings['_ko_property_writers'].htmlValue) {
-                            allBindings['_ko_property_writers'].htmlValue(elementValue);
+                        if (allBindings['_ko_property_writers'] && allBindings['_ko_property_writers']['spContentHtml']) {
+                            allBindings['_ko_property_writers']['spContentHtml'](elementValue);
                         }
                     }
                 }
@@ -1995,85 +1887,99 @@ var Shockout;
                 }
             }
         };
+        ko.bindingHandlers['spContentEditor'] = {
+            init: function (element, valueAccessor, allBindings, bindingContext) {
+                // This will be called when the binding is first applied to an element
+                // Set up any initial state, event handlers, etc. here
+                var viewModel = bindingContext.$data, modelValue = valueAccessor(), person = ko.unwrap(modelValue), $element = $(element);
+                var key = Shockout.Utils.observableNameFromControl(element);
+                if (!!!key) {
+                    return;
+                }
+                var $rte = $('<div>', {
+                    'data-bind': 'spContentHtml: ' + key,
+                    'class': 'content-editable',
+                    'contenteditable': true
+                });
+                if (!!$element.attr('required') && !!!$element.hasClass('required')) {
+                    $rte.attr('required', '');
+                    $rte.addClass('required');
+                }
+                $rte.insertBefore($element);
+                $element.hide();
+            }
+        };
         /* SharePoint People Picker */
         ko.bindingHandlers['spPerson'] = {
             init: function (element, valueAccessor, allBindings, bindingContext) {
                 try {
-                    if (element.tagName.toLowerCase() != "input" || $(element).attr("type") == "hidden") {
+                    if (element.tagName.toLowerCase() != 'input' || $(element).attr('type') == 'hidden') {
                         return;
                     } /*stop if not an editable field */
                     // This will be called when the binding is first applied to an element
                     // Set up any initial state, event handlers, etc. here
                     var viewModel = bindingContext.$data, modelValue = valueAccessor(), person = ko.unwrap(modelValue);
-                    $(element).attr("placeholder", "Employee Account Name").addClass("people-picker-control");
+                    $(element).attr('placeholder', 'Employee Account Name').addClass('people-picker-control');
                     //create wrapper for control
                     var $parent = $(element).parent();
                     //controls
-                    var $spValidate = $("<button>", { "html": "<span>Validate</span>", "class": "sp-validate-person", "title": "Validate the employee account name." }).on("click", function () {
-                        if ($.trim($(element).val()) == "") {
-                            $(element).removeClass("invalid").removeClass("valid");
+                    var $spValidate = $('<button>', { 'html': '<span>Validate</span>', 'class': 'sp-validate-person', 'title': 'Validate the employee account name.' }).on('click', function () {
+                        if ($.trim($(element).val()) == '') {
+                            $(element).removeClass('invalid').removeClass('valid');
                             return false;
                         }
-                        if (!validateSpPerson(modelValue())) {
-                            $spError.text("Invalid").addClass("error");
-                            $(element).addClass("invalid").removeClass("valid");
+                        if (!Shockout.Utils.validateSpPerson(modelValue())) {
+                            $spError.text('Invalid').addClass('error');
+                            $(element).addClass('invalid').removeClass('valid');
                         }
                         else {
-                            $spError.text("Valid").removeClass("error");
-                            $(element).removeClass("invalid").addClass("valid");
+                            $spError.text('Valid').removeClass('error');
+                            $(element).removeClass('invalid').addClass('valid');
                         }
                         return false;
                     });
                     $parent.append($spValidate);
-                    /*var $spLookup = $("<button>", { "html": "<span>Lookup</span>", "class": "sp-lookup-person" }).on("click", function () {
-                        return false;
-                    });
-                    $parent.append($spLookup);
-                    */
-                    var $spError = $("<span>", { "class": "sp-validation person" });
+                    var $spError = $('<span>', { 'class': 'sp-validation person' });
                     $parent.append($spError);
                     var $desc = $('<div>', { 'class': 'no-print', 'html': '<em>Enter the employee name. The auto-suggest menu will appear below the field. Select the account name.</em>' });
                     $parent.append($desc);
                     $(element).autocomplete({
                         source: function (request, response) {
-                            $.ajax({
-                                url: "/_layouts/webster/SPUserAutoComplete.ashx",
-                                dataType: "json",
-                                data: { term: request.term },
-                                success: function (data) {
-                                    response($.map(data, function (item) {
-                                        return {
-                                            label: item.name,
-                                            value: item.id + ';#' + item.name
-                                        };
-                                    }));
-                                }
+                            Shockout.Utils.peopleSearch(request.term, function (data) {
+                                response($.map(data, function (item) {
+                                    return {
+                                        label: item.Name + ' (' + item.WorkEMail + ')',
+                                        value: item.Id + ';#' + item.Account
+                                    };
+                                }));
                             });
                         },
                         minLength: 3,
                         select: function (event, ui) {
                             modelValue(ui.item.value);
                         }
-                    })
-                        .on("focus", function () { $(this).removeClass("valid"); })
-                        .on("blur", function () { onChangeSpPersonEvent(this, modelValue); })
-                        .on("mouseout", function () { onChangeSpPersonEvent(this, modelValue); });
+                    }).on('focus', function () { $(this).removeClass('valid'); })
+                        .on('blur', function () { onChangeSpPersonEvent(this, modelValue); })
+                        .on('mouseout', function () { onChangeSpPersonEvent(this, modelValue); });
                 }
                 catch (e) {
+                    var msg = 'Error in Knockout handler spPerson init(): ' + JSON.stringify(e);
+                    Shockout.Utils.logError(msg, Shockout.ShockoutForm.errorLogListName);
+                    throw msg;
                 }
                 function onChangeSpPersonEvent(self, modelValue) {
                     var value = $.trim($(self).val());
-                    if (value == "") {
+                    if (value == '') {
                         modelValue(null);
-                        $(self).removeClass("valid").removeClass("invalid");
+                        $(self).removeClass('valid').removeClass('invalid');
                         return;
                     }
-                    if (validateSpPerson(modelValue())) {
+                    if (Shockout.Utils.validateSpPerson(modelValue())) {
                         $(self).val(modelValue().split('#')[1]);
-                        $(self).addClass("valid").removeClass("invalid");
+                        $(self).addClass('valid').removeClass('invalid');
                     }
                     else {
-                        $(self).removeClass("valid").addClass("invalid");
+                        $(self).removeClass('valid').addClass('invalid');
                     }
                 }
                 ;
@@ -2090,7 +1996,7 @@ var Shockout;
                     var person = ko.unwrap(modelValue);
                     // Now manipulate the DOM element
                     var displayName = "";
-                    if (validateSpPerson(person)) {
+                    if (Shockout.Utils.validateSpPerson(person)) {
                         displayName = person.split('#')[1];
                         $(element).addClass("valid");
                     }
@@ -2102,20 +2008,23 @@ var Shockout;
                     }
                 }
                 catch (e) {
+                    var msg = 'Error in Knockout handler spPerson update(): ' + JSON.stringify(e);
+                    Shockout.Utils.logError(msg, Shockout.ShockoutForm.errorLogListName);
+                    throw msg;
                 }
             }
         };
         ko.bindingHandlers['spDate'] = {
             init: function (element, valueAccessor, allBindings, bindingContext) {
                 var modelValue = valueAccessor();
-                if (element.tagName.toLowerCase() != "input" || $(element).attr("type") == "hidden") {
+                if (element.tagName.toLowerCase() != 'input' || $(element).attr('type') == 'hidden') {
                     return;
                 } /*stop if not an editable field */
-                $(element).datepicker().addClass("datepicker med").on("blur", onDateChange).on("change", onDateChange);
-                $(element).attr("placeholder", "MM/DD/YYYY");
+                $(element).datepicker().addClass('datepicker med').on('blur', onDateChange).on('change', onDateChange);
+                $(element).attr('placeholder', 'MM/DD/YYYY');
                 function onDateChange() {
                     try {
-                        if ($.trim(this.value) == "") {
+                        if ($.trim(this.value) == '') {
                             modelValue(null);
                             return;
                         }
@@ -2123,7 +2032,7 @@ var Shockout;
                     }
                     catch (e) {
                         modelValue(null);
-                        this.value = "";
+                        this.value = '';
                     }
                 }
                 ;
@@ -2135,7 +2044,7 @@ var Shockout;
                 var dateStr = '';
                 if (value && value != null) {
                     var d = new Date(value);
-                    dateStr = dateToLocaleString(d);
+                    dateStr = Shockout.Utils.dateToLocaleString(d);
                 }
                 if ('value' in element) {
                     $(element).val(dateStr);
@@ -2147,7 +2056,7 @@ var Shockout;
         };
         ko.bindingHandlers['spDateTime'] = {
             init: function (element, valueAccessor, allBindings, bindingContext) {
-                if (element.tagName.toLowerCase() != "input" || $(element).attr("type") == "hidden") {
+                if (element.tagName.toLowerCase() != 'input' || $(element).attr('type') == 'hidden') {
                     return;
                 } /*stop if not an editable field */
                 var viewModel = bindingContext.$data, modelValue = valueAccessor(), value = ko.unwrap(modelValue), required, $time, $display, $error, $element = $(element);
@@ -2156,7 +2065,7 @@ var Shockout;
                     $error = $('<span>', { 'class': 'error', 'html': 'Invalid Date-time', 'style': 'display:none;' }).insertAfter($element);
                     element.$display = $display;
                     element.$error = $error;
-                    required = $element.hasClass("required") || $element.attr("required") != null;
+                    required = $element.hasClass('required') || $element.attr('required') != null;
                     $element.attr({
                         'placeholder': 'MM/DD/YYYY',
                         'maxlength': 10,
@@ -2164,7 +2073,7 @@ var Shockout;
                     }).datepicker().on('change', function () {
                         try {
                             $error.hide();
-                            if (!isDate(this.value)) {
+                            if (!Shockout.Utils.isDate(this.value)) {
                                 $error.show();
                                 return;
                             }
@@ -2178,7 +2087,7 @@ var Shockout;
                             date.setDate(d);
                             date.setYear(y);
                             modelValue(date);
-                            $display.html(toDateTimeLocaleString(date));
+                            $display.html(Shockout.Utils.toDateTimeLocaleString(date));
                         }
                         catch (e) {
                             $error.show();
@@ -2190,8 +2099,7 @@ var Shockout;
                         'style': 'width:6em;',
                         'class': (required ? 'required' : ''),
                         'placeholder': 'HH:MM PM'
-                    })
-                        .insertAfter($element)
+                    }).insertAfter($element)
                         .on('change', function () {
                         try {
                             $error.hide();
@@ -2200,7 +2108,7 @@ var Shockout;
                             if (modelValue() == null) {
                                 return;
                             }
-                            if (!isTime(time)) {
+                            if (!Shockout.Utils.isTime(time)) {
                                 $error.show();
                                 return;
                             }
@@ -2218,7 +2126,7 @@ var Shockout;
                             d.setHours(h);
                             d.setMinutes(m);
                             modelValue(d);
-                            $display.html(toDateTimeLocaleString(d));
+                            $display.html(Shockout.Utils.toDateTimeLocaleString(d));
                             $error.hide();
                         }
                         catch (e) {
@@ -2234,6 +2142,8 @@ var Shockout;
                     }
                 }
                 catch (e) {
+                    var msg = 'Error in Knockout handler spDateTime init(): ' + JSON.stringify(e);
+                    Shockout.Utils.logError(msg, Shockout.ShockoutForm.errorLogListName);
                 }
             },
             update: function (element, valueAccessor, allBindings, bindingContext) {
@@ -2241,9 +2151,9 @@ var Shockout;
                 try {
                     if (value && value != null) {
                         var d = new Date(value);
-                        var dateStr = dateToLocaleString(d);
-                        var timeStr = toTimeLocaleString(d);
-                        if (element.tagName.toLowerCase() == "input") {
+                        var dateStr = Shockout.Utils.dateToLocaleString(d);
+                        var timeStr = Shockout.Utils.toTimeLocaleString(d);
+                        if (element.tagName.toLowerCase() == 'input') {
                             element.value = dateStr;
                             element.$time.val(timeStr);
                             element.$display.html(dateStr + ' ' + timeStr);
@@ -2253,19 +2163,22 @@ var Shockout;
                         }
                     }
                 }
-                catch (e) { }
+                catch (e) {
+                    var msg = 'Error in Knockout handler spDateTime update(): ' + JSON.stringify(e);
+                    Shockout.Utils.logError(msg, Shockout.ShockoutForm.errorLogListName);
+                }
             }
         };
         ko.bindingHandlers['spMoney'] = {
             'init': function (element, valueAccessor, allBindings, viewModel, bindingContext) {
                 /* stop if not an editable field */
-                if (element.tagName.toLowerCase() != "input" || $(element).attr("type") == "hidden") {
+                if (element.tagName.toLowerCase() != 'input' || $(element).attr('type') == 'hidden') {
                     return;
                 }
                 viewModel = bindingContext.$data;
                 var value = valueAccessor();
                 var valueUnwrapped = ko.unwrap(value);
-                $(element).on("blur", onChange).on("change", onChange);
+                $(element).on('blur', onChange).on('change', onChange);
                 function onChange() {
                     var val = this.value.toString().replace(/[^\d\.\-]/g, '');
                     val = val == '' ? null : (val - 0);
@@ -2279,29 +2192,29 @@ var Shockout;
                 var valueUnwrapped = ko.unwrap(value);
                 if (valueUnwrapped != null) {
                     if (valueUnwrapped < 0) {
-                        $(element).addClass("negative");
+                        $(element).addClass('negative');
                     }
                     else {
-                        $(element).removeClass("negative");
+                        $(element).removeClass('negative');
                     }
                 }
                 else {
                     valueUnwrapped = 0;
                 }
-                var formattedValue = accounting.formatMoney(valueUnwrapped);
-                updateKoField(element, formattedValue);
+                var formattedValue = Shockout.Utils.formatMoney(valueUnwrapped);
+                Shockout.Utils.updateKoField(element, formattedValue);
             }
         };
         ko.bindingHandlers['spDecimal'] = {
             'init': function (element, valueAccessor, allBindings, viewModel, bindingContext) {
                 // stop if not an editable field 
-                if (element.tagName.toLowerCase() != "input" || $(element).attr("type") == "hidden") {
+                if (element.tagName.toLowerCase() != 'input' || $(element).attr('type') == 'hidden') {
                     return;
                 }
                 viewModel = bindingContext.$data;
                 var value = valueAccessor();
                 var valueUnwrapped = ko.unwrap(value);
-                $(element).on("blur", onChange).on("change", onChange);
+                $(element).on('blur', onChange).on('change', onChange);
                 function onChange() {
                     var val = this.value.toString().replace(/[^\d\-\.]/g, '');
                     val = val == '' ? null : (val - 0);
@@ -2314,32 +2227,32 @@ var Shockout;
                 var value = valueAccessor();
                 var valueUnwrapped = ko.unwrap(value);
                 var precision = allBindings.get('precision') || 2;
-                var formattedValue = accounting.toFixed(valueUnwrapped, precision);
+                var formattedValue = Shockout.Utils.toFixed(valueUnwrapped, precision);
                 if (valueUnwrapped != null) {
                     if (valueUnwrapped < 0) {
-                        $(element).addClass("negative");
+                        $(element).addClass('negative');
                     }
                     else {
-                        $(element).removeClass("negative");
+                        $(element).removeClass('negative');
                     }
                 }
                 else {
                     valueUnwrapped = 0;
                 }
-                updateKoField(element, formattedValue);
+                Shockout.Utils.updateKoField(element, formattedValue);
             }
         };
         ko.bindingHandlers['spNumber'] = {
             /* executes on load */
             init: function (element, valueAccessor, allBindings, viewModel, bindingContext) {
                 /* stop if not an editable field */
-                if (element.tagName.toLowerCase() != "input" || $(element).attr("type") == "hidden") {
+                if (element.tagName.toLowerCase() != 'input' || $(element).attr('type') == 'hidden') {
                     return;
                 }
                 viewModel = bindingContext.$data;
                 var value = valueAccessor();
                 var valueUnwrapped = ko.unwrap(value);
-                $(element).on("blur", onChange).on("change", onChange);
+                $(element).on('blur', onChange).on('change', onChange);
                 function onChange() {
                     var val = this.value.toString().replace(/[^\d\-]/g, '');
                     val = val == '' ? null : (val - 0);
@@ -2354,85 +2267,13 @@ var Shockout;
                 var valueUnwrapped = ko.unwrap(value);
                 valueUnwrapped = valueUnwrapped == null ? 0 : valueUnwrapped;
                 valueUnwrapped = valueUnwrapped.constructor == String ? valueUnwrapped = valueUnwrapped.replace(/\D/g) - 0 : valueUnwrapped;
-                updateKoField(element, valueUnwrapped);
-                if (typeof (value) == "function") {
+                Shockout.Utils.updateKoField(element, valueUnwrapped);
+                if (value.constructor == Function) {
                     value(valueUnwrapped);
                 }
             }
         };
     })(ko);
-    /* update a KO observable whether it's an update or text field */
-    function updateKoField(el, val) {
-        if (el.tagName.toLowerCase() == "input") {
-            $(el).val(val);
-        }
-        else {
-            $(el).html(val);
-        }
-    }
-    //validate format ID;#UserName
-    function validateSpPerson(person) {
-        return person != null && person.toString().match(/^\d*;#/) != null;
-    }
-    function isTime(val) {
-        var rx = new RegExp("\\d{1,2}:\\d{2}\\s{0,1}(AM|PM)");
-        return rx.test(val);
-    }
-    function isDate(val) {
-        var rx = new RegExp("\\d{1,2}\/\\d{1,2}\/\\d{4}");
-        return rx.test(val.toString());
-    }
-    function dateToLocaleString(d) {
-        try {
-            var dd = d.getDate();
-            dd = dd < 10 ? "0" + dd : dd;
-            var mo = d.getMonth() + 1;
-            mo = mo < 10 ? "0" + mo : mo;
-            return mo + '/' + dd + '/' + d.getFullYear();
-        }
-        catch (e) {
-            return 'Invalid Date';
-        }
-    }
-    function toTimeLocaleObject(d) {
-        var hours = 0;
-        var minutes;
-        var tt;
-        hours = d.getHours();
-        minutes = d.getMinutes();
-        tt = hours > 11 ? 'PM' : 'AM';
-        if (minutes < 10) {
-            minutes = '0' + minutes;
-        }
-        if (hours > 12) {
-            hours -= 12;
-        }
-        return {
-            hours: hours,
-            minutes: minutes,
-            tt: tt
-        };
-    }
-    function toTimeLocaleString(d) {
-        var str = '12:00 AM';
-        var hours = d.getHours();
-        var minutes = d.getMinutes();
-        var tt = hours > 11 ? 'PM' : 'AM';
-        if (minutes < 10) {
-            minutes = '0' + minutes;
-        }
-        if (hours > 12) {
-            hours -= 12;
-        }
-        else if (hours == 0) {
-            hours = 12;
-        }
-        return hours + ':' + minutes + ' ' + tt;
-    }
-    function toDateTimeLocaleString(d) {
-        var time = toTimeLocaleString(d);
-        return dateToLocaleString(d) + ' ' + time;
-    }
 })(Shockout || (Shockout = {}));
 var Shockout;
 (function (Shockout) {
@@ -2550,14 +2391,288 @@ var Shockout;
         Templates.historyKey = 'history';
         Templates.historyDescriptionKey = 'description';
         Templates.historyDateKey = 'date';
-        Templates.BRANDING = '<div class="company-branding">' +
-            '<img src="/StyleLibrary/Webster/Images/CDSLogo.png" alt="CDS in Texas" />' +
-            '<img src="/StyleLibrary/Webster/Images/DSSWLogo.png" alt="DSSW" />' +
-            '<img src="/StyleLibrary/Webster/Images/LifeSpanLogo.png" alt="LifeSpan" />' +
-            '</div>';
         return Templates;
     })();
     Shockout.Templates = Templates;
+})(Shockout || (Shockout = {}));
+var Shockout;
+(function (Shockout) {
+    var Utils = (function () {
+        function Utils() {
+        }
+        Utils.peopleSearch = function (term, callback, take, siteUrl) {
+            if (take === void 0) { take = 10; }
+            if (siteUrl === void 0) { siteUrl = ''; }
+            // Allowed system query options are $filter, $select, $orderby, $skip, $top, $count, $search, $expand, and $levels.
+            var uri = siteUrl + "/_vti_bin/listdata.svc/UserInformationList?$filter=startswith(Name,'{0}')&$select=Id,Account,Name,WorkEMail&$orderby=Name&$top={1}"
+                .replace(/\{0\}/, term).replace(/\{1\}/, take.toString());
+            var $jqXhr = $.ajax({
+                url: uri,
+                type: 'GET',
+                cache: false,
+                dataType: 'json',
+                contentType: 'application/json; charset=utf-8',
+                headers: {
+                    'Accept': 'application/json'
+                }
+            });
+            $jqXhr.done(function (data, status, jqXhr) {
+                callback(data.d.results);
+            });
+            $jqXhr.fail(function (obj, status, jqXhr) {
+                var msg = 'People Search error. Status: ' + obj.statusText + ' ' + status + ' ' + JSON.stringify(jqXhr);
+                Utils.logError(msg, Shockout.ShockoutForm.errorLogListName);
+                throw msg;
+            });
+        };
+        /**
+        * Extract the Knockout observable name from a field with `data-bind` attribute
+        * @param control: HTMLElement
+        * @return string
+        */
+        Utils.observableNameFromControl = function (control) {
+            var attr = $(control).attr("data-bind");
+            if (!!!attr) {
+                return null;
+            }
+            var rx = new RegExp("\\b:(\\s+|)\\w*\\b");
+            var exec = rx.exec(attr);
+            var result = !!exec ? exec[0].replace(/:(\s+|)/gi, "") : null;
+            return result;
+        };
+        Utils.parseJsonDate = function (d) {
+            if (!Utils.isJsonDate(d)) {
+                return null;
+            }
+            return new Date(parseInt(d.replace(/\d/g, '')));
+        };
+        Utils.isJsonDate = function (val) {
+            if (typeof val == 'undefined') {
+                return false;
+            }
+            return /\/Date\(\d+\)\//.test(val+'');
+        };
+        Utils.getQueryParam = function (p) {
+            var escape = window["escape"], unescape = window["unescape"];
+            p = escape(unescape(p));
+            var regex = new RegExp("[?&]" + p + "(?:=([^&]*))?", "i");
+            var match = regex.exec(window.location.search);
+            return match != null ? match[1] : null;
+        };
+        // https://developer.mozilla.org/en-US/docs/Web/Guide/API/DOM/The_structured_clone_algorithm
+        Utils.clone = function (objectToBeCloned) {
+            // Basis.
+            if (!(objectToBeCloned instanceof Object)) {
+                return objectToBeCloned;
+            }
+            var objectClone;
+            // Filter out special objects.
+            var Constructor = objectToBeCloned.constructor;
+            switch (Constructor) {
+                // Implement other special objects here.
+                case RegExp:
+                    objectClone = new Constructor(objectToBeCloned);
+                    break;
+                case Date:
+                    objectClone = new Constructor(objectToBeCloned.getTime());
+                    break;
+                default:
+                    objectClone = new Constructor();
+            }
+            // Clone each property.
+            for (var prop in objectToBeCloned) {
+                objectClone[prop] = this.clone(objectToBeCloned[prop]);
+            }
+            return objectClone;
+        };
+        Utils.logError = function (msg, errorLogListName, siteUrl, debug) {
+            if (siteUrl === void 0) { siteUrl = ''; }
+            if (debug === void 0) { debug = false; }
+            if (debug) {
+                console.warn(msg);
+                return;
+            }
+            var loc = window.location.href;
+            var errorMsg = '<p>An error occurred at <a href="' + loc + '" target="_blank">' + loc + '</a></p><p>Message: ' + msg + '</p>';
+            $.ajax({
+                url: siteUrl + "/_vti_bin/listdata.svc/" + errorLogListName.replace(/\s/g, ''),
+                type: "POST",
+                processData: false,
+                contentType: "application/json;odata=verbose",
+                data: JSON.stringify({ "Title": "Web Form Error", "Error": errorMsg }),
+                headers: {
+                    "Accept": "application/json;odata=verbose"
+                },
+                success: function () {
+                },
+                error: function (data) {
+                    throw data.responseJSON.error;
+                }
+            });
+        };
+        /* update a KO observable whether it's an update or text field */
+        Utils.updateKoField = function (el, val) {
+            if (el.tagName.toLowerCase() == "input") {
+                $(el).val(val);
+            }
+            else {
+                $(el).html(val);
+            }
+        };
+        //validate format ID;#UserName
+        Utils.validateSpPerson = function (person) {
+            return person != null && person.toString().match(/^\d*;#/) != null;
+        };
+        Utils.isTime = function (val) {
+            var rx = new RegExp("\\d{1,2}:\\d{2}\\s{0,1}(AM|PM)");
+            return rx.test(val);
+        };
+        Utils.isDate = function (val) {
+            var rx = new RegExp("\\d{1,2}\/\\d{1,2}\/\\d{4}");
+            return rx.test(val.toString());
+        };
+        Utils.dateToLocaleString = function (d) {
+            try {
+                var dd = d.getDate();
+                dd = dd < 10 ? "0" + dd : dd;
+                var mo = d.getMonth() + 1;
+                mo = mo < 10 ? "0" + mo : mo;
+                return mo + '/' + dd + '/' + d.getFullYear();
+            }
+            catch (e) {
+                return 'Invalid Date';
+            }
+        };
+        Utils.toTimeLocaleObject = function (d) {
+            var hours = 0;
+            var minutes;
+            var tt;
+            hours = d.getHours();
+            minutes = d.getMinutes();
+            tt = hours > 11 ? 'PM' : 'AM';
+            if (minutes < 10) {
+                minutes = '0' + minutes;
+            }
+            if (hours > 12) {
+                hours -= 12;
+            }
+            return {
+                hours: hours,
+                minutes: minutes,
+                tt: tt
+            };
+        };
+        Utils.toTimeLocaleString = function (d) {
+            var str = '12:00 AM';
+            var hours = d.getHours();
+            var minutes = d.getMinutes();
+            var tt = hours > 11 ? 'PM' : 'AM';
+            if (minutes < 10) {
+                minutes = '0' + minutes;
+            }
+            if (hours > 12) {
+                hours -= 12;
+            }
+            else if (hours == 0) {
+                hours = 12;
+            }
+            return hours + ':' + minutes + ' ' + tt;
+        };
+        Utils.toDateTimeLocaleString = function (d) {
+            var time = Utils.toTimeLocaleString(d);
+            return Utils.dateToLocaleString(d) + ' ' + time;
+        };
+        /**
+        * Addapted from accounting.js library. http://josscrowcroft.github.com/accounting.js/
+        * Format a number into currency
+        *
+        * Usage: accounting.formatMoney(number, symbol, precision, thousandsSep, decimalSep, format)
+        * defaults: (0, "$", 2, ",", ".", "%s%v")
+        *
+        * Localise by overriding the symbol, precision, thousand / decimal separators and format
+        * Second param can be an object matching `settings.currency` which is the easiest way.
+        *
+        * To do: tidy up the parameters
+        */
+        Utils.formatMoney = function (value, symbol, precision) {
+            if (symbol === void 0) { symbol = '$'; }
+            if (precision === void 0) { precision = 2; }
+            // Clean up number:
+            var num = Utils.unformatNumber(value), format = '%s%v', neg = format.replace('%v', '-%v'), useFormat = num > 0 ? format : num < 0 ? neg : format, numFormat = Utils.formatNumber(Math.abs(num), Utils.checkPrecision(precision));
+            // Return with currency symbol added:
+            return useFormat
+                .replace('%s', symbol)
+                .replace('%v', numFormat);
+        };
+        /**
+        * Addapted from accounting.js library. http://josscrowcroft.github.com/accounting.js/
+        * Takes a string/array of strings, removes all formatting/cruft and returns the raw float value
+        * alias: accounting.`parse(string)`
+        *
+        * Decimal must be included in the regular expression to match floats (defaults to
+        * accounting.settings.number.decimal), so if the number uses a non-standard decimal
+        * separator, provide it as the second argument.
+        *
+        * Also matches bracketed negatives (eg. "$ (1.99)" => -1.99)
+        *
+        * Doesn't throw any errors (`NaN`s become 0) but this may change in future
+        */
+        Utils.unformatNumber = function (value) {
+            // Return the value as-is if it's already a number:
+            if (typeof value === "number")
+                return value;
+            // Build regex to strip out everything except digits, decimal point and minus sign:
+            var unformatted = parseFloat((value + '')
+                .replace(/\((.*)\)/, '-$1') // replace parenthesis for negative numbers
+                .replace(/[^0-9-.]/g, ''));
+            return !isNaN(unformatted) ? unformatted : 0;
+        };
+        /**
+        * Addapted from accounting.js library. http://josscrowcroft.github.com/accounting.js/
+        * Format a number, with comma-separated thousands and custom precision/decimal places
+        *
+        * Localise by overriding the precision and thousand / decimal separators
+        * 2nd parameter `precision` can be an object matching `settings.number`
+        */
+        Utils.formatNumber = function (value, precision) {
+            if (precision === void 0) { precision = 0; }
+            // Build options object from second param (if object) or all params, extending defaults:
+            var num = Utils.unformatNumber(value), usePrecision = Utils.checkPrecision(precision), negative = num < 0 ? "-" : "", base = parseInt(Utils.toFixed(Math.abs(num || 0), usePrecision), 10) + "", mod = base.length > 3 ? base.length % 3 : 0;
+            // Format the number:
+            return negative + (mod ? base.substr(0, mod) + ',' : '') + base.substr(mod).replace(/(\d{3})(?=\d)/g, '$1,') + (usePrecision ? '.' + Utils.toFixed(Math.abs(num), usePrecision).split('.')[1] : "");
+        };
+        /**
+         * Tests whether supplied parameter is a string
+         * from underscore.js
+         */
+        Utils.isString = function (obj) {
+            return !!(obj === '' || (obj && obj.charCodeAt && obj.substr));
+        };
+        /**
+        * Addapted from accounting.js library.
+        * Implementation of toFixed() that treats floats more like decimals
+        *
+        * Fixes binary rounding issues (eg. (0.615).toFixed(2) === "0.61") that present
+        * problems for accounting- and finance-related software.
+        */
+        Utils.toFixed = function (value, precision) {
+            if (precision === void 0) { precision = 0; }
+            precision = Utils.checkPrecision(precision);
+            var power = Math.pow(10, precision);
+            // Multiply up by precision, round accurately, then divide and use native toFixed():
+            return (Math.round(Utils.unformatNumber(value) * power) / power).toFixed(precision);
+        };
+        /**
+        * Addapted from accounting.js library. http://josscrowcroft.github.com/accounting.js/
+        * Check and normalise the value of precision (must be positive integer)
+        */
+        Utils.checkPrecision = function (val) {
+            val = Math.round(Math.abs(val));
+            return isNaN(val) ? 0 : val;
+        };
+        return Utils;
+    })();
+    Shockout.Utils = Utils;
 })(Shockout || (Shockout = {}));
 var Shockout;
 (function (Shockout) {
@@ -2596,4 +2711,4 @@ var Shockout;
     })();
     Shockout.ViewModel = ViewModel;
 })(Shockout || (Shockout = {}));
-//# sourceMappingURL=ShockoutForms.js.map
+//# sourceMappingURL=ShockoutForms-0.0.1.js.map

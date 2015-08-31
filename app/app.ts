@@ -2,20 +2,10 @@
 /// <reference path="../typings/jquery.d.ts" />
 /// <reference path="../typings/jquery.ui.datetimepicker.d.ts" />
 /// <reference path="../typings/jqueryui.d.ts" />
-/// <reference path="../typings/accounting.d.ts" />
 
 'use strict';
 
 module Shockout {
-    
-    // This method for finding specific nodes in the returned XML was developed by Steve Workman. See his blog post
-    // http://www.steveworkman.com/html5-2/javascript/2011/improving-javascript-xml-node-finding-performance-by-2000/
-    // for performance details.
-    jQuery.fn.SPFilterNode = function (name) {
-        return this.find('*').filter(function () {
-            return this.nodeName === name;
-        });
-    }; // End $.fn.SPFilterNode
 
     export class ShockoutForm {
 
@@ -36,33 +26,37 @@ module Shockout {
         public editableFields: Array<string> = [];
         public enableErrorLog: boolean = true;
         public errorLogListName: string = 'Error Log';
+        public fieldNames: Array<string>;
         public fileHandlerUrl: string = '/_layouts/webster/SPFormFileHandler.ashx';
         public fileUploaderSettings: IFileUploaderSettings;
-        public fileUploader: any = null;
-        public form: HTMLElement = null;
+        public fileUploader: any;
+        public form: HTMLElement;
+        public formId: string;
         public hasAttachments: boolean = true;
-        public itemId: number = null;
+        public itemId: number;
         public isSubmittedKey: string;
-        public listId: string = null;
+        public listId: string;
         public listItem: ISpItem;
-        public listName: string = null;
+        public listName: string;
         public preRender: Function;
         public postRender: Function;
         public preSave: Function;
         public requireAttachments: boolean = false;
-        public rootUrl: string = '//' + window.location.hostname;
+        public rootUrl: string = window.location.protocol + '//' + window.location.hostname + (!!window.location.port ? ':' + window.location.port : '');
         public siteUrl: string = '/';
         public includeUserProfiles: boolean = true;
         public includeWorkflowHistory: boolean = true;
         public sourceUrl: string;
-        public version: number = 1.0;
         public viewModelIsBound: boolean = false;
         public viewModel: IViewModel;   
         public workflowHistoryListName: string = 'Workflow History';
+
+        public static errorLogListName: string;
         
         private asyncFns: Array<any>;
+        private version: string = '0.0.1';
 
-        constructor(options: {}) {
+        constructor(options: Object) {
             var self = this;
 
             if (!(this instanceof ShockoutForm)) {
@@ -72,15 +66,15 @@ module Shockout {
                 return;
             }
 
-            if (!!this.getQueryParam("id")) {
-                this.itemId = parseInt(this.getQueryParam("id"));
+            if (!!Utils.getQueryParam("id")) {
+                this.itemId = parseInt(Utils.getQueryParam("id"));
             }
             
-            if (!!this.getQueryParam("formid")) {
-                this.itemId = parseInt(this.getQueryParam("formid"));
+            if (!!Utils.getQueryParam("formid")) {
+                this.itemId = parseInt(Utils.getQueryParam("formid"));
             }
 
-            this.sourceUrl = this.getQueryParam("source"); //if accessing the form from a SP list, take user back to the list on close
+            this.sourceUrl = Utils.getQueryParam("source"); //if accessing the form from a SP list, take user back to the list on close
 
             if (!!this.sourceUrl) {
                 this.sourceUrl = decodeURIComponent(this.sourceUrl);
@@ -100,11 +94,29 @@ module Shockout {
             }
 
             // get the form container element
-            this.form = <HTMLFormElement>(arguments['form'].constructor == String
-                ? document.getElementById(arguments['form'])
-                : arguments['form']);
+            this.form = <HTMLFormElement>(options['formId'].constructor == String
+                ? document.getElementById(options['formId'])
+                : options['formId']);
 
             this.$form = $(this.form);
+
+            self.$formStatus = $('<div>', { 'class': 'form-status' }).appendTo(self.$form);
+
+            self.$dialog = $('<div>', { 'id': 'formdialog' })
+                .appendTo(self.$form)
+                .dialog({
+                    autoOpen: false,
+                    show: {
+                        effect: "blind",
+                        duration: 1000
+                    },
+                    hide: {
+                        effect: "explode",
+                        duration: 1000
+                    }
+                });
+
+            ShockoutForm.errorLogListName = this.errorLogListName;
 
             this.viewModel = new ViewModel(this);
 
@@ -132,7 +144,7 @@ module Shockout {
             ];
 
             //start CAFE
-            this.nextAsync();         
+            this.nextAsync(true, 'Begin initialization...');         
         }
 
         nextAsync(success: boolean = undefined, msg: string = undefined, args: any = undefined): void {
@@ -152,32 +164,14 @@ module Shockout {
                 return;
             }
             // execute the next function in the array
-            this.asyncFns.shift()(this, args);
+            this.asyncFns.shift()(self, args);
         }
 
         initFormAsync(self: ShockoutForm, args: any = undefined) {            
             try {
                 self.updateStatus("Initializing dynamic form features...");
 
-                self.$form.prepend(Templates.BRANDING);
-
-                self.$createdInfo = this.$form.find(".created-info");
-
-                self.$formStatus = $('<div>', { 'class': 'form-status' }).appendTo(this.$form);
-
-                self.$dialog = $('<div>', { 'id': 'formdialog' })
-                    .appendTo(self.$form)
-                    .dialog({
-                        autoOpen: false,
-                        show: {
-                            effect: "blind",
-                            duration: 1000
-                        },
-                        hide: {
-                            effect: "explode",
-                            duration: 1000
-                        }
-                    });
+                self.$createdInfo = self.$form.find(".created-info");
 
                 // append action buttons
                 self.$formAction = $(Templates.getFormAction(self.allowSave, self.allowDelete, self.allowPrint)).appendTo(self.$form);
@@ -192,15 +186,15 @@ module Shockout {
                     }
                 }
 
-                if (this.editableFields.length == 0) {
+                if (self.editableFields.length == 0) {
                     //make array of SP field names and those that are editable from elements w/ data-bind attribute
-                    self.$form.find("[data-bind]").each(function (i: number, e: HTMLElement) {
-                        var key = self.observableNameFromControl(e);
+                    self.$form.find('[data-bind]').each(function (i: number, e: HTMLElement) {
+                        var key = Utils.observableNameFromControl(e);
 
                         //skip observable keys that have already been added or begins with an underscore '_' or dollar sign '$'
                         if (!!!key || self.editableFields.indexOf(key) > -1 || key.match(/^(_|\$)/) != null) { return; }
 
-                        if (e.tagName == "INPUT" || e.tagName == "SELECT" || e.tagName == "TEXTAREA" || $(e).attr("contenteditable") == "true") {
+                        if (e.tagName == 'INPUT' || e.tagName == 'SELECT' || e.tagName == 'TEXTAREA' || $(e).attr('contenteditable') == 'true') {
                             self.editableFields.push(key);
                         }
                     });
@@ -210,7 +204,7 @@ module Shockout {
 
                 self.fileUploaderSettings = {
                     element: null,
-                    action: self.siteUrl + self.fileHandlerUrl,
+                    action: self.fileHandlerUrl,
                     debug: self.debug,
                     multiple: false,
                     maxConnections: 3,
@@ -241,37 +235,16 @@ module Shockout {
                     self.fileUploader = new Shockout.qq.FileUploader(self.fileUploaderSettings);
                 });
 
-                //setup HTML fields
-                // deprecated
-                self.$form.find("textarea.rte").each(function (i: number, el: HTMLElement) {
-                    var key = self.observableNameFromControl(el);
-                    if (!!!key) { return; }
-
-                    var $rte = $("<div>", {
-                        "data-bind": "htmlValue: " + key,
-                        "class": "content-editable",
-                        "contenteditable": true
-                    });
-
-                    if ($(el).attr("required") != null || $(el).hasClass("required")) {
-                        $rte.attr("required", "");
-                        $rte.addClass("required");
-                    }
-
-                    $rte.insertBefore(el);
-
-                    if (!self.debug) {
-                        el.style.display = "none";
-                    }
-                });
-
                 self.$form.find('[required]').addClass('required');
 
                 self.nextAsync(true, "Form initialized.");
 
             }
             catch (e) {
-                self.logError("initForm: " + e);
+                if (self.debug) {
+                    console.warn(e);
+                }
+                self.logError("initFormAsync: " + e);
                 self.nextAsync(false, "Failed to initialize form. " + e);
             }
         }
@@ -279,10 +252,10 @@ module Shockout {
         getCurrentUserAsync(self: ShockoutForm, args: any = undefined): void {
             try {
                 var currentUser: ICurrentUser;
-                var query = '<Where><Eq><FieldRef Name="ID" /><Value Type="Counter"><UserID /></Value></Eq></Where>';
-                var viewFields = '<FieldRef Name="ID" /><FieldRef Name="Name" /><FieldRef Name="EMail" /><FieldRef Name="Department" /><FieldRef Name="JobTitle" /><FieldRef Name="UserName" /><FieldRef Name="Office" />';
+                var query = '<Query><Where><Eq><FieldRef Name="ID" /><Value Type="Counter"><UserID /></Value></Eq></Where></Query>';
+                var viewFields = '<ViewFields><FieldRef Name="ID" /><FieldRef Name="Name" /><FieldRef Name="EMail" /><FieldRef Name="Department" /><FieldRef Name="JobTitle" /><FieldRef Name="UserName" /><FieldRef Name="Office" /></ViewFields>';
 
-                self.getListItemsSoap(self.siteUrl, 'User Information List', viewFields, query, function (xData, Sstatus) {
+                self.getListItemsSoap('', 'User Information List', viewFields, query, function (xData, Sstatus) {
                     
                     var user: ICurrentUser = {
                         id: null,
@@ -295,16 +268,16 @@ module Shockout {
                         groups: []
                     };
 
-                    var $res: any = $(xData.responseXML);
-
-                    $res.SPFilterNode("z:row").each(function (i: number, node: any) {
-                        user.id = parseInt($(node).attr("ows_ID"));
-                        user.title = $(node).attr("ows_Name");
-                        user.login = $(node).attr("ows_UserName");
-                        user.email = $(node).attr("ows_EMail");
+                    $(xData.responseXML).find('*').filter(function() {
+                        return this.nodeName === 'z:row';
+                    }).each(function(i: number, node: any) {
+                        user.id = parseInt($(node).attr('ows_ID'));
+                        user.title = $(node).attr('ows_Name');
+                        user.login = $(node).attr('ows_UserName');
+                        user.email = $(node).attr('ows_EMail');
+                        user.jobtitle = $(node).attr('ows_JobTitle');
+                        user.department = $(node).attr('ows_Department');
                         user.account = user.id + ';#' + user.login;
-                        user.jobtitle = $(node).attr("ows_JobTitle");
-                        user.department = $(node).attr("ows_Department");
                     });
 
                     self.currentUser = user;
@@ -313,8 +286,11 @@ module Shockout {
                 });
             }
             catch (e) {
-                self.logError("getCurrentUserAsync:" + e);
-                self.nextAsync(false, "Failed to retrieve your account.");
+                if (self.debug) {
+                    console.warn(e);
+                }
+                self.logError('getCurrentUserAsync():' + e);
+                self.nextAsync(false, 'Failed to retrieve your account.');
             }
         }
 
@@ -362,6 +338,9 @@ module Shockout {
                 self.updateStatus("Retrieving your groups...");
             }
             catch (e) {
+                if (self.debug) {
+                    console.warn(e);
+                }
                 self.logError("getUsersGroupsAsync: " + e);
                 self.nextAsync(false, "Failed to retrieve your groups.");
             }
@@ -395,24 +374,34 @@ module Shockout {
                 self.nextAsync(true, "Retrieved your permissions.");
             }
             catch (e) {
+                if (self.debug) {
+                    console.warn(e);
+                }
                 self.logError("restrictSpGroupElementsAsync: " + e);
                 self.nextAsync(true, "Failed to retrieve your permissions.");
             }
         }
 
         getListItemAsync(self: ShockoutForm, args: any = undefined): void {
-            var model: IViewModel = self.viewModel;
+            try {
+                var model: IViewModel = self.viewModel;
 
-            self.updateStatus("Retrieving form values...");
+                self.updateStatus("Retrieving form values...");
 
-            if (!!!self.itemId) {
-                self.nextAsync(true, "This is a New form.");
-                return;
+                if (!!!self.itemId) {
+                    self.nextAsync(true, "This is a New form.");
+                    return;
+                }
+
+                var uri = self.rootUrl + self.siteUrl + '/_vti_bin/listdata.svc/' + self.listName.replace(/\s/g, '') + '(' + self.itemId + ')';
+                // get the list item data
+                self.getListItemsRest(uri, bindValues, fail);
             }
-
-            var uri = self.rootUrl + self.siteUrl + '/_vti_bin/listdata.svc/' + self.listName.replace(/\s/g, '') + '(' + self.itemId + ')';
-            // get the list item data
-            self.getListItemsRest(uri, bindValues, fail);
+            catch (e) {
+                if (self.debug) {
+                    console.warn(e);
+                }
+            }
 
             function bindValues(data: ISpWrapper<ISpItem>, status: string, jqXhr: any) {
                 self.bindListItemValues(self, model, data.d);
@@ -443,7 +432,7 @@ module Shockout {
 
                 self.getListItemsRest(uri, function (data: ISpCollectionWrapper<any>, status: string, jqXhr: any) {
                     $(data.d).each(function (i: number, item: any) {
-                        historyItems.push(new HistoryItem(item.Description, self.parseJsonDate(item.DateOccurred)));
+                        historyItems.push(new HistoryItem(item.Description, Utils.parseJsonDate(item.DateOccurred)));
                     });
                     self.viewModel.history(historyItems);
                     self.nextAsync(true, "Retrieved workflow history.");
@@ -451,13 +440,14 @@ module Shockout {
             }
             catch (ex) {
                 var wfUrl = self.rootUrl + self.siteUrl + '/Lists/' + self.workflowHistoryListName.replace(/\s/g, '%20');
-                self.logError('The Workflow History list may be full at <a href="{url}">{url}</a>. Failed to retrieve workflow history in method, getHistoryAsync(). Error: '.replace(/\{url\}/g, wfUrl) + JSON.stringify(ex));
+                self.logError('The Workflow History list may be full at <a href="{url}">{url}</a>. Failed to retrieve workflow history in method, getHistoryAsync(). Error: '
+                    .replace(/\{url\}/g, wfUrl) + JSON.stringify(ex));
                 self.nextAsync(true, 'Failed to retrieve workflow history.');
             }
         }
 
         bindListItemValues(self: ShockoutForm, model: IViewModel, item: ISpItem): void {
-            self.listItem = self.clone(item, self); //store copy of the original SharePoint list item
+            self.listItem = Utils.clone(item); //store copy of the original SharePoint list item
 
             // Exclude these read-only metadata fields from the Knockout view model.
             var rxExclude = new RegExp("^(__metadata|ContentTypeID|ContentType|CreatedBy|ModifiedBy|Owshiddenversion|Version|Attachments|Path)");
@@ -469,16 +459,16 @@ module Shockout {
                 // Object types will have a corresponding key name plus the suffix `Value` or `Id` for lookups.
                 // For example: `SupervisorApproval` is an object container for `__deferred` that corresponds to `SupervisorApprovalValue` 
                 // which is an ID or string value.
-                if (item[key].constructor === Object && item[key]['__deferred']) {
+                if (item[key] != null && item[key].constructor === Object && item[key]['__deferred']) {
                     if (item[key + 'Value']) {
                         model[key] = ko.observable(item[key + 'Value']);
                     } else if (item[key + 'Id']) {
                         model[key] = ko.observable(item[key + 'Id']);
                     }
                 }
-                else if (self.isJsonDate(item[key])) {
+                else if (item[key] != null && Utils.isJsonDate(item[key])) {
                     // parse JSON dates
-                    model[key] = ko.observable(self.parseJsonDate(item[key]));
+                    model[key] = ko.observable(Utils.parseJsonDate(item[key]));
                 }
                 else {
                     // if there is a boolean field for storing the state of a form's submission status 
@@ -567,7 +557,7 @@ module Shockout {
             }
             
             // prepare data to post
-            $.each(this.editableFields, function (i: number, key: string): void {
+            $.each(self.editableFields, function (i: number, key: string): void {
                 postData[key] = model[key]();
             });
 
@@ -641,11 +631,23 @@ module Shockout {
 
         getAttachmentsAsync(self: ShockoutForm = undefined): void {
             self = self || this;
-            self.getListItemsRest(self.listItem.Attachments.__deferred.uri, function (data: ISpCollectionWrapper<ISpAttachment>, status: string, jqXhr: any) {
-                $.each(data.d.results, function (i: number, att: ISpAttachment) {
-                    self.viewModel.attachments().push(new Attachment(att));
+            if (self.listItem == undefined) {
+                self.nextAsync(true);
+                return;
+            }
+            try {
+                self.getListItemsRest(self.listItem.Attachments.__deferred.uri, function (data: ISpCollectionWrapper<ISpAttachment>, status: string, jqXhr: any) {
+                    $.each(data.d.results, function (i: number, att: ISpAttachment) {
+                        self.viewModel.attachments().push(new Attachment(att));
+                    });
+                    self.nextAsync(true, 'Retrieved attachments.');
                 });
-            });
+            }
+            catch (e) {
+                if (self.debug) {
+                    console.warn(e);
+                }
+            }
         }
 
         deleteAttachment(att: Attachment): void {
@@ -701,7 +703,7 @@ module Shockout {
                     '</soap:Envelope>';
 
                 var $jqXhr: JQueryXHR = $.ajax({
-                    url: self.rootUrl + siteUrl + '/_vti_bin/lists.asmx',
+                    url: siteUrl + '/_vti_bin/lists.asmx',
                     type: 'POST',
                     dataType: 'xml',
                     data: packet,
@@ -722,89 +724,6 @@ module Shockout {
             }
         }
 
-        /**
-        * Extract the Knockout observable name from a field with `data-bind` attribute
-        * @param control: HTMLElement
-        * @return string
-        */
-        observableNameFromControl(control: HTMLElement): string {
-            var attr: string = $(control).attr("data-bind");
-            if (!!!attr) { return null; }
-            var rx: RegExp = new RegExp("\\b:(\\s+|)\\w*\\b");
-            var exec: Array<string> = rx.exec(attr);
-            var result: string = !!exec ? exec[0].replace(/:(\s+|)/gi, "") : null;
-            return result; 
-        }
-
-        logError(msg: string): void {
-            var self = this;
-
-            //a dictionary lookup for known error messages from server
-            var errors = [
-                {
-                    "message": "An error occurred. Invalid data has been used to update the list item. The field you are trying to update may be read only.",
-                    "definition": "An Employee Account Name field contains an invalid company employee account name/ID. Please inspect each field for a valid account name/ID.",
-                    "action": function (o) {
-                        var labels = [];
-
-                        //display labels of fields to correct
-                        $("input.people-picker-control", self.form).each(function (el) {
-                            var $parent = $(this).parent();
-                            var label = $parent.first().html();
-                            labels.push(label);
-                        });
-
-                        return o.definition += '<div><strong>' + labels.join('<br />') + '</strong></div>';
-                    }
-                }
-            ];
-
-            //lookup [from errors] and display a friendly error message for known issues to interpret canned server responses            
-            for (var i = 0; i < errors.length; i++) {
-                var rx = new RegExp(errors[i].message, "i");
-                if (rx.test(msg)) {
-                    if ("action" in errors[i]) {
-                        msg = errors[i].action(errors[i]);
-                    }
-                    else {
-                        msg = errors[i].definition;
-                    }
-                    break;
-                }
-            }
-
-            if (this.debug) {
-                this.log(msg);
-                return;
-            }
-
-            var loc = window.location.href;
-            var errorMsg = '<p>An error occurred at <a href="' + loc + '" target="_blank">' + loc + '</a></p>' +
-                '<p>List Site URL: ' + self.rootUrl + self.siteUrl + '<br />' +
-                'List Name: ' + self.listName + '<br />' +
-                'Message: ' + msg + '</p>';
-
-            if (!this.enableErrorLog) { return; }
-
-            $.ajax({
-                url: self.rootUrl + "/_vti_bin/listdata.svc/" + self.errorLogListName.replace(/\s/g, ''),
-                type: "POST",
-                processData: false,
-                contentType: "application/json;odata=verbose",
-                data: JSON.stringify({ "Title": "Web Form Error: " + this.listName, "Error": errorMsg }),
-                headers: {
-                    "Accept": "application/json;odata=verbose"
-                },
-                success: function (data) {
-                    self.showDialog('<p>An error has occurred and the web administrator has been notified. They will be in touch with you soon.</p><p>Error Details: <pre>' + msg + '</pre></p>');
-                },
-                error: function (data) {
-                    throw data.responseJSON.error;
-                }
-            });
-
-        }
-
         log(msg) {
             if (this.debug) {
                 console.log(msg);
@@ -816,15 +735,16 @@ module Shockout {
             this.$formStatus
                 .html(msg)
                 .css('color', (success ? "#ff0" : "$f00"))
-                .slideup();
+                .slideUp();
         }
 
         showDialog(msg: string, title: string = undefined, timeout: number = undefined) {
+            var self: ShockoutForm = this;
             title = title || "Form Dialog";
             msg = (msg).toString().match(/<\w>\w*/) == null ? '<p>' + msg + '</p>' : msg; //wrap non-html in <p>
-            this.$dialog.html(msg).dialog('open');
+            self.$dialog.html(msg).dialog('open');
             if (timeout) {
-                setTimeout(function () { this.$dialog.dialog.close(); }, timeout);
+                setTimeout(function () { self.$dialog.dialog.close(); }, timeout);
             }
         }
 
@@ -861,57 +781,6 @@ module Shockout {
             }
         }
 
-        parseJsonDate(d: string): Date {
-            if (!this.isJsonDate(d)) { return null; }
-            return new Date(parseInt(d.replace(/\d/g, '')));
-        }
-
-        isJsonDate(val: any): boolean {
-            return /\/Date\(\d+\)\//.test(val.toString());
-        }
-
-        getQueryParam(p) {
-            var escape: Function = window["escape"], unescape: Function = window["unescape"];
-            p = escape(unescape(p));
-            var regex = new RegExp("[?&]" + p + "(?:=([^&]*))?", "i");
-            var match = regex.exec(window.location.search);
-            return match != null ? match[1] : null;
-        }
-
-        // https://developer.mozilla.org/en-US/docs/Web/Guide/API/DOM/The_structured_clone_algorithm
-        clone(objectToBeCloned, self: ShockoutForm = undefined) {
-
-            self = self || this;
-
-            // Basis.
-            if (!(objectToBeCloned instanceof Object)) {
-                return objectToBeCloned;
-            }
-
-            var objectClone;
-  
-            // Filter out special objects.
-            var Constructor = objectToBeCloned.constructor;
-            switch (Constructor) {
-                // Implement other special objects here.
-                case RegExp:
-                    objectClone = new Constructor(objectToBeCloned);
-                    break;
-                case Date:
-                    objectClone = new Constructor(objectToBeCloned.getTime());
-                    break;
-                default:
-                    objectClone = new Constructor();
-            }
-  
-            // Clone each property.
-            for (var prop in objectToBeCloned) {
-                objectClone[prop] = this.clone(objectToBeCloned[prop]);
-            }
-
-            return objectClone;
-        }
-
         /**
         * Validate the View Model's required fields
         * @returns: bool
@@ -927,7 +796,7 @@ module Shockout {
             try {
 
                 self.$form.find('.required, [required]').each(function checkRequired(i: number, n: any): void {
-                    var p = self.observableNameFromControl(n);
+                    var p = Utils.observableNameFromControl(n);
                     if (!!p && model[p]) {
                         var val = model[p]();
                         if (val == null) {
@@ -972,6 +841,15 @@ module Shockout {
             }
         }
 
+        getVersion(): string {
+            return this.version;
+        }
+
+        logError(msg: string, self: ShockoutForm = undefined): void {
+            self = self || this;
+            self.showDialog('<p>An error has occurred and the web administrator has been notified. They will be in touch with you soon.</p><p>Error Details: <pre>' + msg + '</pre></p>');
+            Utils.logError(msg, self.errorLogListName, self.rootUrl, self.debug);
+        }
     }
 
 }

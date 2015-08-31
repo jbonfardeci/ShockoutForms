@@ -27,18 +27,13 @@
     <TypeScriptCompile Include="app\fileUploader.ts" />
     <TypeScriptCompile Include="app\koHandlers.ts" />
     <TypeScriptCompile Include="app\templates.ts" />
+    <TypeScriptCompile Include="app\utils.ts" />
     <TypeScriptCompile Include="app\viewModel.ts" />
     <TypeScriptCompile Include="typings\accounting.d.ts" />
     <TypeScriptCompile Include="typings\jquery.d.ts" />
     <TypeScriptCompile Include="typings\jquery.ui.datetimepicker.d.ts" />
     <TypeScriptCompile Include="typings\jqueryui.d.ts" />
     <TypeScriptCompile Include="typings\knockout.d.ts" />
-  </ItemGroup>
-  <ItemGroup>
-    <Content Include="ShockoutForms.js" />
-  </ItemGroup>
-  <ItemGroup>
-    <Content Include="ShockoutForms.js.map" />
   </ItemGroup>
   <PropertyGroup>
     <VisualStudioVersion Condition="'$(VisualStudioVersion)' == ''">12.0</VisualStudioVersion>
@@ -69,7 +64,16 @@
   <PropertyGroup Condition="'$(Configuration)' == 'Debug'">
     <TypeScriptRemoveComments>false</TypeScriptRemoveComments>
     <TypeScriptSourceMap>true</TypeScriptSourceMap>
-    <TypeScriptOutFile>ShockoutForms.js</TypeScriptOutFile>
+    <TypeScriptOutFile>ShockoutForms-0.0.1.js</TypeScriptOutFile>
+    <TypeScriptTarget>ES5</TypeScriptTarget>
+    <TypeScriptCompileOnSaveEnabled>True</TypeScriptCompileOnSaveEnabled>
+    <TypeScriptNoImplicitAny>False</TypeScriptNoImplicitAny>
+    <TypeScriptModuleKind>None</TypeScriptModuleKind>
+    <TypeScriptOutDir />
+    <TypeScriptGeneratesDeclarations>False</TypeScriptGeneratesDeclarations>
+    <TypeScriptNoEmitOnError>True</TypeScriptNoEmitOnError>
+    <TypeScriptMapRoot />
+    <TypeScriptSourceRoot />
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)' == 'Release'">
     <TypeScriptRemoveComments>true</TypeScriptRemoveComments>

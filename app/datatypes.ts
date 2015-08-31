@@ -96,6 +96,14 @@ module Shockout {
         results: Array<T>;
     }
 
+    export interface ISpPersonSearchResult {
+        __metadata: ISpItemMetadata;
+        Id: number;
+        Account: string;
+        Name: string;
+        WorkEMail: string;
+    }
+
     export interface ISpPerson {
         __metadata: ISpItemMetadata;
         ContentTypeID: string;
