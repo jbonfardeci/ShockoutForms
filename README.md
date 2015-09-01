@@ -39,32 +39,32 @@ Forget the frustrations of legacy InfoPath and XSL SharePoint forms. Leverage th
 ####spPerson
 `<input type="text" data-bind="spPerson: myVar" />`
 	OR
-`<div data-bind="spPerson: myVar" />`
+`<div data-bind="spPerson: myVar"></div>`
 
 ####spDate
 `<input type="text" data-bind="spDate: myVar" />`	
 	OR
-`<div data-bind="spDate: myVar" />`
+`<div data-bind="spDate: myVar"></div>`
 
 ####spDateTime
 `<input type="text" data-bind="spDateTime: myVar" />`
 	OR
-`<div data-bind="spDateTime: myVar" />`
+`<div data-bind="spDateTime: myVar"></div>`
 
 ####spMoney
 `<input type="text" data-bind="spMoney: myVar" />`
 	OR
-`<div data-bind="spMoney: myVar" />`
+`<div data-bind="spMoney: myVar"></div>`
 
 ####spDecimal
 `<input type="text" data-bind="spDecimal: myVar" />`
 	OR
-`<div data-bind="spDecimal: myVar" />`
+`<div data-bind="spDecimal: myVar"></div>`
 
 ####spNumber
 `<input type="text" data-bind="spNumber: myVar" />`
 	OR
-`<div data-bind="spNumber: myVar" />`
+`<div data-bind="spNumber: myVar"></div>`
 
 
 Copyright (C) 2015  John T. Bonfardeci
