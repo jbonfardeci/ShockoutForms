@@ -1,12 +1,11 @@
 # ShockoutForms
-# a Work in Progress
+### a Work in Progress
 SharePoint + Knockout MVVM forms - an InfoPath killer
 
 Forget the frustrations of legacy InfoPath and XSL SharePoint forms. Leverage the power of Knockout's databinding with this framework.
 
-# Usage
-
-`var spForm = new Shockout.SPForm(
+#### Usage
+<pre>var spForm = new Shockout.SPForm(
 	/*listName:*/ 'My SharePoint List Name', 
 	/*formId:*/ 'my-form-ID', 
 	/*options:*/ {
@@ -17,7 +16,7 @@ Forget the frustrations of legacy InfoPath and XSL SharePoint forms. Leverage th
 		allowDelete: false, // default false
         allowPrint: true, // default true
         allowSave: true, // default true
-        allowedExtensions: []  // default is `['txt', 'rtf', 'zip', 'pdf', 'doc', 'docx', 'jpg', 'gif', 'png', 'ppt', 'tif', 'pptx', 'csv', 'pub', 'msg']`
+        allowedExtensions: []  // default is ['txt', 'rtf', 'zip', 'pdf', 'doc', 'docx', 'jpg', 'gif', 'png', 'ppt', 'tif', 'pptx', 'csv', 'pub', 'msg']
         attachmentMessage: 'An attachment is required.', // the default
         confirmationUrl: '/SitePages/Confirmation.aspx', // the default
         enableErrorLog: true, // default true
@@ -29,6 +28,6 @@ Forget the frustrations of legacy InfoPath and XSL SharePoint forms. Leverage th
         requireAttachments: false, // default false
         siteUrl: '/companyForms', // default is ''        
         workflowHistoryListName: 'Workflow History' // the default
-	});`
-
+	});
+</pre>
 

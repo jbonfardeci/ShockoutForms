@@ -35,6 +35,9 @@
     <TypeScriptCompile Include="typings\jqueryui.d.ts" />
     <TypeScriptCompile Include="typings\knockout.d.ts" />
   </ItemGroup>
+  <ItemGroup>
+    <Content Include="_layouts\SPFormFileHandler.ashx" />
+  </ItemGroup>
   <PropertyGroup>
     <VisualStudioVersion Condition="'$(VisualStudioVersion)' == ''">12.0</VisualStudioVersion>
   </PropertyGroup>
