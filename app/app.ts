@@ -27,7 +27,7 @@ module Shockout {
         public allowDelete: boolean = false;
         public allowPrint: boolean  = true;
         public allowSave: boolean = false;
-        public allowedExtensions: Array<string>;
+        public allowedExtensions: Array<string> = ['txt', 'rtf', 'zip', 'pdf', 'doc', 'docx', 'jpg', 'gif', 'png', 'ppt', 'tif', 'pptx', 'csv', 'pub', 'msg'];
         public attachmentMessage: string = 'An attachment is required.';
         public currentUser: ICurrentUser;
         public confirmationUrl: string = '/SitePages/Confirmation.aspx';

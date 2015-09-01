@@ -11,6 +11,7 @@ var Shockout;
             this.allowDelete = false;
             this.allowPrint = true;
             this.allowSave = false;
+            this.allowedExtensions = ['txt', 'rtf', 'zip', 'pdf', 'doc', 'docx', 'jpg', 'gif', 'png', 'ppt', 'tif', 'pptx', 'csv', 'pub', 'msg'];
             this.attachmentMessage = 'An attachment is required.';
             this.confirmationUrl = '/SitePages/Confirmation.aspx';
             this.debug = false;
@@ -73,7 +74,9 @@ var Shockout;
             this.form = document.getElementById(this.formId);
             this.$form = $(this.form);
             self.$formStatus = $('<div>', { 'class': 'form-status' }).appendTo(self.$form);
-            self.$dialog = $('<div>', { 'id': 'formdialog' }).appendTo(self.$form).dialog({
+            self.$dialog = $('<div>', { 'id': 'formdialog' })
+                .appendTo(self.$form)
+                .dialog({
                 autoOpen: false,
                 show: {
                     effect: "blind",
@@ -173,8 +176,7 @@ var Shockout;
                         listId: self.listId,
                         itemId: self.itemId
                     },
-                    onSubmit: function (id, fileName) {
-                    },
+                    onSubmit: function (id, fileName) { },
                     onComplete: function (id, fileName, json) {
                         if (self.itemId == null) {
                             self.viewModel['Id'](json.itemId);
@@ -254,7 +256,13 @@ var Shockout;
                     self.nextAsync(true, msg);
                     return;
                 }
-                var packet = '<soap:Envelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">' + '<soap:Body>' + '<GetGroupCollectionFromUser xmlns="http://schemas.microsoft.com/sharepoint/soap/directory/">' + '<userLoginName>' + self.currentUser.login + '</userLoginName>' + '</GetGroupCollectionFromUser>' + '</soap:Body>' + '</soap:Envelope>';
+                var packet = '<soap:Envelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">' +
+                    '<soap:Body>' +
+                    '<GetGroupCollectionFromUser xmlns="http://schemas.microsoft.com/sharepoint/soap/directory/">' +
+                    '<userLoginName>' + self.currentUser.login + '</userLoginName>' +
+                    '</GetGroupCollectionFromUser>' +
+                    '</soap:Body>' +
+                    '</soap:Envelope>';
                 var $jqXhr = $.ajax({
                     url: self.rootUrl + self.siteUrl + '/_vti_bin/usergroup.asmx',
                     type: 'POST',
@@ -363,7 +371,8 @@ var Shockout;
                     return;
                 }
                 var historyItems = [];
-                var uri = self.rootUrl + self.siteUrl + "/_vti_bin/listdata.svc/" + self.workflowHistoryListName.replace(/\s/g, '') + "?$filter=ListID eq '" + self.listId + "' and PrimaryItemID eq " + self.itemId + "&$select=Description,DateOccurred&$orderby=DateOccurred asc";
+                var uri = self.rootUrl + self.siteUrl + "/_vti_bin/listdata.svc/" + self.workflowHistoryListName.replace(/\s/g, '') +
+                    "?$filter=ListID eq '" + self.listId + "' and PrimaryItemID eq " + self.itemId + "&$select=Description,DateOccurred&$orderby=DateOccurred asc";
                 self.getListItemsRest(uri, function (data, status, jqXhr) {
                     $(data.d.results).each(function (i, item) {
                         historyItems.push(new Shockout.HistoryItem(item.Description, Shockout.Utils.parseJsonDate(item.DateOccurred)));
@@ -374,7 +383,8 @@ var Shockout;
             }
             catch (ex) {
                 var wfUrl = self.rootUrl + self.siteUrl + '/Lists/' + self.workflowHistoryListName.replace(/\s/g, '%20');
-                self.logError('The Workflow History list may be full at <a href="{url}">{url}</a>. Failed to retrieve workflow history in method, getHistoryAsync(). Error: '.replace(/\{url\}/g, wfUrl) + JSON.stringify(ex));
+                self.logError('The Workflow History list may be full at <a href="{url}">{url}</a>. Failed to retrieve workflow history in method, getHistoryAsync(). Error: '
+                    .replace(/\{url\}/g, wfUrl) + JSON.stringify(ex));
                 self.nextAsync(true, 'Failed to retrieve workflow history.');
             }
         };
@@ -532,9 +542,7 @@ var Shockout;
                         // update model values
                         self.bindListItemValues(self);
                         //give WF History list 5 seconds to update
-                        setTimeout(function () {
-                            self.getHistoryAsync(self);
-                        }, 5000);
+                        setTimeout(function () { self.getHistoryAsync(self); }, 5000);
                     }
                 }
             });
@@ -569,7 +577,8 @@ var Shockout;
         SPForm.prototype.deleteAttachment = function (att) {
             var self = this, model = self.viewModel;
             try {
-                var packet = '<?xml version="1.0" encoding="utf-8"?><soap:Envelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">' + '<soap:Body><DeleteAttachment xmlns="http://schemas.microsoft.com/sharepoint/soap/"><listName>' + self.listName + '</listName><listItemID>' + self.itemId + '</listItemID><url>' + att.href + '</url></DeleteAttachment></soap:Body></soap:Envelope>';
+                var packet = '<?xml version="1.0" encoding="utf-8"?><soap:Envelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">' +
+                    '<soap:Body><DeleteAttachment xmlns="http://schemas.microsoft.com/sharepoint/soap/"><listName>' + self.listName + '</listName><listItemID>' + self.itemId + '</listItemID><url>' + att.href + '</url></DeleteAttachment></soap:Body></soap:Envelope>';
                 var $jqXhr = $.ajax({
                     url: self.rootUrl + self.siteUrl + '/_vti_bin/lists.asmx',
                     type: 'POST',
@@ -600,7 +609,19 @@ var Shockout;
             if (queryOptions === void 0) { queryOptions = '<QueryOptions/>'; }
             var self = this;
             try {
-                var packet = '<?xml version="1.0" encoding="utf-8"?>' + '<soap:Envelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">' + '<soap:Body>' + '<GetListItems xmlns="http://schemas.microsoft.com/sharepoint/soap/">' + '<listName>' + listName + '</listName>' + '<query>' + query + '</query>' + '<viewFields>' + viewFields + '</viewFields>' + '<rowLimit>' + rowLimit + '</rowLimit>' + '</GetListItems>' + '</soap:Body>' + '</soap:Envelope>';
+                var packet = '<?xml version="1.0" encoding="utf-8"?>' +
+                    '<soap:Envelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">' +
+                    '<soap:Body>' +
+                    '<GetListItems xmlns="http://schemas.microsoft.com/sharepoint/soap/">' +
+                    '<listName>' + listName + '</listName>' +
+                    //'<viewName>' + viewName + '</viewName>' +
+                    '<query>' + query + '</query>' +
+                    '<viewFields>' + viewFields + '</viewFields>' +
+                    '<rowLimit>' + rowLimit + '</rowLimit>' +
+                    //'<queryOptions>' + queryOptions + '</queryOptions>' +
+                    '</GetListItems>' +
+                    '</soap:Body>' +
+                    '</soap:Envelope>';
                 var $jqXhr = $.ajax({
                     url: siteUrl + '/_vti_bin/lists.asmx',
                     type: 'POST',
@@ -655,7 +676,10 @@ var Shockout;
         SPForm.prototype.updateStatus = function (msg, success) {
             if (success === void 0) { success = undefined; }
             success = success || true;
-            this.$formStatus.html(msg).css('color', (success ? "#ff0" : "$f00")).slideUp();
+            this.$formStatus
+                .html(msg)
+                .css('color', (success ? "#ff0" : "$f00"))
+                .slideUp();
         };
         SPForm.prototype.showDialog = function (msg, title, timeout) {
             if (title === void 0) { title = undefined; }
@@ -665,9 +689,7 @@ var Shockout;
             msg = (msg).toString().match(/<\w>\w*/) == null ? '<p>' + msg + '</p>' : msg; //wrap non-html in <p>
             self.$dialog.html(msg).dialog('open');
             if (timeout) {
-                setTimeout(function () {
-                    self.$dialog.dialog.close();
-                }, timeout);
+                setTimeout(function () { self.$dialog.dialog.close(); }, timeout);
             }
         };
         SPForm.prototype.getListItemsRest = function (uri, done, fail, always) {
@@ -839,9 +861,7 @@ var Shockout;
     };
     Shockout.qq.getUniqueId = (function () {
         var id = 0;
-        return function () {
-            return id++;
-        };
+        return function () { return id++; };
     })();
     //
     // Events
@@ -979,9 +999,17 @@ var Shockout;
      */
     Shockout.qq.obj2url = function (obj, temp, prefixDone) {
         var uristrings = [], prefix = '&', add = function (nextObj, i) {
-            var nextTemp = temp ? (/\[\]$/.test(temp)) ? temp : temp + '[' + i + ']' : i;
+            var nextTemp = temp
+                ? (/\[\]$/.test(temp)) // prevent double-encoding
+                    ? temp
+                    : temp + '[' + i + ']'
+                : i;
             if ((nextTemp != 'undefined') && (i != 'undefined')) {
-                uristrings.push((typeof nextObj === 'object') ? Shockout.qq.obj2url(nextObj, nextTemp, true) : (Object.prototype.toString.call(nextObj) === '[object Function]') ? encodeURIComponent(nextTemp) + '=' + encodeURIComponent(nextObj()) : encodeURIComponent(nextTemp) + '=' + encodeURIComponent(nextObj));
+                uristrings.push((typeof nextObj === 'object')
+                    ? Shockout.qq.obj2url(nextObj, nextTemp, true)
+                    : (Object.prototype.toString.call(nextObj) === '[object Function]')
+                        ? encodeURIComponent(nextTemp) + '=' + encodeURIComponent(nextObj())
+                        : encodeURIComponent(nextTemp) + '=' + encodeURIComponent(nextObj));
             }
         };
         if (!prefixDone && temp) {
@@ -990,11 +1018,13 @@ var Shockout;
             uristrings.push(Shockout.qq.obj2url(obj));
         }
         else if ((Object.prototype.toString.call(obj) === '[object Array]') && (typeof obj != 'undefined')) {
+            // we wont use a for-in-loop on an array (performance)
             for (var i = 0, len = obj.length; i < len; ++i) {
                 add(obj[i], i);
             }
         }
         else if ((typeof obj != 'undefined') && (obj !== null) && (typeof obj === "object")) {
+            // for anything else but a scalar, we will use for-in-loop
             for (var p in obj) {
                 add(obj[p], p);
             }
@@ -1002,7 +1032,9 @@ var Shockout;
         else {
             uristrings.push(encodeURIComponent(temp) + '=' + encodeURIComponent(obj));
         }
-        return uristrings.join(prefix).replace(/^&/, '').replace(/%20/g, '+');
+        return uristrings.join(prefix)
+            .replace(/^&/, '')
+            .replace(/%20/g, '+');
     };
     //
     //
@@ -1027,14 +1059,10 @@ var Shockout;
             minSizeLimit: 0,
             // events
             // return false to cancel submit
-            onSubmit: function (id, fileName) {
-            },
-            onProgress: function (id, fileName, loaded, total) {
-            },
-            onComplete: function (id, fileName, responseJSON) {
-            },
-            onCancel: function (id, fileName) {
-            },
+            onSubmit: function (id, fileName) { },
+            onProgress: function (id, fileName, loaded, total) { },
+            onComplete: function (id, fileName, responseJSON) { },
+            onCancel: function (id, fileName) { },
             // messages                
             messages: {
                 typeError: "{file} has invalid extension. Only {extensions} are allowed.",
@@ -1188,9 +1216,7 @@ var Shockout;
         },
         _error: function (code, fileName) {
             var message = this._options.messages[code];
-            function r(name, replacement) {
-                message = message.replace(name, replacement);
-            }
+            function r(name, replacement) { message = message.replace(name, replacement); }
             r('{file}', this._formatFileName(fileName));
             r('{extensions}', this._options.allowedExtensions.join(', '));
             r('{sizeLimit}', this._formatSize(this._options.sizeLimit));
@@ -1237,9 +1263,19 @@ var Shockout;
             element: null,
             // if set, will be used instead of qq-upload-list in template
             listElement: null,
-            template: '<div class="qq-uploader">' + '<div class="qq-upload-drop-area"><span>Drop files here to upload</span></div>' + '<div class="qq-upload-button">Attach File</div>' + '<ul class="qq-upload-list"></ul>' + '</div>',
+            template: '<div class="qq-uploader">' +
+                '<div class="qq-upload-drop-area"><span>Drop files here to upload</span></div>' +
+                '<div class="qq-upload-button">Attach File</div>' +
+                '<ul class="qq-upload-list"></ul>' +
+                '</div>',
             // template for one item in file list
-            fileTemplate: '<li>' + '<span class="qq-upload-file"></span>' + '<span class="qq-upload-spinner"></span>' + '<span class="qq-upload-size"></span>' + '<a class="qq-upload-cancel" href="#">Cancel</a>' + '<span class="qq-upload-failed-text">Failed</span>' + '</li>',
+            fileTemplate: '<li>' +
+                '<span class="qq-upload-file"></span>' +
+                '<span class="qq-upload-spinner"></span>' +
+                '<span class="qq-upload-size"></span>' +
+                '<a class="qq-upload-cancel" href="#">Cancel</a>' +
+                '<span class="qq-upload-failed-text">Failed</span>' +
+                '</li>',
             classes: {
                 // used to get elements from templates
                 button: 'qq-upload-button',
@@ -1356,6 +1392,8 @@ var Shockout;
         },
         _getItemByFileId: function (id) {
             var item = this._listElement.firstChild;
+            // there can't be txt nodes in dynamically created list
+            // and we can  use nextSibling
             while (item) {
                 if (item.qqFileId == id)
                     return item;
@@ -1382,15 +1420,11 @@ var Shockout;
     Shockout.qq.UploadDropZone = function (o) {
         this._options = {
             element: null,
-            onEnter: function (e) {
-            },
-            onLeave: function (e) {
-            },
+            onEnter: function (e) { },
+            onLeave: function (e) { },
             // is not fired when leaving element by hovering descendants   
-            onLeaveNotDescendants: function (e) {
-            },
-            onDrop: function (e) {
-            }
+            onLeaveNotDescendants: function (e) { },
+            onDrop: function (e) { }
         };
         Shockout.qq.extend(this._options, o);
         this._element = this._options.element;
@@ -1453,7 +1487,8 @@ var Shockout;
             isWebkit = navigator.userAgent.indexOf("AppleWebKit") > -1;
             // dt.effectAllowed is none in Safari 5
             // dt.types.contains check is for firefox            
-            return dt && dt.effectAllowed != 'none' && (dt.files || (!isWebkit && dt.types.contains && dt.types.contains('Files')));
+            return dt && dt.effectAllowed != 'none' &&
+                (dt.files || (!isWebkit && dt.types.contains && dt.types.contains('Files')));
         }
     };
     Shockout.qq.UploadButton = function (o) {
@@ -1463,8 +1498,7 @@ var Shockout;
             multiple: false,
             // name attribute of file input
             name: 'file',
-            onChange: function (input) {
-            },
+            onChange: function (input) { },
             hoverClass: 'qq-upload-button-hover',
             focusClass: 'qq-upload-button-focus'
         };
@@ -1550,12 +1584,9 @@ var Shockout;
             action: '/upload.php',
             // maximum number of concurrent uploads        
             maxConnections: 999,
-            onProgress: function (id, fileName, loaded, total) {
-            },
-            onComplete: function (id, fileName, response) {
-            },
-            onCancel: function (id, fileName) {
-            }
+            onProgress: function (id, fileName, loaded, total) { },
+            onComplete: function (id, fileName, response) { },
+            onCancel: function (id, fileName) { }
         };
         Shockout.qq.extend(this._options, o);
         this._queue = [];
@@ -1571,8 +1602,7 @@ var Shockout;
          * Adds file or file input to the queue
          * @returns id
          **/
-        add: function (file) {
-        },
+        add: function (file) { },
         /**
          * Sends the file identified by id and additional query params to the server
          */
@@ -1605,13 +1635,11 @@ var Shockout;
         /**
          * Returns name of the file identified by id
          */
-        getName: function (id) {
-        },
+        getName: function (id) { },
         /**
          * Returns size of the file identified by id
          */
-        getSize: function (id) {
-        },
+        getSize: function (id) { },
         /**
          * Returns id of files being uploaded or
          * waiting for their turn
@@ -1622,13 +1650,11 @@ var Shockout;
         /**
          * Actual upload method
          */
-        _upload: function (id) {
-        },
+        _upload: function (id) { },
         /**
          * Actual cancel method
          */
-        _cancel: function (id) {
-        },
+        _cancel: function (id) { },
         /**
          * Removes element from queue, starts upload of next
          */
@@ -1713,7 +1739,9 @@ var Shockout;
                     return;
                 }
                 // fixing Opera 10.53
-                if (iframe.contentDocument && iframe.contentDocument.body && iframe.contentDocument.body.innerHTML == "false") {
+                if (iframe.contentDocument &&
+                    iframe.contentDocument.body &&
+                    iframe.contentDocument.body.innerHTML == "false") {
                     // In Opera event is fired second time
                     // when body.innerHTML changed from false
                     // to server response approx. after 1 sec
@@ -1788,7 +1816,9 @@ var Shockout;
     Shockout.qq.UploadHandlerXhr.isSupported = function () {
         var input = document.createElement('input');
         input.type = 'file';
-        return ('multiple' in input && typeof File != "undefined" && typeof (new XMLHttpRequest()).upload != "undefined");
+        return ('multiple' in input &&
+            typeof File != "undefined" &&
+            typeof (new XMLHttpRequest()).upload != "undefined");
     };
     // @inherits qq.UploadHandlerAbstract
     Shockout.qq.extend(Shockout.qq.UploadHandlerXhr.prototype, Shockout.qq.UploadHandlerAbstract.prototype);
@@ -1895,7 +1925,10 @@ var Shockout;
                 //ko.utils.registerEventHandler(element, "keydown", update);
                 //ko.utils.registerEventHandler(element, "change", update);
                 //ko.utils.registerEventHandler(element, "mousedown", update);
-                $(element).on('blur', update).on('keydown', update).on('change', update).on('mousedown', update);
+                $(element).on('blur', update)
+                    .on('keydown', update)
+                    .on('change', update)
+                    .on('mousedown', update);
                 function update() {
                     var modelValue = valueAccessor();
                     var elementValue = element.innerHTML;
@@ -1988,13 +2021,9 @@ var Shockout;
                         select: function (event, ui) {
                             modelValue(ui.item.value);
                         }
-                    }).on('focus', function () {
-                        $(this).removeClass('valid');
-                    }).on('blur', function () {
-                        onChangeSpPersonEvent(this, modelValue);
-                    }).on('mouseout', function () {
-                        onChangeSpPersonEvent(this, modelValue);
-                    });
+                    }).on('focus', function () { $(this).removeClass('valid'); })
+                        .on('blur', function () { onChangeSpPersonEvent(this, modelValue); })
+                        .on('mouseout', function () { onChangeSpPersonEvent(this, modelValue); });
                 }
                 catch (e) {
                     var msg = 'Error in Knockout handler spPerson init(): ' + JSON.stringify(e);
@@ -2019,6 +2048,9 @@ var Shockout;
                 ;
             },
             update: function (element, valueAccessor, allBindings, bindingContext) {
+                // This will be called once when the binding is first applied to an element,
+                // and again whenever any observables/computeds that are accessed change
+                // Update the DOM element based on the supplied values here.
                 try {
                     var viewModel = bindingContext.$data;
                     // First get the latest data that we're bound to
@@ -2130,7 +2162,8 @@ var Shockout;
                         'style': 'width:6em;',
                         'class': (required ? 'required' : ''),
                         'placeholder': 'HH:MM PM'
-                    }).insertAfter($element).on('change', function () {
+                    }).insertAfter($element)
+                        .on('change', function () {
                         try {
                             $error.hide();
                             var time = this.value.toString().toUpperCase().replace(/[^\d\:AMP\s]/g, '');
@@ -2311,20 +2344,48 @@ var Shockout;
         function Templates() {
         }
         Templates.getFileUploadTemplate = function () {
-            return '<div class="qq-uploader">' + '<div class="qq-upload-drop-area"><span>Drop files here to upload</span></div>' + '<div class="btn qq-upload-button">Attach Files</div>' + '<ul class="qq-upload-list"></ul>' + '</div>';
+            return '<div class="qq-uploader">' +
+                '<div class="qq-upload-drop-area"><span>Drop files here to upload</span></div>' +
+                '<div class="btn qq-upload-button">Attach Files</div>' +
+                '<ul class="qq-upload-list"></ul>' +
+                '</div>';
         };
         Templates.getCreatedModifiedInfo = function () {
-            var template = '<h4>Created/Modified Information</h4>' + '<ul>' + '<li class="create-mod-info no-print"></li>' + '<li><label>Created By</label><a data-bind="text: {0}, attr:{href: \'mailto:\'+{1}()}" class="email"></a></li>' + '<li><label>Created</label><span data-bind="spDateTime: {2}"></span></li>' + '<li><label>Modified By</label><a data-bind="text: {3}, attr:{href: \'mailto:\'+{4}()}" class="email"></a></li>' + '<li><label>Modified</label><span data-bind="spDateTime: {5}"></span></li>' + '</ul>';
+            var template = '<h4>Created/Modified Information</h4>' +
+                '<ul>' +
+                '<li class="create-mod-info no-print"></li>' +
+                '<li><label>Created By</label><a data-bind="text: {0}, attr:{href: \'mailto:\'+{1}()}" class="email"></a></li>' +
+                '<li><label>Created</label><span data-bind="spDateTime: {2}"></span></li>' +
+                '<li><label>Modified By</label><a data-bind="text: {3}, attr:{href: \'mailto:\'+{4}()}" class="email"></a></li>' +
+                '<li><label>Modified</label><span data-bind="spDateTime: {5}"></span></li>' +
+                '</ul>';
             var section = document.createElement('section');
             section.className = 'created-mod-info';
-            section.innerHTML = template.replace(/\{0\}/g, Shockout.ViewModel.createdByKey).replace(/\{1\}/g, Shockout.ViewModel.createdByEmailKey).replace(/\{2\}/g, Shockout.ViewModel.createdKey).replace(/\{3\}/g, Shockout.ViewModel.modifiedByKey).replace(/\{4\}/g, Shockout.ViewModel.modifiedByEmailKey).replace(/\{5\}/g, Shockout.ViewModel.modifiedKey);
+            section.innerHTML = template
+                .replace(/\{0\}/g, Shockout.ViewModel.createdByKey)
+                .replace(/\{1\}/g, Shockout.ViewModel.createdByEmailKey)
+                .replace(/\{2\}/g, Shockout.ViewModel.createdKey)
+                .replace(/\{3\}/g, Shockout.ViewModel.modifiedByKey)
+                .replace(/\{4\}/g, Shockout.ViewModel.modifiedByEmailKey)
+                .replace(/\{5\}/g, Shockout.ViewModel.modifiedKey);
             return section;
         };
         Templates.getHistoryTemplate = function () {
-            var template = '<h4>Workflow History</h4>' + '<table border="1" cellpadding="5" cellspacing="0" class="data-table" style="width:100%;border-collapse:collapse;">' + '<thead>' + '<tr><th>Description</th><th>Date</th></tr>' + '</thead>' + '<tbody data-bind="foreach: {0}">' + '<tr><td data-bind="text: {1}"></td><td data-bind="text: {2}"></td></tr>' + '</tbody>' + '</table>';
+            var template = '<h4>Workflow History</h4>' +
+                '<table border="1" cellpadding="5" cellspacing="0" class="data-table" style="width:100%;border-collapse:collapse;">' +
+                '<thead>' +
+                '<tr><th>Description</th><th>Date</th></tr>' +
+                '</thead>' +
+                '<tbody data-bind="foreach: {0}">' +
+                '<tr><td data-bind="text: {1}"></td><td data-bind="text: {2}"></td></tr>' +
+                '</tbody>' +
+                '</table>';
             var section = document.createElement('section');
             section.setAttribute('data-bind', 'visible: {0}.length > 0'.replace(/\{0\}/i, Shockout.ViewModel.historyKey));
-            section.innerHTML = template.replace(/\{0\}/g, Shockout.ViewModel.historyKey).replace(/\{1\}/g, Shockout.ViewModel.historyDescriptionKey).replace(/\{2\}/g, Shockout.ViewModel.historyDateKey);
+            section.innerHTML = template
+                .replace(/\{0\}/g, Shockout.ViewModel.historyKey)
+                .replace(/\{1\}/g, Shockout.ViewModel.historyDescriptionKey)
+                .replace(/\{2\}/g, Shockout.ViewModel.historyDateKey);
             return section;
         };
         Templates.getFormAction = function (allowSave, allowDelete, allowPrint) {
@@ -2350,16 +2411,42 @@ var Shockout;
             return div;
         };
         Templates.getAttachmentsTemplate = function (fileuploaderId) {
-            var template = '<h4>Attachments</h4>' + '<div id="{0}"></div>' + '<table class="attachments-table">' + '<tbody data-bind="foreach: attachments">' + '<tr>' + '<td><a href="" data-bind="text: title, attr: {href: href, \'class\': ext}"></a></td>' + '<td><button data-bind="event: {click: $root.deleteAttachment}" class="btn del" title="Delete"><span>Delete</span></button></td>' + '</tr>' + '</tbody>' + '</table>';
+            var template = '<h4>Attachments</h4>' +
+                '<div id="{0}"></div>' +
+                '<table class="attachments-table">' +
+                '<tbody data-bind="foreach: attachments">' +
+                '<tr>' +
+                '<td><a href="" data-bind="text: title, attr: {href: href, \'class\': ext}"></a></td>' +
+                '<td><button data-bind="event: {click: $root.deleteAttachment}" class="btn del" title="Delete"><span>Delete</span></button></td>' +
+                '</tr>' +
+                '</tbody>' +
+                '</table>';
             var div = document.createElement('div');
             div.innerHTML = template.replace(/\{0\}/, fileuploaderId);
             return div;
         };
         Templates.getUserProfileTemplate = function (profile, headerTxt) {
-            var template = '<h4>{header}</h4>' + '<img src="{pictureurl}" alt="{name}" />' + '<ul>' + '<li><label>Name</label>{name}</li>' + '<li><label>Title</label>{jobtitle}</li>' + '<li><label>Department</label>{department}</li>' + '<li><label>Email</label><a href="mailto:{workemail}">{workemail}</a></li>' + '<li><label>Phone</label>{workphone}</li>' + '<li><label>Office</label>{office}</li>' + '</ul>';
+            var template = '<h4>{header}</h4>' +
+                '<img src="{pictureurl}" alt="{name}" />' +
+                '<ul>' +
+                '<li><label>Name</label>{name}</li>' +
+                '<li><label>Title</label>{jobtitle}</li>' +
+                '<li><label>Department</label>{department}</li>' +
+                '<li><label>Email</label><a href="mailto:{workemail}">{workemail}</a></li>' +
+                '<li><label>Phone</label>{workphone}</li>' +
+                '<li><label>Office</label>{office}</li>' +
+                '</ul>';
             var div = document.createElement("div");
             div.className = "user-profile-card";
-            div.innerHTML = template.replace(/\{header\}/g, headerTxt).replace(/\{pictureurl\}/g, (profile.Picture.indexOf(',') > 0 ? profile.Picture.split(',')[0] : profile.Picture)).replace(/\{name\}/g, (profile.Name || '')).replace(/\{jobtitle\}/g, profile.Title || '').replace(/\{department\}/g, profile.Department || '').replace(/\{workemail\}/g, profile.WorkEMail || '').replace(/\{workphone\}/g, profile.WorkPhone || '').replace(/\{office\}/g, profile.Office || '');
+            div.innerHTML = template
+                .replace(/\{header\}/g, headerTxt)
+                .replace(/\{pictureurl\}/g, (profile.Picture.indexOf(',') > 0 ? profile.Picture.split(',')[0] : profile.Picture))
+                .replace(/\{name\}/g, (profile.Name || ''))
+                .replace(/\{jobtitle\}/g, profile.Title || '')
+                .replace(/\{department\}/g, profile.Department || '')
+                .replace(/\{workemail\}/g, profile.WorkEMail || '')
+                .replace(/\{workphone\}/g, profile.WorkPhone || '')
+                .replace(/\{office\}/g, profile.Office || '');
             return div;
         };
         return Templates;
@@ -2376,7 +2463,8 @@ var Shockout;
             if (siteUrl === void 0) { siteUrl = ''; }
             var page = !!take ? take.toString() : '10';
             // Allowed system query options are $filter, $select, $orderby, $skip, $top, $count, $search, $expand, and $levels.
-            var uri = siteUrl + "/_vti_bin/listdata.svc/UserInformationList?$filter=startswith(Name,'{0}')&$select=Id,Account,Name,WorkEMail&$orderby=Name&$top={1}".replace(/\{0\}/, term).replace(/\{1\}/, page);
+            var uri = siteUrl + "/_vti_bin/listdata.svc/UserInformationList?$filter=startswith(Name,'{0}')&$select=Id,Account,Name,WorkEMail&$orderby=Name&$top={1}"
+                .replace(/\{0\}/, term).replace(/\{1\}/, page);
             var $jqXhr = $.ajax({
                 url: uri,
                 type: 'GET',
@@ -2440,6 +2528,7 @@ var Shockout;
             // Filter out special objects.
             var Constructor = objectToBeCloned.constructor;
             switch (Constructor) {
+                // Implement other special objects here.
                 case RegExp:
                     objectClone = new Constructor(objectToBeCloned);
                     break;
@@ -2449,6 +2538,7 @@ var Shockout;
                 default:
                     objectClone = new Constructor();
             }
+            // Clone each property.
             for (var prop in objectToBeCloned) {
                 objectClone[prop] = this.clone(objectToBeCloned[prop]);
             }
@@ -2575,7 +2665,9 @@ var Shockout;
             // Clean up number:
             var num = Utils.unformatNumber(value), format = '%s%v', neg = format.replace('%v', '-%v'), useFormat = num > 0 ? format : num < 0 ? neg : format, numFormat = Utils.formatNumber(Math.abs(num), Utils.checkPrecision(precision));
             // Return with currency symbol added:
-            return useFormat.replace('%s', symbol).replace('%v', numFormat);
+            return useFormat
+                .replace('%s', symbol)
+                .replace('%v', numFormat);
         };
         /**
         * Addapted from accounting.js library. http://josscrowcroft.github.com/accounting.js/
@@ -2595,7 +2687,9 @@ var Shockout;
             if (typeof value === "number")
                 return value;
             // Build regex to strip out everything except digits, decimal point and minus sign:
-            var unformatted = parseFloat((value + '').replace(/\((.*)\)/, '-$1').replace(/[^0-9-.]/g, ''));
+            var unformatted = parseFloat((value + '')
+                .replace(/\((.*)\)/, '-$1') // replace parenthesis for negative numbers
+                .replace(/[^0-9-.]/g, ''));
             return !isNaN(unformatted) ? unformatted : 0;
         };
         /**
