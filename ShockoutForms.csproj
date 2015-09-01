@@ -22,13 +22,13 @@
     <Service Include="{4A0DDDB5-7A95-4FBF-97CC-616D07737A77}" />
   </ItemGroup>
   <ItemGroup>
-    <TypeScriptCompile Include="app\app.ts" />
-    <TypeScriptCompile Include="app\datatypes.ts" />
-    <TypeScriptCompile Include="app\fileUploader.ts" />
-    <TypeScriptCompile Include="app\koHandlers.ts" />
-    <TypeScriptCompile Include="app\templates.ts" />
-    <TypeScriptCompile Include="app\utils.ts" />
-    <TypeScriptCompile Include="app\viewModel.ts" />
+    <TypeScriptCompile Include="Shockout\SPForm.ts" />
+    <TypeScriptCompile Include="Shockout\datatypes.ts" />
+    <TypeScriptCompile Include="Shockout\fileUploader.ts" />
+    <TypeScriptCompile Include="Shockout\koHandlers.ts" />
+    <TypeScriptCompile Include="Shockout\templates.ts" />
+    <TypeScriptCompile Include="Shockout\utils.ts" />
+    <TypeScriptCompile Include="Shockout\viewModel.ts" />
     <TypeScriptCompile Include="typings\accounting.d.ts" />
     <TypeScriptCompile Include="typings\jquery.d.ts" />
     <TypeScriptCompile Include="typings\jquery.ui.datetimepicker.d.ts" />
@@ -37,6 +37,9 @@
   </ItemGroup>
   <ItemGroup>
     <Content Include="_layouts\SPFormFileHandler.ashx" />
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="content\" />
   </ItemGroup>
   <PropertyGroup>
     <VisualStudioVersion Condition="'$(VisualStudioVersion)' == ''">12.0</VisualStudioVersion>

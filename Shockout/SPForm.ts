@@ -2,71 +2,238 @@
 /// <reference path="../typings/jquery.d.ts" />
 /// <reference path="../typings/jquery.ui.datetimepicker.d.ts" />
 /// <reference path="../typings/jqueryui.d.ts" />
-
 'use strict';
 
+/**
+* -----------------
+* Shockout SP Form
+* -----------------
+* By John Bonfardeci <john.bonfardeci@gmail.com>
+*
+* A Replacement for InfoPath and XSLT Forms
+* Leverage the power Knockout JS databinding with SharePoint services for modern and dynamic web form development. 
+*
+* Minimum Usage: 
+* `var spForm = new Shockout.SPForm('My SharePoint List Name', 'my-form-ID', {});`
+* 
+* Dependencies: jQuery 1.72+, jQuery UI<any>, KnockoutJS 3.2+
+*    
+*   Copyright (C) 2015  John T. Bonfardeci
+*
+*   This program is free software: you can redistribute it and/or modify
+*   it under the terms of the GNU Affero General Public License as
+*   published by the Free Software Foundation, either version 3 of the
+*   License, or (at your option) any later version.
+*
+*   This program is distributed in the hope that it will be useful,
+*   but WITHOUT ANY WARRANTY; without even the implied warranty of
+*   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+*   GNU Affero General Public License for more details.
+*
+*   You should have received a copy of the GNU Affero General Public License
+*   along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/
 module Shockout {
 
     export class SPForm {
 
-        // static
+        ///////////////////////////
+        // Minimum Required Fields
+        ///////////////////////////
+        // the ID of the form
+        public formId: string;
+
+        // The name of the SP List you're submitting a form to.
+        public listName: string;
+
+        /////////////////////
+        // Static properties
+        /////////////////////
         public static errorLogListName: string;
 
+        //////////////////
         // jQuery objects
+        //////////////////
         public $createdInfo;
         public $dialog;
         public $form;
         public $formAction;
         public $formStatus;
 
-        // required
-        public formId: string;
-        public listName: string;
+        //////////////////
+        // Public Options
+        //////////////////
 
-        // public options
+        // Allow users to delete a form
         public allowDelete: boolean = false;
-        public allowPrint: boolean  = true;
+
+        // Allow users to print
+        public allowPrint: boolean = true;
+
+        // Enable users to save their form before submitting
         public allowSave: boolean = false;
+
+        // Allowed extensions for file attachments
         public allowedExtensions: Array<string> = ['txt', 'rtf', 'zip', 'pdf', 'doc', 'docx', 'jpg', 'gif', 'png', 'ppt', 'tif', 'pptx', 'csv', 'pub', 'msg'];
+
+        // Message to display if a file attachment is required - good for receipts attached to purchase requisitions and such
         public attachmentMessage: string = 'An attachment is required.';
-        public currentUser: ICurrentUser;
+        
+        // Redeirect users after form submission to this page.
         public confirmationUrl: string = '/SitePages/Confirmation.aspx';
+
+        // Run in debug mode with extra logging; disables error logging to SP list.
         public debug: boolean = false;
-        public defaultViewUrl: string;
-        public defailtMobileViewUrl: string;
+        
+        // Override the SP List fields a user is allowed to submit. 
         public editableFields: Array<string> = [];
+
+        // Enable users to attach files.
+        public enableAttachments: boolean = false;
+
+        // Enable error logging to SP List. Good if you want to track and debug errors that users may run into.
         public enableErrorLog: boolean = true;
+
+        // The name of the SP List to log errors to
         public errorLogListName: string = 'Error Log';
+
+        // Override the default fields selected by the SP List Item query.
         public fieldNames: Array<string>;
+
+        // The relative URL of the Handler that attaches fiel uploads to list items.
         public fileHandlerUrl: string = '/_layouts/webster/SPFormFileHandler.ashx';
+
+        // The setting sobject for File Uploader
         public fileUploaderSettings: IFileUploaderSettings;
+
+        // The File Uploader object
         public fileUploader: any;
-        public form: HTMLElement;        
-        public hasAttachments: boolean = true;
+                
+        // Display the user profiles of the users that created and last modified a form. Includes photos. See `Shockout.Templates.getUserProfileTemplate()` in `templates.ts`.
         public includeUserProfiles: boolean = true;
+
+        // Display logs from the workflow history list assigned to form workflows.
         public includeWorkflowHistory: boolean = true;
-        public itemId: number;
-        public isSubmittedKey: string; 
-        public listId: string;    
-        public listItem: ISpItem;        
+                
+        // Function to execute before rendering templates and before Knockout databinding. Good for inserting your own markup and logic.
         public preRender: Function;
+
+        // Function to execute after a form has rendered all templates and after Knockout binding has taken place.
         public postRender: Function;
+
+        // Function to execute before sacing/submitting a form. Good place to insert extra logic such as extra validation.
         public preSave: Function;
+
+        // Set to true if at least one attachment is required for a form. Good requriring receipts to purchase requisitions and such. 
         public requireAttachments: boolean = false;
-        public rootUrl: string = window.location.protocol + '//' + window.location.hostname + (!!window.location.port ? ':' + window.location.port : '');
+        
+        // The relative URL of the SP subsite where the target SP list is located.
         public siteUrl: string = '';      
-        public sourceUrl: string;
-        public viewModelIsBound: boolean = false;
+
+        // Utility methods for internal and external use.
+        public utils: Utils = Utils;
+
+        // The form's Knockout view model.
         public viewModel: IViewModel;
-        public utils: Utils = Utils;   
+           
+        // The SP list name of the workflow history list where form workflow entries are stored.
+        // Displays workflow history to viewer so they know the status of their form. Depends on writing workflows with good logging.
+        // Be careful,. Workflow History lsits can exceed the maximum amount of items regular users are allowed to view. Be sure to implement
+        // a good Powershell script to clean up your workflow history lists with Task Scheduler on the server. Good luck doing that with Office 365! 
         public workflowHistoryListName: string = 'Workflow History';
        
-        // private vars
-        private asyncFns: Array<any>;
-        private enableAttachments: boolean = false;
+        /////////////////////////////////////
+        // Private Set Public Get Properties
+        /////////////////////////////////////
+        /**
+        * Get the current logged in user profile.
+        * @return ICurrentUser
+        */
+        public getCurrentUser(): ICurrentUser { return this.currentUser; }
+        private currentUser: ICurrentUser;
+      
+        /**
+        * Get the default view for the list.
+        * @return string
+        */
+        public getDefaultViewUrl(): string { return this.defaultViewUrl; }
+        private defaultViewUrl: string;
+       
+        /**
+        * Get the default mobile view for the list.
+        * @return string
+        */
+        public getDefailtMobileViewUrl(): string { return this.defailtMobileViewUrl; }
+        private defailtMobileViewUrl: string;
+        
+        /**
+        * Get a reference to the form element.
+        * @return HTMLElement
+        */
+        public getForm(): HTMLElement { return this.form; }
+        private form: HTMLElement;
+
+        /**
+        * Get the SP list item ID number.
+        * @return number
+        */
+        public getItemId(): number { return this.itemId; }
+        private itemId: number;
+
+        /**
+        * Get the GUID of the SP list.
+        * @return HTMLElement
+        */
+        public getListId(): string { return this.listId; }
+        private listId: string;
+
+        /**
+        * Get a reference to the original SP list item.
+        * @return ISpItem
+        */
+        public getListItem(): ISpItem { return this.listItem; }
+        private listItem: ISpItem;
+
+        /**
+        * Requires user to checkout the list item?
+        * @return boolean
+        */
         private requireCheckout: boolean = false;
+        public requiresCheckout(): boolean { return this.requireCheckout; }
+
+        /**
+        * Get the SP site root URL
+        * @return string
+        */
+        private rootUrl: string = window.location.protocol + '//' + window.location.hostname + (!!window.location.port ? ':' + window.location.port : '');
+        public getRootUrl(): string { return this.rootUrl; }
+
+        /**
+        * Get the `source` key's value from the querystring.
+        * @return string
+        */
+        private sourceUrl: string;
+        public getSourceUrl(): string { return this.sourceUrl; }
+
+        /**
+        * Get a reference to the form's Knockout view model. 
+        * @return string
+        */
+        public getViewModel(): IViewModel { return this.viewModel; }
+
+        /**
+        * Get the version number for this framework. 
+        * @return string
+        */
+        public getVersion(): string { return this.version; }
         private version: string = '0.0.1';
 
+        /////////////////////////////
+        // Privte GET/SET Properties
+        /////////////////////////////
+        private asyncFns: Array<any>;
+        private viewModelIsBound: boolean = false;
+        
         constructor(listName: string, formId: string, options: Object) {
             var self = this;
             var error;
@@ -135,7 +302,8 @@ module Shockout {
 
             this.viewModel = new ViewModel(this);
 
-            //Cascading Asynchronous Function Execution (CAFE) Array
+            // Cascading Asynchronous Function Execution (CAFE) Array
+            // Don't change the order of these unless you know what you're doing.
             this.asyncFns = [
                 self.getListAsync
                 , function () {
@@ -163,6 +331,9 @@ module Shockout {
             this.nextAsync(true, 'Begin initialization...');         
         }
 
+        /**
+        * Execute the next asynchronous function from `asyncFns`.
+        */
         nextAsync(success: boolean = undefined, msg: string = undefined, args: any = undefined): void {
             var self = this;
             success = success || true;
@@ -183,7 +354,10 @@ module Shockout {
             this.asyncFns.shift()(self, args);
         }
 
-        initFormAsync(self: SPForm, args: any = undefined) {            
+        /**
+        * Initialize the form.
+        */
+        initFormAsync(self: SPForm, args: any = undefined): void {            
             try {
                 self.updateStatus("Initializing dynamic form features...");
 
@@ -265,6 +439,9 @@ module Shockout {
             }
         }
 
+        /**
+        * Get the current logged in user's profile.
+        */
         getCurrentUserAsync(self: SPForm, args: any = undefined): void {
             try {
                 var currentUser: ICurrentUser;
@@ -310,6 +487,9 @@ module Shockout {
             }
         }
 
+        /**
+        * Get the SP user groups this user is a member of for removing/showing protected form sections.
+        */
         getUsersGroupsAsync(self: SPForm, args: any = undefined): void {
             try {
                 var msg = "Retrieved your groups.";
@@ -362,6 +542,9 @@ module Shockout {
             }
         }
 
+        /**
+        * Removes form sections the user doesn't have access to from the DOM.
+        */
         restrictSpGroupElementsAsync(self: SPForm, args: any = undefined): void {
             try {
                 self.updateStatus("Retrieving your permissions...");
@@ -398,6 +581,9 @@ module Shockout {
             }
         }
 
+        /**
+        * Get the SP list item data and build the Knockout view model.
+        */
         getListItemAsync(self: SPForm, args: any = undefined): void {
             try {
                 self.updateStatus("Retrieving form values...");
@@ -435,6 +621,9 @@ module Shockout {
             };
         }
 
+        /**
+        * Get the workflow history for this form, if any.
+        */
         getHistoryAsync(self: SPForm, args: any = undefined): void {
             try {
                 if (!!!self.itemId || !self.includeWorkflowHistory) {
@@ -461,6 +650,9 @@ module Shockout {
             }
         }
 
+        /**
+        * Bind the SP list item values to the view model.
+        */
         bindListItemValues(self: SPForm = undefined): void {
             self = self || this;
 
@@ -492,15 +684,17 @@ module Shockout {
                     if (/submitted/i.test(key)) {
                         self.allowSave = true;
                         self.$formAction.find('.btn.save').show();
-                        self.isSubmittedKey = key;
+                        ViewModel.isSubmittedKey = key;
                     }
                     self.viewModel[key] = ko.observable(item[key]);
                 }
             } 
                 
-            // apply Knockout bindings
-            ko.applyBindings(self.viewModel, self.form);
-            self.viewModelIsBound = true;
+            // apply Knockout bindings if not already bound.
+            if (!self.viewModelIsBound) {
+                ko.applyBindings(self.viewModel, self.form);
+                self.viewModelIsBound = true;
+            }
 
             // get CreatedBy profile
             self.getListItemsRest(item.CreatedBy.__deferred.uri, function (data: ISpWrapper<ISpPerson>, status: string, jqXhr: any) {
@@ -526,7 +720,9 @@ module Shockout {
             });
         }
 
-        // http://blog.vgrem.com/2014/03/22/list-items-manipulation-via-rest-api-in-sharepoint-2010/
+        /**
+        * Delete the list item.
+        */
         deleteListItem(model: IViewModel) {
             var self: SPForm = model.parent;
             var item: ISpItem = self.listItem;
@@ -552,6 +748,9 @@ module Shockout {
             });
         }
 
+        /**
+        * Save the list item.
+        */
         // http://blog.vgrem.com/2014/03/22/list-items-manipulation-via-rest-api-in-sharepoint-2010/
         saveListItem(model: IViewModel, isSubmit: boolean = true, refresh: boolean = true, customMsg: string = undefined): void {
 
@@ -584,8 +783,8 @@ module Shockout {
 
             //Only update IsSubmitted if it's != true -- if it was already submitted.
             //Otherwise pressing Save would set it from true back to false - breaking any workflow logic in place!
-            if (typeof model[self.isSubmittedKey] != "undefined" && (model[self.isSubmittedKey]() == null || model[self.isSubmittedKey]() == false)) {
-                postData[self.isSubmittedKey] = isSubmit;
+            if (typeof model[ViewModel.isSubmittedKey] != "undefined" && (model[ViewModel.isSubmittedKey]() == null || model[ViewModel.isSubmittedKey]() == false)) {
+                postData[ViewModel.isSubmittedKey] = isSubmit;
             }
 
             if (isNew) {
@@ -653,6 +852,9 @@ module Shockout {
             });
         }
 
+        /**
+        * Get attachments for this form. 
+        */
         getAttachmentsAsync(self: SPForm = undefined, args: any = undefined): void {
             self = self || this;
             if (!!!self.listItem || !self.enableAttachments) {
@@ -674,6 +876,9 @@ module Shockout {
             }
         }
 
+        /**
+        * Delete an attachment.
+        */
         deleteAttachment(att: Attachment): void {
             var self = this
                 , model = self.viewModel;
@@ -708,6 +913,9 @@ module Shockout {
             }
         }
 
+        /**
+        * Get list items via SOAP.
+        */
         getListItemsSoap(siteUrl: string, listName: string, viewFields: string, query: string, callback: JQueryPromiseCallback<any>, rowLimit: number = 25, viewName: string = '<ViewName/>', queryOptions: string = '<QueryOptions/>'): void {
             var self = this;
             try {           
@@ -748,7 +956,11 @@ module Shockout {
             }
         }
 
-        getListAsync(self: SPForm, args: any = undefined) {
+        /**
+        * Get metadata about an SP list.
+        * Needed to determine the list GUID, if attachments are allowed, and if checkout/in is required.
+        */
+        getListAsync(self: SPForm, args: any = undefined): void {
             var packet = '<?xml version="1.0" encoding="utf-8"?><soap:Envelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/"><soap:Body><GetList xmlns="http://schemas.microsoft.com/sharepoint/soap/"><listName>{0}</listName></GetList></soap:Body></soap:Envelope>';
 
             var $jqXhr = $.ajax({
@@ -778,12 +990,18 @@ module Shockout {
             });
         }
 
-        log(msg) {
+        /**
+        * Log to console in degug mode.
+        */
+        log(msg): void {
             if (this.debug) {
                 console.log(msg);
             }
         }
 
+        /**
+        * Update the form status to display feedback to the user.
+        */
         updateStatus(msg: string, success: boolean = undefined): void {
             success = success || true;
             this.$formStatus
@@ -792,7 +1010,10 @@ module Shockout {
                 .slideUp();
         }
 
-        showDialog(msg: string, title: string = undefined, timeout: number = undefined) {
+        /**
+        * Display a message to the user with jQuery UI Dialog.
+        */
+        showDialog(msg: string, title: string = undefined, timeout: number = undefined): void {
             var self: SPForm = this;
             title = title || "Form Dialog";
             msg = (msg).toString().match(/<\w>\w*/) == null ? '<p>' + msg + '</p>' : msg; //wrap non-html in <p>
@@ -802,6 +1023,9 @@ module Shockout {
             }
         }
 
+        /**
+        * Get list items via REST.
+        */
         getListItemsRest(uri: string, done: JQueryPromiseCallback<any>, fail: JQueryPromiseCallback<any> = undefined, always: JQueryPromiseCallback<any> = undefined): void {
             var self = this;
 
@@ -878,7 +1102,7 @@ module Shockout {
                 }
 
                 //if attachment(s) are required
-                if (self.hasAttachments && self.requireAttachments && model.attachments().length == 0) {
+                if (self.enableAttachments && self.requireAttachments && model.attachments().length == 0) {
                     errorCount++;
                     labels.push(self.attachmentMessage);
                 }
@@ -897,18 +1121,9 @@ module Shockout {
             }
         }
 
-        getVersion(): string {
-            return this.version;
-        }
-
-        checkoutRequired(): boolean {
-            return this.requireCheckout;
-        }
-
-        attachmentsEnabled(): boolean {
-            return this.enableAttachments;
-        }
-
+        /**
+        * Log errors to designated SP list.
+        */
         logError(msg: string, self: SPForm = undefined): void {
             self = self || this;
             self.showDialog('<p>An error has occurred and the web administrator has been notified.</p><p>Error Details: <pre>' + msg + '</pre></p>');

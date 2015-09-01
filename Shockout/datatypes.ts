@@ -1,5 +1,4 @@
-﻿
-module Shockout {
+﻿module Shockout {
 
     export interface IHistoryItem {
         description: string;

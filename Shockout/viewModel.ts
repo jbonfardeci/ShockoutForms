@@ -35,6 +35,7 @@
         public static historyKey: string = 'history';
         public static historyDescriptionKey: string = 'description';
         public static historyDateKey: string = 'date';
+        public static isSubmittedKey: string;
 
         //public Title: KnockoutObservable<string> = ko.observable(null);
         public CreatedBy: KnockoutObservable<ISpPerson> = ko.observable(null);
@@ -65,7 +66,8 @@
         }
 
         public cancel(): void {
-            window.location.href = this.parent.sourceUrl != null ? this.parent.sourceUrl : this.parent.rootUrl;
+            var src: string = this.parent.getSourceUrl();
+            window.location.href = !!src ? src : this.parent.getRootUrl();
         }
 
         public print(): void {

@@ -22,7 +22,7 @@ Forget the frustrations of legacy InfoPath and XSL SharePoint forms. Leverage th
         enableErrorLog: true, // default true
         errorLogListName: 'Error Log', // Designated SharePoint list for logging user and form errrors. default 'Error Log'
         fileHandlerUrl: string = '/_layouts/SPFormFileHandler.ashx',  // default    
-        hasAttachments: true, // default true
+        enableAttachments: true, // default true
         includeUserProfiles: true, // default true
         includeWorkflowHistory: true, // default true        
         requireAttachments: false, // default false
@@ -30,4 +30,19 @@ Forget the frustrations of legacy InfoPath and XSL SharePoint forms. Leverage th
         workflowHistoryListName: 'Workflow History' // the default
 	});
 </pre>
+
+Copyright (C) 2015  John T. Bonfardeci
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU Affero General Public License as
+published by the Free Software Foundation, either version 3 of the
+License, or (at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU Affero General Public License for more details.
+
+You should have received a copy of the GNU Affero General Public License
+along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
