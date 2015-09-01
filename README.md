@@ -42,7 +42,7 @@ Forget the frustrations of legacy InfoPath and XSL SharePoint forms. Leverage th
 `<div data-bind="spPerson: myVar" />`
 
 ####spDate
-`<input type="text" data-bind="spDate: myVar" />	
+`<input type="text" data-bind="spDate: myVar" />`	
 	OR
 `<div data-bind="spDate: myVar" />`
 
