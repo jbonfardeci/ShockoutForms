@@ -31,6 +31,42 @@ Forget the frustrations of legacy InfoPath and XSL SharePoint forms. Leverage th
 	});
 </pre>
 
+## Custom Knockout bind handlers for SP list field types included:
+	
+####spContentEditor
+`<textarea data-bind="spContentEditor: myVar"></textarea>`
+
+####spPerson
+`<input type="text" data-bind="spPerson: myVar" />`
+	OR
+`<div data-bind="spPerson: myVar" />`
+
+####spDate
+`<input type="text" data-bind="spDate: myVar" />	
+	OR
+`<div data-bind="spDate: myVar" />`
+
+####spDateTime
+`<input type="text" data-bind="spDateTime: myVar" />`
+	OR
+`<div data-bind="spDateTime: myVar" />`
+
+####spMoney
+`<input type="text" data-bind="spMoney: myVar" />`
+	OR
+`<div data-bind="spMoney: myVar" />`
+
+####spDecimal
+`<input type="text" data-bind="spDecimal: myVar" />`
+	OR
+`<div data-bind="spDecimal: myVar" />`
+
+####spNumber
+`<input type="text" data-bind="spNumber: myVar" />`
+	OR
+`<div data-bind="spNumber: myVar" />`
+
+
 Copyright (C) 2015  John T. Bonfardeci
 
 This program is free software: you can redistribute it and/or modify
