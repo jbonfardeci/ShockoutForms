@@ -10,9 +10,10 @@
     
         public static peopleSearch(term: string, callback: Function, take: number = 10, siteUrl: string = ''): void {
 
+            var page: string = !!take ? take.toString() : '10';
             // Allowed system query options are $filter, $select, $orderby, $skip, $top, $count, $search, $expand, and $levels.
             var uri = siteUrl + "/_vti_bin/listdata.svc/UserInformationList?$filter=startswith(Name,'{0}')&$select=Id,Account,Name,WorkEMail&$orderby=Name&$top={1}"
-                .replace(/\{0\}/, term).replace(/\{1\}/, take.toString());
+                .replace(/\{0\}/, term).replace(/\{1\}/, page);
 
             var $jqXhr: JQueryXHR = $.ajax({
                 url: uri,
@@ -31,7 +32,7 @@
 
             $jqXhr.fail(function (obj: any, status: string, jqXhr: any) {
                 var msg = 'People Search error. Status: ' + obj.statusText + ' ' + status + ' ' + JSON.stringify(jqXhr);
-                Utils.logError(msg, ShockoutForm.errorLogListName);
+                Utils.logError(msg, SPForm.errorLogListName);
                 throw msg;
             });
         }
@@ -52,12 +53,12 @@
 
         public static parseJsonDate(d: any): Date {
             if (!Utils.isJsonDate(d)) { return null; }
-            return new Date(parseInt(d.replace(/\d/g, '')));
+            return new Date(parseInt(d.replace(/\D/g, '')));
         }
 
         public static isJsonDate(val: any): boolean {
-            if (typeof val == undefined) { return false; }
-            return /\/Date\(\d+\)\//.test(val.toString());
+            if (!!!val) { return false; }
+            return /\/Date\(\d+\)\//.test(val+'');
         }
 
         public static getQueryParam(p): string {
@@ -141,11 +142,13 @@
         }
 
         public static isTime(val: string): boolean {
+            if (!!!val) { return false; }
             var rx = new RegExp("\\d{1,2}:\\d{2}\\s{0,1}(AM|PM)");
             return rx.test(val);
         }
 
         public static isDate(val: string): boolean {
+            if (!!!val) { return false; }
             var rx = new RegExp("\\d{1,2}\/\\d{1,2}\/\\d{4}");
             return rx.test(val.toString());
         }

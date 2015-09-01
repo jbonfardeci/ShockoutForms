@@ -7,14 +7,23 @@
 
 module Shockout {
 
-    export class ShockoutForm {
+    export class SPForm {
 
+        // static
+        public static errorLogListName: string;
+
+        // jQuery objects
         public $createdInfo;
         public $dialog;
         public $form;
         public $formAction;
         public $formStatus;
 
+        // required
+        public formId: string;
+        public listName: string;
+
+        // public options
         public allowDelete: boolean = false;
         public allowPrint: boolean  = true;
         public allowSave: boolean = false;
@@ -23,6 +32,8 @@ module Shockout {
         public currentUser: ICurrentUser;
         public confirmationUrl: string = '/SitePages/Confirmation.aspx';
         public debug: boolean = false;
+        public defaultViewUrl: string;
+        public defailtMobileViewUrl: string;
         public editableFields: Array<string> = [];
         public enableErrorLog: boolean = true;
         public errorLogListName: string = 'Error Log';
@@ -30,47 +41,60 @@ module Shockout {
         public fileHandlerUrl: string = '/_layouts/webster/SPFormFileHandler.ashx';
         public fileUploaderSettings: IFileUploaderSettings;
         public fileUploader: any;
-        public form: HTMLElement;
-        public formId: string;
+        public form: HTMLElement;        
         public hasAttachments: boolean = true;
+        public includeUserProfiles: boolean = true;
+        public includeWorkflowHistory: boolean = true;
         public itemId: number;
-        public isSubmittedKey: string;
-        public listId: string;
-        public listItem: ISpItem;
-        public listName: string;
+        public isSubmittedKey: string; 
+        public listId: string;    
+        public listItem: ISpItem;        
         public preRender: Function;
         public postRender: Function;
         public preSave: Function;
         public requireAttachments: boolean = false;
         public rootUrl: string = window.location.protocol + '//' + window.location.hostname + (!!window.location.port ? ':' + window.location.port : '');
-        public siteUrl: string = '/';
-        public includeUserProfiles: boolean = true;
-        public includeWorkflowHistory: boolean = true;
+        public siteUrl: string = '';      
         public sourceUrl: string;
         public viewModelIsBound: boolean = false;
-        public viewModel: IViewModel;   
+        public viewModel: IViewModel;
+        public utils: Utils = Utils;   
         public workflowHistoryListName: string = 'Workflow History';
-
-        public static errorLogListName: string;
-        
+       
+        // private vars
         private asyncFns: Array<any>;
+        private enableAttachments: boolean = false;
+        private requireCheckout: boolean = false;
         private version: string = '0.0.1';
 
-        constructor(options: Object) {
+        constructor(listName: string, formId: string, options: Object) {
             var self = this;
+            var error;
 
-            if (!(this instanceof ShockoutForm)) {
-                var error = "You must declare an instance of this class with 'new'.";
+            if (!(this instanceof SPForm)) {
+                error = 'You must declare an instance of this class with `new`.';
                 alert(error);
                 throw error;
                 return;
             }
 
+            if (!!!formId || !!!listName) {
+                var errors: any = ['Missing required parameters:'];
+                if (!!!this.formId) { errors.push(' `formId`') }
+                if (!!!this.listName) { errors.push(' `listName`') }
+                errors = errors.join('');
+                alert(errors);
+                throw errors;
+                return;
+            }
+
+            this.formId = formId;
+            this.listName = listName;
+
             if (!!Utils.getQueryParam("id")) {
                 this.itemId = parseInt(Utils.getQueryParam("id"));
             }
-            
-            if (!!Utils.getQueryParam("formid")) {
+            else if (!!Utils.getQueryParam("formid")) {
                 this.itemId = parseInt(Utils.getQueryParam("formid"));
             }
 
@@ -80,24 +104,15 @@ module Shockout {
                 this.sourceUrl = decodeURIComponent(this.sourceUrl);
             }
 
-            // override default instance variables with key-value pairs from args
+            // override default instance variables with key-value pairs from options
             if (options && options.constructor === Object) {
                 for (var p in options) {
                     this[p] = options[p];
                 }
             }
-            else {
-                error = "Missing required parameters.";
-                alert(error);
-                throw error;
-                return;
-            }
 
             // get the form container element
-            this.form = <HTMLFormElement>(options['formId'].constructor == String
-                ? document.getElementById(options['formId'])
-                : options['formId']);
-
+            this.form = document.getElementById(this.formId);
             this.$form = $(this.form);
 
             self.$formStatus = $('<div>', { 'class': 'form-status' }).appendTo(self.$form);
@@ -116,13 +131,14 @@ module Shockout {
                     }
                 });
 
-            ShockoutForm.errorLogListName = this.errorLogListName;
+            SPForm.errorLogListName = this.errorLogListName;
 
             this.viewModel = new ViewModel(this);
 
             //Cascading Asynchronous Function Execution (CAFE) Array
             this.asyncFns = [
-                function () {
+                self.getListAsync
+                , function () {
                     if (self.preRender) {
                         self.preRender(self);
                     }
@@ -167,7 +183,7 @@ module Shockout {
             this.asyncFns.shift()(self, args);
         }
 
-        initFormAsync(self: ShockoutForm, args: any = undefined) {            
+        initFormAsync(self: SPForm, args: any = undefined) {            
             try {
                 self.updateStatus("Initializing dynamic form features...");
 
@@ -249,7 +265,7 @@ module Shockout {
             }
         }
 
-        getCurrentUserAsync(self: ShockoutForm, args: any = undefined): void {
+        getCurrentUserAsync(self: SPForm, args: any = undefined): void {
             try {
                 var currentUser: ICurrentUser;
                 var query = '<Query><Where><Eq><FieldRef Name="ID" /><Value Type="Counter"><UserID /></Value></Eq></Where></Query>';
@@ -294,7 +310,7 @@ module Shockout {
             }
         }
 
-        getUsersGroupsAsync(self: ShockoutForm, args: any = undefined): void {
+        getUsersGroupsAsync(self: SPForm, args: any = undefined): void {
             try {
                 var msg = "Retrieved your groups.";
 
@@ -346,7 +362,7 @@ module Shockout {
             }
         }
 
-        restrictSpGroupElementsAsync(self: ShockoutForm, args: any = undefined): void {
+        restrictSpGroupElementsAsync(self: SPForm, args: any = undefined): void {
             try {
                 self.updateStatus("Retrieving your permissions...");
 
@@ -382,10 +398,8 @@ module Shockout {
             }
         }
 
-        getListItemAsync(self: ShockoutForm, args: any = undefined): void {
+        getListItemAsync(self: SPForm, args: any = undefined): void {
             try {
-                var model: IViewModel = self.viewModel;
-
                 self.updateStatus("Retrieving form values...");
 
                 if (!!!self.itemId) {
@@ -395,7 +409,7 @@ module Shockout {
 
                 var uri = self.rootUrl + self.siteUrl + '/_vti_bin/listdata.svc/' + self.listName.replace(/\s/g, '') + '(' + self.itemId + ')';
                 // get the list item data
-                self.getListItemsRest(uri, bindValues, fail);
+                self.getListItemsRest(uri, bind, fail);
             }
             catch (e) {
                 if (self.debug) {
@@ -403,10 +417,11 @@ module Shockout {
                 }
             }
 
-            function bindValues(data: ISpWrapper<ISpItem>, status: string, jqXhr: any) {
-                self.bindListItemValues(self, model, data.d);
+            function bind(data: ISpWrapper<ISpItem>, status: string, jqXhr: any) {
+                self.listItem = Utils.clone(data.d); //store copy of the original SharePoint list item
+                self.bindListItemValues(self);
                 self.nextAsync(true, "Retrieved form data.");
-            }
+            };
 
             function fail(obj: any, status: string, jqXhr: any) {
                 if (obj.status && obj.status == '404') {
@@ -417,12 +432,12 @@ module Shockout {
                 }
                 self.showDialog(msg);
                 self.nextAsync(false, msg);
-            }
+            };
         }
 
-        getHistoryAsync(self: ShockoutForm, args: any = undefined): void {
+        getHistoryAsync(self: SPForm, args: any = undefined): void {
             try {
-                if (!!!self.itemId) {
+                if (!!!self.itemId || !self.includeWorkflowHistory) {
                     self.nextAsync(true);
                     return;
                 }
@@ -431,7 +446,7 @@ module Shockout {
                     "?$filter=ListID eq '" + self.listId + "' and PrimaryItemID eq " + self.itemId + "&$select=Description,DateOccurred&$orderby=DateOccurred asc";
 
                 self.getListItemsRest(uri, function (data: ISpCollectionWrapper<any>, status: string, jqXhr: any) {
-                    $(data.d).each(function (i: number, item: any) {
+                    $(data.d.results).each(function (i: number, item: any) {
                         historyItems.push(new HistoryItem(item.Description, Utils.parseJsonDate(item.DateOccurred)));
                     });
                     self.viewModel.history(historyItems);
@@ -446,29 +461,31 @@ module Shockout {
             }
         }
 
-        bindListItemValues(self: ShockoutForm, model: IViewModel, item: ISpItem): void {
-            self.listItem = Utils.clone(item); //store copy of the original SharePoint list item
+        bindListItemValues(self: SPForm = undefined): void {
+            self = self || this;
 
             // Exclude these read-only metadata fields from the Knockout view model.
             var rxExclude = new RegExp("^(__metadata|ContentTypeID|ContentType|CreatedBy|ModifiedBy|Owshiddenversion|Version|Attachments|Path)");
+            var item: ISpItem = self.listItem;
 
             for (var key in item) {
 
-                if (rxExclude.test(key) || !!model[key]) { continue; }
+                if (rxExclude.test(key) || !!self.viewModel[key]) { continue; }
 
                 // Object types will have a corresponding key name plus the suffix `Value` or `Id` for lookups.
                 // For example: `SupervisorApproval` is an object container for `__deferred` that corresponds to `SupervisorApprovalValue` 
                 // which is an ID or string value.
                 if (item[key] != null && item[key].constructor === Object && item[key]['__deferred']) {
                     if (item[key + 'Value']) {
-                        model[key] = ko.observable(item[key + 'Value']);
-                    } else if (item[key + 'Id']) {
-                        model[key] = ko.observable(item[key + 'Id']);
+                        self.viewModel[key] = ko.observable(item[key + 'Value']);
+                    }
+                    else if (item[key + 'Id']) {
+                        self.viewModel[key] = ko.observable(item[key + 'Id']);
                     }
                 }
                 else if (item[key] != null && Utils.isJsonDate(item[key])) {
                     // parse JSON dates
-                    model[key] = ko.observable(Utils.parseJsonDate(item[key]));
+                    self.viewModel[key] = ko.observable(Utils.parseJsonDate(item[key]));
                 }
                 else {
                     // if there is a boolean field for storing the state of a form's submission status 
@@ -477,19 +494,21 @@ module Shockout {
                         self.$formAction.find('.btn.save').show();
                         self.isSubmittedKey = key;
                     }
-                    model[key] = ko.observable(item[key]);
+                    self.viewModel[key] = ko.observable(item[key]);
                 }
             } 
                 
             // apply Knockout bindings
-            ko.applyBindings(model, self.form);
-            self.viewModelIsBound = true;  
+            ko.applyBindings(self.viewModel, self.form);
+            self.viewModelIsBound = true;
 
             // get CreatedBy profile
             self.getListItemsRest(item.CreatedBy.__deferred.uri, function (data: ISpWrapper<ISpPerson>, status: string, jqXhr: any) {
                 var person: ISpPerson = data.d;
-                model.CreatedBy(person);
-                model.isAuthor(self.currentUser.id == person.Id);
+                self.viewModel.CreatedBy(person);
+                self.viewModel.isAuthor(self.currentUser.id == person.Id);
+                self.viewModel.CreatedByName(person.Name);
+                self.viewModel.CreatedByEmail(person.WorkEMail);
                 if (self.includeUserProfiles) {
                     self.$createdInfo.find('.create-mod-info').prepend(Templates.getUserProfileTemplate(person, "Created By"));
                 }
@@ -498,7 +517,9 @@ module Shockout {
             // get ModifiedBy profile
             self.getListItemsRest(item.ModifiedBy.__deferred.uri, function (data: ISpWrapper<ISpPerson>, status: string, jqXhr: any) {
                 var person: ISpPerson = data.d;
-                model.ModifiedBy(person);
+                self.viewModel.ModifiedBy(person);
+                self.viewModel.ModifiedByName(person.Name);
+                self.viewModel.ModifiedByEmail(person.WorkEMail);
                 if (self.includeUserProfiles) {
                     self.$createdInfo.find('.create-mod-info').append(Templates.getUserProfileTemplate(person, "Last Modified By"));
                 }
@@ -507,7 +528,7 @@ module Shockout {
 
         // http://blog.vgrem.com/2014/03/22/list-items-manipulation-via-rest-api-in-sharepoint-2010/
         deleteListItem(model: IViewModel) {
-            var self: ShockoutForm = model.parent;
+            var self: SPForm = model.parent;
             var item: ISpItem = self.listItem;
             var timeout: number = 3000;
 
@@ -534,7 +555,7 @@ module Shockout {
         // http://blog.vgrem.com/2014/03/22/list-items-manipulation-via-rest-api-in-sharepoint-2010/
         saveListItem(model: IViewModel, isSubmit: boolean = true, refresh: boolean = true, customMsg: string = undefined): void {
 
-            var self: ShockoutForm = model.parent,
+            var self: SPForm = model.parent,
                 isNew: boolean = !!!self.itemId,
                 timeout: number = 3000,
                 saveMsg: string = customMsg || "<p>Your form has been saved.</p>",
@@ -552,7 +573,7 @@ module Shockout {
             }
             
             // validate the form
-            if (isSubmit && !self.formIsValid(model)) {
+            if (isSubmit && !self.formIsValid(model, true)) {
                 return;
             }
             
@@ -563,7 +584,7 @@ module Shockout {
 
             //Only update IsSubmitted if it's != true -- if it was already submitted.
             //Otherwise pressing Save would set it from true back to false - breaking any workflow logic in place!
-            if (typeof(model[self.isSubmittedKey]) != "undefined" && (model[self.isSubmittedKey]() == null || model[self.isSubmittedKey]() == false)) {
+            if (typeof model[self.isSubmittedKey] != "undefined" && (model[self.isSubmittedKey]() == null || model[self.isSubmittedKey]() == false)) {
                 postData[self.isSubmittedKey] = isSubmit;
             }
 
@@ -591,16 +612,19 @@ module Shockout {
             });
 
             $jqXhr.done(function (data: ISpWrapper<ISpItem>, status: string, jqXhr: any): void {
-                var listItem: ISpItem = data.d;
-                self.itemId = listItem.Id;
+                self.listItem = Utils.clone(data.d);
+                self.itemId = self.listItem.Id;
 
-                if (isSubmit && !self.debug) {//submitting form
+                if (isSubmit && !self.debug) {
+                    //submitting form
                     self.showDialog("<p>Your form has been submitted. You will be redirected in " + timeout / 1000 + " seconds.</p>", "Form Submission Successful");
+
                     setTimeout(function () {
                         window.location.href = self.sourceUrl != null ? self.sourceUrl : self.confirmationUrl;
                     }, timeout);
                 }
-                else {//saving form
+                else {
+                    //saving form
                     if (isNew || refresh) {
                         saveMsg += "<p>This page will refresh in " + timeout / 1000 + " seconds.</p>";
                     }
@@ -615,7 +639,7 @@ module Shockout {
                     }
                     else {
                         // update model values
-                        self.bindListItemValues(self, model, listItem);
+                        self.bindListItemValues(self);
                         //give WF History list 5 seconds to update
                         setTimeout(function () { self.getHistoryAsync(self); }, 5000);
                     }
@@ -629,9 +653,9 @@ module Shockout {
             });
         }
 
-        getAttachmentsAsync(self: ShockoutForm = undefined): void {
+        getAttachmentsAsync(self: SPForm = undefined, args: any = undefined): void {
             self = self || this;
-            if (self.listItem == undefined) {
+            if (!!!self.listItem || !self.enableAttachments) {
                 self.nextAsync(true);
                 return;
             }
@@ -724,6 +748,36 @@ module Shockout {
             }
         }
 
+        getListAsync(self: SPForm, args: any = undefined) {
+            var packet = '<?xml version="1.0" encoding="utf-8"?><soap:Envelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/"><soap:Body><GetList xmlns="http://schemas.microsoft.com/sharepoint/soap/"><listName>{0}</listName></GetList></soap:Body></soap:Envelope>';
+
+            var $jqXhr = $.ajax({
+                url: self.rootUrl + self.siteUrl + '/_vti_bin/lists.asmx',
+                type: 'POST',
+                cache: false,
+                dataType: "xml",
+                data: packet.replace('{0}', self.listName),
+                headers: {
+                    "SOAPAction": "http://schemas.microsoft.com/sharepoint/soap/GetList",
+                    "Content-Type": "text/xml; charset=utf-8"
+                }
+            });
+
+            $jqXhr.done(function (xmlDoc, status, jqXhr) {
+                var $list = $(xmlDoc).find('List').first();
+                self.listId = $list.attr('ID');
+                self.requireCheckout = $list.attr('RequireCheckout').toLowerCase() == 'true';
+                self.enableAttachments = $list.attr('EnableAttachments').toLowerCase() == 'true';
+                self.defaultViewUrl = $list.attr('DefaultViewUrl');
+                self.defailtMobileViewUrl = $list.attr('MobileDefaultViewUrl');
+                self.nextAsync(true);
+            });
+
+            $jqXhr.fail(function () {
+                self.nextAsync(false, 'Failed to retrieve list data.');
+            });
+        }
+
         log(msg) {
             if (this.debug) {
                 console.log(msg);
@@ -739,7 +793,7 @@ module Shockout {
         }
 
         showDialog(msg: string, title: string = undefined, timeout: number = undefined) {
-            var self: ShockoutForm = this;
+            var self: SPForm = this;
             title = title || "Form Dialog";
             msg = (msg).toString().match(/<\w>\w*/) == null ? '<p>' + msg + '</p>' : msg; //wrap non-html in <p>
             self.$dialog.html(msg).dialog('open');
@@ -785,8 +839,8 @@ module Shockout {
         * Validate the View Model's required fields
         * @returns: bool
         */
-        formIsValid(model: IViewModel): boolean {
-            var self: ShockoutForm = model.parent,
+        formIsValid(model: IViewModel, showDialog: boolean = false): boolean {
+            var self: SPForm = model.parent,
                 labels: Array<string> = [],
                 errorCount: number = 0,
                 invalidCount: number = 0,
@@ -830,7 +884,9 @@ module Shockout {
                 }
 
                 if (errorCount > 0) {
-                    self.showDialog('<p class="warning">The following are required:</p><p class="error"><strong>' + labels.join('<br/>') + '</strong></p>');
+                    if (showDialog) {
+                        self.showDialog('<p class="warning">The following are required:</p><p class="error"><strong>' + labels.join('<br/>') + '</strong></p>');
+                    }
                     return false;
                 }
                 return true;
@@ -845,10 +901,20 @@ module Shockout {
             return this.version;
         }
 
-        logError(msg: string, self: ShockoutForm = undefined): void {
+        checkoutRequired(): boolean {
+            return this.requireCheckout;
+        }
+
+        attachmentsEnabled(): boolean {
+            return this.enableAttachments;
+        }
+
+        logError(msg: string, self: SPForm = undefined): void {
             self = self || this;
-            self.showDialog('<p>An error has occurred and the web administrator has been notified. They will be in touch with you soon.</p><p>Error Details: <pre>' + msg + '</pre></p>');
-            Utils.logError(msg, self.errorLogListName, self.rootUrl, self.debug);
+            self.showDialog('<p>An error has occurred and the web administrator has been notified.</p><p>Error Details: <pre>' + msg + '</pre></p>');
+            if (self.enableErrorLog) {
+                Utils.logError(msg, self.errorLogListName, self.rootUrl, self.debug);
+            }
         }
     }
 

@@ -132,7 +132,7 @@
                 }
                 catch (e) {
                     var msg = 'Error in Knockout handler spPerson init(): ' + JSON.stringify(e);
-                    Utils.logError(msg, ShockoutForm.errorLogListName);
+                    Utils.logError(msg, Shockout.SPForm.errorLogListName);
                     throw msg;
                 }
 
@@ -181,7 +181,7 @@
                 }
                 catch (e) {
                     var msg = 'Error in Knockout handler spPerson update(): ' + JSON.stringify(e);
-                    Utils.logError(msg, ShockoutForm.errorLogListName);
+                    Utils.logError(msg, Shockout.SPForm.errorLogListName);
                     throw msg;
                 }
             }
@@ -331,7 +331,7 @@
                 }
                 catch (e) {
                     var msg = 'Error in Knockout handler spDateTime init(): ' + JSON.stringify(e);
-                    Utils.logError(msg, ShockoutForm.errorLogListName);
+                    Utils.logError(msg, Shockout.SPForm.errorLogListName);
                 }
             },
             update: function (element, valueAccessor, allBindings, bindingContext) {
@@ -357,7 +357,7 @@
                 }
                 catch (e) {
                     var msg = 'Error in Knockout handler spDateTime update(): ' + JSON.stringify(e);
-                    Utils.logError(msg, ShockoutForm.errorLogListName);
+                    Utils.logError(msg, Shockout.SPForm.errorLogListName);
                 }
             }
         };

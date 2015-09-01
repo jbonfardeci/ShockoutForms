@@ -2,14 +2,6 @@
 
     export class Templates {
         
-        public static createdByKey: string = 'CreatedBy';
-        public static modifiedByKey: string = 'ModifiedBy';
-        public static createdKey: string = 'Created';
-        public static modifiedKey: string = 'Modified';
-        public static historyKey: string = 'history';
-        public static historyDescriptionKey: string = 'description';
-        public static historyDateKey: string = 'date';
-
         public static getFileUploadTemplate(): string {
             return '<div class="qq-uploader">' +
                 '<div class="qq-upload-drop-area"><span>Drop files here to upload</span></div>' +
@@ -22,19 +14,21 @@
             var template: string = '<h4>Created/Modified Information</h4>' +
                 '<ul>' +
                 '<li class="create-mod-info no-print"></li>' +
-                '<li><label>Created By</label><a data-bind="text: {0}().Name, attr:{href: \'mailto:\'+{0}().WorkEMail}" class="email"></a></li>' +
-                '<li><label>Created</label><span data-bind="spDateTime: {1}"></span></li>' +
-                '<li><label>Modified By</label><a data-bind="text: {2}().Name, attr:{href: \'mailto:\'+{2}().WorkEMail}" class="email"></a></li>' +
-                '<li><label>Modified</label><span data-bind="spDateTime: {3}"></span></li>' +
+                '<li><label>Created By</label><a data-bind="text: {0}, attr:{href: \'mailto:\'+{1}()}" class="email"></a></li>' +
+                '<li><label>Created</label><span data-bind="spDateTime: {2}"></span></li>' +
+                '<li><label>Modified By</label><a data-bind="text: {3}, attr:{href: \'mailto:\'+{4}()}" class="email"></a></li>' +
+                '<li><label>Modified</label><span data-bind="spDateTime: {5}"></span></li>' +
                 '</ul>';
 
             var section: HTMLElement = document.createElement('section');
             section.className = 'created-mod-info';
             section.innerHTML = template
-                .replace(/\{0\}/g, Templates.createdByKey)
-                .replace(/\{1\}/g, Templates.createdKey)
-                .replace(/\{2\}/g, Templates.modifiedByKey)
-                .replace(/\{3\}/g, Templates.modifiedKey);
+                .replace(/\{0\}/g, ViewModel.createdByKey)
+                .replace(/\{1\}/g, ViewModel.createdByEmailKey)
+                .replace(/\{2\}/g, ViewModel.createdKey)
+                .replace(/\{3\}/g, ViewModel.modifiedByKey)
+                .replace(/\{4\}/g, ViewModel.modifiedByEmailKey)
+                .replace(/\{5\}/g, ViewModel.modifiedKey);
             return section;
         }
 
@@ -49,11 +43,11 @@
                 '</tbody>' +
                 '</table>';
             var section: HTMLElement = document.createElement('section');
-            section.setAttribute('data-bind', 'visible: {0}.length > 0'.replace(/\{0\}/i, Templates.historyKey));
+            section.setAttribute('data-bind', 'visible: {0}.length > 0'.replace(/\{0\}/i, ViewModel.historyKey));
             section.innerHTML = template
-                .replace(/\{0\}/g, Templates.historyKey)
-                .replace(/\{1\}/g, Templates.historyDescriptionKey)
-                .replace(/\{2\}/g, Templates.historyDateKey);
+                .replace(/\{0\}/g, ViewModel.historyKey)
+                .replace(/\{1\}/g, ViewModel.historyDescriptionKey)
+                .replace(/\{2\}/g, ViewModel.historyDateKey);
             return section;
         }
 
@@ -72,7 +66,7 @@
                 template.push('<button class="btn save" data-bind="event: { click: save }"><span>Save</span></button>');
             }
 
-            template.push('<button class="btn submit" data-bind="event: { click: submit }"><span>Submit</span></button>');
+            template.push('<button class="btn submit" data-bind="event: { click: submit }, visible: isValid"><span>Submit</span></button>');
 
             var div: HTMLDivElement = document.createElement('div');
             div.className = 'form-action';
@@ -113,7 +107,7 @@
             div.className = "user-profile-card";
             div.innerHTML = template
                 .replace(/\{header\}/g, headerTxt)
-                .replace(/\{pictureurl\}/g, profile.Picture)
+                .replace(/\{pictureurl\}/g, (profile.Picture.indexOf(',') > 0 ? profile.Picture.split(',')[0] : profile.Picture))
                 .replace(/\{name\}/g, (profile.Name || ''))
                 .replace(/\{jobtitle\}/g, profile.Title || '')
                 .replace(/\{department\}/g, profile.Department || '')
