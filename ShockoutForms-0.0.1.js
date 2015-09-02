@@ -1,962 +1,3 @@
-/// <reference path="../typings/knockout.d.ts" />
-/// <reference path="../typings/jquery.d.ts" />
-/// <reference path="../typings/jquery.ui.datetimepicker.d.ts" />
-/// <reference path="../typings/jqueryui.d.ts" />
-'use strict';
-/**
-* -----------------
-* Shockout SP Form
-* -----------------
-* By John Bonfardeci <john.bonfardeci@gmail.com>
-*
-* A Replacement for InfoPath and XSLT Forms
-* Leverage the power Knockout JS databinding with SharePoint services for modern and dynamic web form development.
-*
-* Minimum Usage:
-* `var spForm = new Shockout.SPForm('My SharePoint List Name', 'my-form-ID', {});`
-*
-* Dependencies: jQuery 1.72+, jQuery UI<any>, KnockoutJS 3.2+
-*
-*   Copyright (C) 2015  John T. Bonfardeci
-*
-*   This program is free software: you can redistribute it and/or modify
-*   it under the terms of the GNU Affero General Public License as
-*   published by the Free Software Foundation, either version 3 of the
-*   License, or (at your option) any later version.
-*
-*   This program is distributed in the hope that it will be useful,
-*   but WITHOUT ANY WARRANTY; without even the implied warranty of
-*   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-*   GNU Affero General Public License for more details.
-*
-*   You should have received a copy of the GNU Affero General Public License
-*   along with this program.  If not, see <http://www.gnu.org/licenses/>.
-*/
-var Shockout;
-(function (Shockout) {
-    var SPForm = (function () {
-        function SPForm(listName, formId, options) {
-            //////////////////
-            // Public Options
-            //////////////////
-            // Allow users to delete a form
-            this.allowDelete = false;
-            // Allow users to print
-            this.allowPrint = true;
-            // Enable users to save their form before submitting
-            this.allowSave = false;
-            // Allowed extensions for file attachments
-            this.allowedExtensions = ['txt', 'rtf', 'zip', 'pdf', 'doc', 'docx', 'jpg', 'gif', 'png', 'ppt', 'tif', 'pptx', 'csv', 'pub', 'msg'];
-            // Message to display if a file attachment is required - good for receipts attached to purchase requisitions and such
-            this.attachmentMessage = 'An attachment is required.';
-            // Redeirect users after form submission to this page.
-            this.confirmationUrl = '/SitePages/Confirmation.aspx';
-            // Run in debug mode with extra logging; disables error logging to SP list.
-            this.debug = false;
-            // Override the SP List fields a user is allowed to submit. 
-            this.editableFields = [];
-            // Enable users to attach files.
-            this.enableAttachments = false;
-            // Enable error logging to SP List. Good if you want to track and debug errors that users may run into.
-            this.enableErrorLog = true;
-            // The name of the SP List to log errors to
-            this.errorLogListName = 'Error Log';
-            // The relative URL of the Handler that attaches fiel uploads to list items.
-            this.fileHandlerUrl = '/_layouts/webster/SPFormFileHandler.ashx';
-            // Display the user profiles of the users that created and last modified a form. Includes photos. See `Shockout.Templates.getUserProfileTemplate()` in `templates.ts`.
-            this.includeUserProfiles = true;
-            // Display logs from the workflow history list assigned to form workflows.
-            this.includeWorkflowHistory = true;
-            // Set to true if at least one attachment is required for a form. Good requriring receipts to purchase requisitions and such. 
-            this.requireAttachments = false;
-            // The relative URL of the SP subsite where the target SP list is located.
-            this.siteUrl = '';
-            // Utility methods for internal and external use.
-            this.utils = Shockout.Utils;
-            // The SP list name of the workflow history list where form workflow entries are stored.
-            // Displays workflow history to viewer so they know the status of their form. Depends on writing workflows with good logging.
-            // Be careful,. Workflow History lsits can exceed the maximum amount of items regular users are allowed to view. Be sure to implement
-            // a good Powershell script to clean up your workflow history lists with Task Scheduler on the server. Good luck doing that with Office 365! 
-            this.workflowHistoryListName = 'Workflow History';
-            /**
-            * Requires user to checkout the list item?
-            * @return boolean
-            */
-            this.requireCheckout = false;
-            /**
-            * Get the SP site root URL
-            * @return string
-            */
-            this.rootUrl = window.location.protocol + '//' + window.location.hostname + (!!window.location.port ? ':' + window.location.port : '');
-            this.version = '0.0.1';
-            this.viewModelIsBound = false;
-            var self = this;
-            var error;
-            if (!(this instanceof SPForm)) {
-                error = 'You must declare an instance of this class with `new`.';
-                alert(error);
-                throw error;
-                return;
-            }
-            if (!!!formId || !!!listName) {
-                var errors = ['Missing required parameters:'];
-                if (!!!this.formId) {
-                    errors.push(' `formId`');
-                }
-                if (!!!this.listName) {
-                    errors.push(' `listName`');
-                }
-                errors = errors.join('');
-                alert(errors);
-                throw errors;
-                return;
-            }
-            this.formId = formId;
-            this.listName = listName;
-            if (!!Shockout.Utils.getQueryParam("id")) {
-                this.itemId = parseInt(Shockout.Utils.getQueryParam("id"));
-            }
-            else if (!!Shockout.Utils.getQueryParam("formid")) {
-                this.itemId = parseInt(Shockout.Utils.getQueryParam("formid"));
-            }
-            this.sourceUrl = Shockout.Utils.getQueryParam("source"); //if accessing the form from a SP list, take user back to the list on close
-            if (!!this.sourceUrl) {
-                this.sourceUrl = decodeURIComponent(this.sourceUrl);
-            }
-            // override default instance variables with key-value pairs from options
-            if (options && options.constructor === Object) {
-                for (var p in options) {
-                    this[p] = options[p];
-                }
-            }
-            // get the form container element
-            this.form = document.getElementById(this.formId);
-            this.$form = $(this.form);
-            self.$formStatus = $('<div>', { 'class': 'form-status' }).appendTo(self.$form);
-            self.$dialog = $('<div>', { 'id': 'formdialog' }).appendTo(self.$form).dialog({
-                autoOpen: false,
-                show: {
-                    effect: "blind",
-                    duration: 1000
-                },
-                hide: {
-                    effect: "explode",
-                    duration: 1000
-                }
-            });
-            SPForm.errorLogListName = this.errorLogListName;
-            this.viewModel = new Shockout.ViewModel(this);
-            // Cascading Asynchronous Function Execution (CAFE) Array
-            // Don't change the order of these unless you know what you're doing.
-            this.asyncFns = [
-                self.getListAsync,
-                function () {
-                    if (self.preRender) {
-                        self.preRender(self);
-                    }
-                    self.nextAsync(true);
-                },
-                self.getCurrentUserAsync,
-                self.getUsersGroupsAsync,
-                self.restrictSpGroupElementsAsync,
-                self.initFormAsync,
-                self.getListItemAsync,
-                self.getAttachmentsAsync,
-                self.getHistoryAsync,
-                function () {
-                    if (self.postRender) {
-                        self.postRender(self);
-                    }
-                    self.nextAsync(true);
-                }
-            ];
-            //start CAFE
-            this.nextAsync(true, 'Begin initialization...');
-        }
-        /////////////////////////////////////
-        // Private Set Public Get Properties
-        /////////////////////////////////////
-        /**
-        * Get the current logged in user profile.
-        * @return ICurrentUser
-        */
-        SPForm.prototype.getCurrentUser = function () {
-            return this.currentUser;
-        };
-        /**
-        * Get the default view for the list.
-        * @return string
-        */
-        SPForm.prototype.getDefaultViewUrl = function () {
-            return this.defaultViewUrl;
-        };
-        /**
-        * Get the default mobile view for the list.
-        * @return string
-        */
-        SPForm.prototype.getDefailtMobileViewUrl = function () {
-            return this.defailtMobileViewUrl;
-        };
-        /**
-        * Get a reference to the form element.
-        * @return HTMLElement
-        */
-        SPForm.prototype.getForm = function () {
-            return this.form;
-        };
-        /**
-        * Get the SP list item ID number.
-        * @return number
-        */
-        SPForm.prototype.getItemId = function () {
-            return this.itemId;
-        };
-        /**
-        * Get the GUID of the SP list.
-        * @return HTMLElement
-        */
-        SPForm.prototype.getListId = function () {
-            return this.listId;
-        };
-        /**
-        * Get a reference to the original SP list item.
-        * @return ISpItem
-        */
-        SPForm.prototype.getListItem = function () {
-            return this.listItem;
-        };
-        SPForm.prototype.requiresCheckout = function () {
-            return this.requireCheckout;
-        };
-        SPForm.prototype.getRootUrl = function () {
-            return this.rootUrl;
-        };
-        SPForm.prototype.getSourceUrl = function () {
-            return this.sourceUrl;
-        };
-        /**
-        * Get a reference to the form's Knockout view model.
-        * @return string
-        */
-        SPForm.prototype.getViewModel = function () {
-            return this.viewModel;
-        };
-        /**
-        * Get the version number for this framework.
-        * @return string
-        */
-        SPForm.prototype.getVersion = function () {
-            return this.version;
-        };
-        /**
-        * Execute the next asynchronous function from `asyncFns`.
-        */
-        SPForm.prototype.nextAsync = function (success, msg, args) {
-            if (success === void 0) { success = undefined; }
-            if (msg === void 0) { msg = undefined; }
-            if (args === void 0) { args = undefined; }
-            var self = this;
-            success = success || true;
-            if (msg) {
-                this.updateStatus(msg, success);
-            }
-            if (!success) {
-                return;
-            }
-            if (this.asyncFns.length == 0) {
-                setTimeout(function () {
-                    self.$formStatus.slideDown();
-                }, 2000);
-                return;
-            }
-            // execute the next function in the array
-            this.asyncFns.shift()(self, args);
-        };
-        /**
-        * Initialize the form.
-        */
-        SPForm.prototype.initFormAsync = function (self, args) {
-            if (args === void 0) { args = undefined; }
-            try {
-                self.updateStatus("Initializing dynamic form features...");
-                self.$createdInfo = self.$form.find(".created-info");
-                // append action buttons
-                self.$formAction = $(Shockout.Templates.getFormAction(self.allowSave, self.allowDelete, self.allowPrint)).appendTo(self.$form);
-                //append Created/Modified info to predefined section or append to form
-                if (!!self.itemId) {
-                    self.$createdInfo.html(Shockout.Templates.getCreatedModifiedInfo().innerHTML);
-                    //append Workflow history section
-                    if (self.includeWorkflowHistory) {
-                        self.$form.append(Shockout.Templates.getHistoryTemplate());
-                    }
-                }
-                if (self.editableFields.length == 0) {
-                    //make array of SP field names and those that are editable from elements w/ data-bind attribute
-                    self.$form.find('[data-bind]').each(function (i, e) {
-                        var key = Shockout.Utils.observableNameFromControl(e);
-                        //skip observable keys that have already been added or begins with an underscore '_' or dollar sign '$'
-                        if (!!!key || self.editableFields.indexOf(key) > -1 || key.match(/^(_|\$)/) != null) {
-                            return;
-                        }
-                        if (e.tagName == 'INPUT' || e.tagName == 'SELECT' || e.tagName == 'TEXTAREA' || $(e).attr('contenteditable') == 'true') {
-                            self.editableFields.push(key);
-                        }
-                    });
-                    self.editableFields.sort();
-                }
-                self.fileUploaderSettings = {
-                    element: null,
-                    action: self.fileHandlerUrl,
-                    debug: self.debug,
-                    multiple: false,
-                    maxConnections: 3,
-                    allowedExtensions: self.allowedExtensions,
-                    params: {
-                        listId: self.listId,
-                        itemId: self.itemId
-                    },
-                    onSubmit: function (id, fileName) {
-                    },
-                    onComplete: function (id, fileName, json) {
-                        if (self.itemId == null) {
-                            self.viewModel['Id'](json.itemId);
-                            self.itemId = json.itemId;
-                            self.saveListItem(self.viewModel, false);
-                        }
-                        if (json.error == null && json.fileName != null) {
-                            self.getAttachmentsAsync();
-                        }
-                    },
-                    template: Shockout.Templates.getFileUploadTemplate()
-                };
-                //setup attachments module
-                self.$form.find(".attachments").each(function (i, att) {
-                    var id = 'fileuploader_' + i;
-                    $(att).append(Shockout.Templates.getAttachmentsTemplate(id));
-                    self.fileUploaderSettings.element = document.getElementById(id);
-                    self.fileUploader = new Shockout.qq.FileUploader(self.fileUploaderSettings);
-                });
-                self.$form.find('[required]').addClass('required');
-                self.nextAsync(true, "Form initialized.");
-            }
-            catch (e) {
-                if (self.debug) {
-                    console.warn(e);
-                }
-                self.logError("initFormAsync: " + e);
-                self.nextAsync(false, "Failed to initialize form. " + e);
-            }
-        };
-        /**
-        * Get the current logged in user's profile.
-        */
-        SPForm.prototype.getCurrentUserAsync = function (self, args) {
-            if (args === void 0) { args = undefined; }
-            try {
-                var currentUser;
-                var query = '<Query><Where><Eq><FieldRef Name="ID" /><Value Type="Counter"><UserID /></Value></Eq></Where></Query>';
-                var viewFields = '<ViewFields><FieldRef Name="ID" /><FieldRef Name="Name" /><FieldRef Name="EMail" /><FieldRef Name="Department" /><FieldRef Name="JobTitle" /><FieldRef Name="UserName" /><FieldRef Name="Office" /></ViewFields>';
-                self.getListItemsSoap('', 'User Information List', viewFields, query, function (xData, Sstatus) {
-                    var user = {
-                        id: null,
-                        title: null,
-                        login: null,
-                        email: null,
-                        account: null,
-                        jobtitle: null,
-                        department: null,
-                        groups: []
-                    };
-                    $(xData.responseXML).find('*').filter(function () {
-                        return this.nodeName === 'z:row';
-                    }).each(function (i, node) {
-                        user.id = parseInt($(node).attr('ows_ID'));
-                        user.title = $(node).attr('ows_Name');
-                        user.login = $(node).attr('ows_UserName');
-                        user.email = $(node).attr('ows_EMail');
-                        user.jobtitle = $(node).attr('ows_JobTitle');
-                        user.department = $(node).attr('ows_Department');
-                        user.account = user.id + ';#' + user.login;
-                    });
-                    self.currentUser = user;
-                    self.viewModel.currentUser(user);
-                    self.nextAsync(true, 'Retrieved your account.');
-                });
-            }
-            catch (e) {
-                if (self.debug) {
-                    console.warn(e);
-                }
-                self.logError('getCurrentUserAsync():' + e);
-                self.nextAsync(false, 'Failed to retrieve your account.');
-            }
-        };
-        /**
-        * Get the SP user groups this user is a member of for removing/showing protected form sections.
-        */
-        SPForm.prototype.getUsersGroupsAsync = function (self, args) {
-            if (args === void 0) { args = undefined; }
-            try {
-                var msg = "Retrieved your groups.";
-                if (self.$form.find("[user-groups]").length == 0) {
-                    self.nextAsync(true, msg);
-                    return;
-                }
-                var packet = '<soap:Envelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">' + '<soap:Body>' + '<GetGroupCollectionFromUser xmlns="http://schemas.microsoft.com/sharepoint/soap/directory/">' + '<userLoginName>' + self.currentUser.login + '</userLoginName>' + '</GetGroupCollectionFromUser>' + '</soap:Body>' + '</soap:Envelope>';
-                var $jqXhr = $.ajax({
-                    url: self.rootUrl + self.siteUrl + '/_vti_bin/usergroup.asmx',
-                    type: 'POST',
-                    dataType: 'xml',
-                    data: packet,
-                    contentType: 'text/xml; charset="utf-8"'
-                });
-                $jqXhr.done(function (doc, statusText, response) {
-                    $(response.responseXML).find("Group").each(function (i, el) {
-                        self.currentUser.groups.push({
-                            id: parseInt($(el).attr("ID")),
-                            name: $(el).attr("Name")
-                        });
-                    });
-                    self.nextAsync(true, "Retrieved your groups.");
-                });
-                $jqXhr.fail(function (xData, status) {
-                    var msg = "Failed to retrieve your groups: " + status;
-                    self.logError(msg);
-                    self.nextAsync(false, msg);
-                });
-                self.updateStatus("Retrieving your groups...");
-            }
-            catch (e) {
-                if (self.debug) {
-                    console.warn(e);
-                }
-                self.logError("getUsersGroupsAsync: " + e);
-                self.nextAsync(false, "Failed to retrieve your groups.");
-            }
-        };
-        /**
-        * Removes form sections the user doesn't have access to from the DOM.
-        */
-        SPForm.prototype.restrictSpGroupElementsAsync = function (self, args) {
-            if (args === void 0) { args = undefined; }
-            try {
-                self.updateStatus("Retrieving your permissions...");
-                self.$form.find("[user-groups]").each(function (i, el) {
-                    var groups = $(el).attr("user-groups");
-                    var groupNames = groups.match(/\,/) != null ? groups.split(',') : [groups];
-                    var ct = 0;
-                    $.each(groupNames, function (i, group) {
-                        group = group.match(/\;#/) != null ? group.split(';')[0] : group; //either id;#groupname or groupname
-                        group = $.trim(group);
-                        $.each(self.currentUser.groups, function (j, g) {
-                            if (group == g.name || parseInt(group) == g.id) {
-                                ct++;
-                            }
-                        });
-                    });
-                    if (ct > 0) {
-                        $(el).show();
-                    }
-                    else {
-                        $(el).remove();
-                    }
-                });
-                self.nextAsync(true, "Retrieved your permissions.");
-            }
-            catch (e) {
-                if (self.debug) {
-                    console.warn(e);
-                }
-                self.logError("restrictSpGroupElementsAsync: " + e);
-                self.nextAsync(true, "Failed to retrieve your permissions.");
-            }
-        };
-        /**
-        * Get the SP list item data and build the Knockout view model.
-        */
-        SPForm.prototype.getListItemAsync = function (self, args) {
-            if (args === void 0) { args = undefined; }
-            try {
-                self.updateStatus("Retrieving form values...");
-                if (!!!self.itemId) {
-                    self.nextAsync(true, "This is a New form.");
-                    return;
-                }
-                var uri = self.rootUrl + self.siteUrl + '/_vti_bin/listdata.svc/' + self.listName.replace(/\s/g, '') + '(' + self.itemId + ')';
-                // get the list item data
-                self.getListItemsRest(uri, bind, fail);
-            }
-            catch (e) {
-                if (self.debug) {
-                    console.warn(e);
-                }
-            }
-            function bind(data, status, jqXhr) {
-                self.listItem = Shockout.Utils.clone(data.d); //store copy of the original SharePoint list item
-                self.bindListItemValues(self);
-                self.nextAsync(true, "Retrieved form data.");
-            }
-            ;
-            function fail(obj, status, jqXhr) {
-                if (obj.status && obj.status == '404') {
-                    var msg = obj.statusText + ". The form may have been deleted by another user.";
-                }
-                else {
-                    msg = status + ' ' + jqXhr;
-                }
-                self.showDialog(msg);
-                self.nextAsync(false, msg);
-            }
-            ;
-        };
-        /**
-        * Get the workflow history for this form, if any.
-        */
-        SPForm.prototype.getHistoryAsync = function (self, args) {
-            if (args === void 0) { args = undefined; }
-            try {
-                if (!!!self.itemId || !self.includeWorkflowHistory) {
-                    self.nextAsync(true);
-                    return;
-                }
-                var historyItems = [];
-                var uri = self.rootUrl + self.siteUrl + "/_vti_bin/listdata.svc/" + self.workflowHistoryListName.replace(/\s/g, '') + "?$filter=ListID eq '" + self.listId + "' and PrimaryItemID eq " + self.itemId + "&$select=Description,DateOccurred&$orderby=DateOccurred asc";
-                self.getListItemsRest(uri, function (data, status, jqXhr) {
-                    $(data.d.results).each(function (i, item) {
-                        historyItems.push(new Shockout.HistoryItem(item.Description, Shockout.Utils.parseJsonDate(item.DateOccurred)));
-                    });
-                    self.viewModel.history(historyItems);
-                    self.nextAsync(true, "Retrieved workflow history.");
-                });
-            }
-            catch (ex) {
-                var wfUrl = self.rootUrl + self.siteUrl + '/Lists/' + self.workflowHistoryListName.replace(/\s/g, '%20');
-                self.logError('The Workflow History list may be full at <a href="{url}">{url}</a>. Failed to retrieve workflow history in method, getHistoryAsync(). Error: '.replace(/\{url\}/g, wfUrl) + JSON.stringify(ex));
-                self.nextAsync(true, 'Failed to retrieve workflow history.');
-            }
-        };
-        /**
-        * Bind the SP list item values to the view model.
-        */
-        SPForm.prototype.bindListItemValues = function (self) {
-            if (self === void 0) { self = undefined; }
-            self = self || this;
-            // Exclude these read-only metadata fields from the Knockout view model.
-            var rxExclude = new RegExp("^(__metadata|ContentTypeID|ContentType|CreatedBy|ModifiedBy|Owshiddenversion|Version|Attachments|Path)");
-            var item = self.listItem;
-            for (var key in item) {
-                if (rxExclude.test(key) || !!self.viewModel[key]) {
-                    continue;
-                }
-                // Object types will have a corresponding key name plus the suffix `Value` or `Id` for lookups.
-                // For example: `SupervisorApproval` is an object container for `__deferred` that corresponds to `SupervisorApprovalValue` 
-                // which is an ID or string value.
-                if (item[key] != null && item[key].constructor === Object && item[key]['__deferred']) {
-                    if (item[key + 'Value']) {
-                        self.viewModel[key] = ko.observable(item[key + 'Value']);
-                    }
-                    else if (item[key + 'Id']) {
-                        self.viewModel[key] = ko.observable(item[key + 'Id']);
-                    }
-                }
-                else if (item[key] != null && Shockout.Utils.isJsonDate(item[key])) {
-                    // parse JSON dates
-                    self.viewModel[key] = ko.observable(Shockout.Utils.parseJsonDate(item[key]));
-                }
-                else {
-                    // if there is a boolean field for storing the state of a form's submission status 
-                    if (/submitted/i.test(key)) {
-                        self.allowSave = true;
-                        self.$formAction.find('.btn.save').show();
-                        Shockout.ViewModel.isSubmittedKey = key;
-                    }
-                    self.viewModel[key] = ko.observable(item[key]);
-                }
-            }
-            // apply Knockout bindings if not already bound.
-            if (!self.viewModelIsBound) {
-                ko.applyBindings(self.viewModel, self.form);
-                self.viewModelIsBound = true;
-            }
-            // get CreatedBy profile
-            self.getListItemsRest(item.CreatedBy.__deferred.uri, function (data, status, jqXhr) {
-                var person = data.d;
-                self.viewModel.CreatedBy(person);
-                self.viewModel.isAuthor(self.currentUser.id == person.Id);
-                self.viewModel.CreatedByName(person.Name);
-                self.viewModel.CreatedByEmail(person.WorkEMail);
-                if (self.includeUserProfiles) {
-                    self.$createdInfo.find('.create-mod-info').prepend(Shockout.Templates.getUserProfileTemplate(person, "Created By"));
-                }
-            });
-            // get ModifiedBy profile
-            self.getListItemsRest(item.ModifiedBy.__deferred.uri, function (data, status, jqXhr) {
-                var person = data.d;
-                self.viewModel.ModifiedBy(person);
-                self.viewModel.ModifiedByName(person.Name);
-                self.viewModel.ModifiedByEmail(person.WorkEMail);
-                if (self.includeUserProfiles) {
-                    self.$createdInfo.find('.create-mod-info').append(Shockout.Templates.getUserProfileTemplate(person, "Last Modified By"));
-                }
-            });
-        };
-        /**
-        * Delete the list item.
-        */
-        SPForm.prototype.deleteListItem = function (model) {
-            var self = model.parent;
-            var item = self.listItem;
-            var timeout = 3000;
-            $.ajax({
-                url: item.__metadata.uri,
-                type: 'POST',
-                headers: {
-                    'Accept': 'application/json;odata=verbose',
-                    'X-Http-Method': 'DELETE',
-                    'If-Match': item.__metadata.etag
-                },
-                success: function (data) {
-                    self.showDialog("The form was deleted. You'll be redirected in " + timeout / 1000 + " seconds.");
-                    setTimeout(function () {
-                        window.location.replace(self.sourceUrl != null ? self.sourceUrl : self.rootUrl);
-                    }, timeout);
-                },
-                error: function (data) {
-                    throw data.responseJSON.error;
-                }
-            });
-        };
-        /**
-        * Save the list item.
-        */
-        // http://blog.vgrem.com/2014/03/22/list-items-manipulation-via-rest-api-in-sharepoint-2010/
-        SPForm.prototype.saveListItem = function (model, isSubmit, refresh, customMsg) {
-            if (isSubmit === void 0) { isSubmit = true; }
-            if (refresh === void 0) { refresh = true; }
-            if (customMsg === void 0) { customMsg = undefined; }
-            var self = model.parent, isNew = !!!self.itemId, timeout = 3000, saveMsg = customMsg || "<p>Your form has been saved.</p>", postData = {}, headers = { Accept: 'application/json;odata=verbose' }, url, contentType = 'application/json';
-            // run presave action and stop if the presave action returns false
-            if (self.preSave) {
-                var retVal = self.preSave(self);
-                if (typeof (retVal) != 'undefined' && !!!retVal) {
-                    return;
-                }
-            }
-            // validate the form
-            if (isSubmit && !self.formIsValid(model, true)) {
-                return;
-            }
-            // prepare data to post
-            $.each(self.editableFields, function (i, key) {
-                postData[key] = model[key]();
-            });
-            //Only update IsSubmitted if it's != true -- if it was already submitted.
-            //Otherwise pressing Save would set it from true back to false - breaking any workflow logic in place!
-            if (typeof model[Shockout.ViewModel.isSubmittedKey] != "undefined" && (model[Shockout.ViewModel.isSubmittedKey]() == null || model[Shockout.ViewModel.isSubmittedKey]() == false)) {
-                postData[Shockout.ViewModel.isSubmittedKey] = isSubmit;
-            }
-            if (isNew) {
-                url = self.rootUrl + self.siteUrl + '/_vti_bin/listdata.svc/' + self.listName.replace(/\s/g, '') + '(' + self.itemId + ')';
-                //postData = JSON.stringify(postData);
-                contentType += ';odata=verbose';
-            }
-            else {
-                url = self.listItem.__metadata.uri;
-                headers['X-HTTP-Method'] = 'MERGE';
-                headers['If-Match'] = self.listItem.__metadata.etag;
-            }
-            var $jqXhr = $.ajax({
-                url: url,
-                type: 'POST',
-                processData: false,
-                contentType: contentType,
-                data: JSON.stringify(postData),
-                headers: headers
-            });
-            $jqXhr.done(function (data, status, jqXhr) {
-                self.listItem = Shockout.Utils.clone(data.d);
-                self.itemId = self.listItem.Id;
-                if (isSubmit && !self.debug) {
-                    //submitting form
-                    self.showDialog("<p>Your form has been submitted. You will be redirected in " + timeout / 1000 + " seconds.</p>", "Form Submission Successful");
-                    setTimeout(function () {
-                        window.location.href = self.sourceUrl != null ? self.sourceUrl : self.confirmationUrl;
-                    }, timeout);
-                }
-                else {
-                    //saving form
-                    if (isNew || refresh) {
-                        saveMsg += "<p>This page will refresh in " + timeout / 1000 + " seconds.</p>";
-                    }
-                    self.showDialog(saveMsg, "The form has been saved.", timeout);
-                    if (isNew || refresh) {
-                        setTimeout(function () {
-                            //append list item id to url
-                            window.location.search = "?formid=" + self.itemId;
-                        }, timeout);
-                    }
-                    else {
-                        // update model values
-                        self.bindListItemValues(self);
-                        //give WF History list 5 seconds to update
-                        setTimeout(function () {
-                            self.getHistoryAsync(self);
-                        }, 5000);
-                    }
-                }
-            });
-            $jqXhr.fail(function (obj, status, jqXhr) {
-                var msg = obj.statusText + '. An error occurred while saving the form.';
-                self.showDialog(msg);
-                self.logError(msg + ': ' + JSON.stringify(arguments));
-            });
-        };
-        /**
-        * Get attachments for this form.
-        */
-        SPForm.prototype.getAttachmentsAsync = function (self, args) {
-            if (self === void 0) { self = undefined; }
-            if (args === void 0) { args = undefined; }
-            self = self || this;
-            if (!!!self.listItem || !self.enableAttachments) {
-                self.nextAsync(true);
-                return;
-            }
-            try {
-                self.getListItemsRest(self.listItem.Attachments.__deferred.uri, function (data, status, jqXhr) {
-                    $.each(data.d.results, function (i, att) {
-                        self.viewModel.attachments().push(new Shockout.Attachment(att));
-                    });
-                    self.nextAsync(true, 'Retrieved attachments.');
-                });
-            }
-            catch (e) {
-                if (self.debug) {
-                    console.warn(e);
-                }
-            }
-        };
-        /**
-        * Delete an attachment.
-        */
-        SPForm.prototype.deleteAttachment = function (att) {
-            var self = this, model = self.viewModel;
-            try {
-                var packet = '<?xml version="1.0" encoding="utf-8"?><soap:Envelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">' + '<soap:Body><DeleteAttachment xmlns="http://schemas.microsoft.com/sharepoint/soap/"><listName>' + self.listName + '</listName><listItemID>' + self.itemId + '</listItemID><url>' + att.href + '</url></DeleteAttachment></soap:Body></soap:Envelope>';
-                var $jqXhr = $.ajax({
-                    url: self.rootUrl + self.siteUrl + '/_vti_bin/lists.asmx',
-                    type: 'POST',
-                    dataType: 'xml',
-                    data: packet,
-                    contentType: "text/xml; charset='utf-8'",
-                    headers: {
-                        "SOAPAction": "http://schemas.microsoft.com/sharepoint/soap/DeleteAttachment",
-                        "Content-Type": "text/xml; charset=utf-8"
-                    }
-                });
-                $jqXhr.done(function (xData, status) {
-                    var attachments = model.attachments;
-                    attachments.remove(att);
-                });
-                $jqXhr.fail(function (xData, status) {
-                    var msg = "Failed to delete attachment: " + status;
-                    self.logError(msg);
-                });
-            }
-            catch (e) {
-                self.logError(e);
-            }
-        };
-        /**
-        * Get list items via SOAP.
-        */
-        SPForm.prototype.getListItemsSoap = function (siteUrl, listName, viewFields, query, callback, rowLimit, viewName, queryOptions) {
-            if (rowLimit === void 0) { rowLimit = 25; }
-            if (viewName === void 0) { viewName = '<ViewName/>'; }
-            if (queryOptions === void 0) { queryOptions = '<QueryOptions/>'; }
-            var self = this;
-            try {
-                var packet = '<?xml version="1.0" encoding="utf-8"?>' + '<soap:Envelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">' + '<soap:Body>' + '<GetListItems xmlns="http://schemas.microsoft.com/sharepoint/soap/">' + '<listName>' + listName + '</listName>' + '<query>' + query + '</query>' + '<viewFields>' + viewFields + '</viewFields>' + '<rowLimit>' + rowLimit + '</rowLimit>' + '</GetListItems>' + '</soap:Body>' + '</soap:Envelope>';
-                var $jqXhr = $.ajax({
-                    url: siteUrl + '/_vti_bin/lists.asmx',
-                    type: 'POST',
-                    dataType: 'xml',
-                    data: packet,
-                    headers: {
-                        "SOAPAction": "http://schemas.microsoft.com/sharepoint/soap/GetListItems",
-                        "Content-Type": "text/xml; charset=utf-8"
-                    }
-                });
-                $jqXhr.done(callback);
-                $jqXhr.fail(function (xData, status) {
-                    self.logError('<pre>' + xData + '</pre>');
-                });
-            }
-            catch (e) {
-                self.logError(e);
-            }
-        };
-        /**
-        * Get metadata about an SP list.
-        * Needed to determine the list GUID, if attachments are allowed, and if checkout/in is required.
-        */
-        SPForm.prototype.getListAsync = function (self, args) {
-            if (args === void 0) { args = undefined; }
-            var packet = '<?xml version="1.0" encoding="utf-8"?><soap:Envelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/"><soap:Body><GetList xmlns="http://schemas.microsoft.com/sharepoint/soap/"><listName>{0}</listName></GetList></soap:Body></soap:Envelope>';
-            var $jqXhr = $.ajax({
-                url: self.rootUrl + self.siteUrl + '/_vti_bin/lists.asmx',
-                type: 'POST',
-                cache: false,
-                dataType: "xml",
-                data: packet.replace('{0}', self.listName),
-                headers: {
-                    "SOAPAction": "http://schemas.microsoft.com/sharepoint/soap/GetList",
-                    "Content-Type": "text/xml; charset=utf-8"
-                }
-            });
-            $jqXhr.done(function (xmlDoc, status, jqXhr) {
-                var $list = $(xmlDoc).find('List').first();
-                self.listId = $list.attr('ID');
-                self.requireCheckout = $list.attr('RequireCheckout').toLowerCase() == 'true';
-                self.enableAttachments = $list.attr('EnableAttachments').toLowerCase() == 'true';
-                self.defaultViewUrl = $list.attr('DefaultViewUrl');
-                self.defailtMobileViewUrl = $list.attr('MobileDefaultViewUrl');
-                self.nextAsync(true);
-            });
-            $jqXhr.fail(function () {
-                self.nextAsync(false, 'Failed to retrieve list data.');
-            });
-        };
-        /**
-        * Log to console in degug mode.
-        */
-        SPForm.prototype.log = function (msg) {
-            if (this.debug) {
-                console.log(msg);
-            }
-        };
-        /**
-        * Update the form status to display feedback to the user.
-        */
-        SPForm.prototype.updateStatus = function (msg, success) {
-            if (success === void 0) { success = undefined; }
-            success = success || true;
-            this.$formStatus.html(msg).css('color', (success ? "#ff0" : "$f00")).slideUp();
-        };
-        /**
-        * Display a message to the user with jQuery UI Dialog.
-        */
-        SPForm.prototype.showDialog = function (msg, title, timeout) {
-            if (title === void 0) { title = undefined; }
-            if (timeout === void 0) { timeout = undefined; }
-            var self = this;
-            title = title || "Form Dialog";
-            msg = (msg).toString().match(/<\w>\w*/) == null ? '<p>' + msg + '</p>' : msg; //wrap non-html in <p>
-            self.$dialog.html(msg).dialog('open');
-            if (timeout) {
-                setTimeout(function () {
-                    self.$dialog.dialog.close();
-                }, timeout);
-            }
-        };
-        /**
-        * Get list items via REST.
-        */
-        SPForm.prototype.getListItemsRest = function (uri, done, fail, always) {
-            if (fail === void 0) { fail = undefined; }
-            if (always === void 0) { always = undefined; }
-            var self = this;
-            var $jqXhr = $.ajax({
-                url: uri,
-                type: 'GET',
-                cache: false,
-                dataType: 'json',
-                contentType: 'application/json; charset=utf-8',
-                headers: {
-                    'Accept': 'application/json'
-                }
-            });
-            $jqXhr.done(done);
-            var fail = fail || function (obj, status, jqXhr) {
-                if (obj.status && obj.status == '404') {
-                    var msg = obj.statusText + ". The data may have been deleted by another user.";
-                }
-                else {
-                    msg = status + ' ' + jqXhr;
-                }
-                self.showDialog(msg);
-            };
-            $jqXhr.fail(fail);
-            if (always) {
-                $jqXhr.always(always);
-            }
-        };
-        /**
-        * Validate the View Model's required fields
-        * @returns: bool
-        */
-        SPForm.prototype.formIsValid = function (model, showDialog) {
-            if (showDialog === void 0) { showDialog = false; }
-            var self = model.parent, labels = [], errorCount = 0, invalidCount = 0, invalidLabels = [];
-            try {
-                self.$form.find('.required, [required]').each(function checkRequired(i, n) {
-                    var p = Shockout.Utils.observableNameFromControl(n);
-                    if (!!p && model[p]) {
-                        var val = model[p]();
-                        if (val == null) {
-                            var label = $(n).parent().find('label:first').html();
-                            if (!!!label) {
-                                $(n).parent().first().html();
-                            }
-                            if (labels.indexOf(label) < 0) {
-                                labels.push(label);
-                                errorCount++;
-                            }
-                        }
-                    }
-                });
-                //check for sp object data errors before saving
-                self.$form.find(".invalid").each(function (i, el) {
-                    var $parent = $(el).parent();
-                    invalidLabels.push($(parent).first().html());
-                    invalidCount++;
-                });
-                if (invalidCount > 0) {
-                    labels.push('<p class="warning">There are validation errors with the following fields. Please correct before saving.</p><p style="color:#f00;">' + invalidLabels.join('<br />') + '</p>');
-                }
-                //if attachment(s) are required
-                if (self.enableAttachments && self.requireAttachments && model.attachments().length == 0) {
-                    errorCount++;
-                    labels.push(self.attachmentMessage);
-                }
-                if (errorCount > 0) {
-                    if (showDialog) {
-                        self.showDialog('<p class="warning">The following are required:</p><p class="error"><strong>' + labels.join('<br/>') + '</strong></p>');
-                    }
-                    return false;
-                }
-                return true;
-            }
-            catch (e) {
-                self.logError("Form validation error at formIsValid(): " + JSON.stringify(e));
-                return false;
-            }
-        };
-        /**
-        * Log errors to designated SP list.
-        */
-        SPForm.prototype.logError = function (msg, self) {
-            if (self === void 0) { self = undefined; }
-            self = self || this;
-            self.showDialog('<p>An error has occurred and the web administrator has been notified.</p><p>Error Details: <pre>' + msg + '</pre></p>');
-            if (self.enableErrorLog) {
-                Shockout.Utils.logError(msg, self.errorLogListName, self.rootUrl, self.debug);
-            }
-        };
-        return SPForm;
-    })();
-    Shockout.SPForm = SPForm;
-})(Shockout || (Shockout = {}));
 var Shockout;
 (function (Shockout) {
     var HistoryItem = (function () {
@@ -1025,9 +66,7 @@ var Shockout;
     };
     Shockout.qq.getUniqueId = (function () {
         var id = 0;
-        return function () {
-            return id++;
-        };
+        return function () { return id++; };
     })();
     //
     // Events
@@ -1165,9 +204,17 @@ var Shockout;
      */
     Shockout.qq.obj2url = function (obj, temp, prefixDone) {
         var uristrings = [], prefix = '&', add = function (nextObj, i) {
-            var nextTemp = temp ? (/\[\]$/.test(temp)) ? temp : temp + '[' + i + ']' : i;
+            var nextTemp = temp
+                ? (/\[\]$/.test(temp)) // prevent double-encoding
+                    ? temp
+                    : temp + '[' + i + ']'
+                : i;
             if ((nextTemp != 'undefined') && (i != 'undefined')) {
-                uristrings.push((typeof nextObj === 'object') ? Shockout.qq.obj2url(nextObj, nextTemp, true) : (Object.prototype.toString.call(nextObj) === '[object Function]') ? encodeURIComponent(nextTemp) + '=' + encodeURIComponent(nextObj()) : encodeURIComponent(nextTemp) + '=' + encodeURIComponent(nextObj));
+                uristrings.push((typeof nextObj === 'object')
+                    ? Shockout.qq.obj2url(nextObj, nextTemp, true)
+                    : (Object.prototype.toString.call(nextObj) === '[object Function]')
+                        ? encodeURIComponent(nextTemp) + '=' + encodeURIComponent(nextObj())
+                        : encodeURIComponent(nextTemp) + '=' + encodeURIComponent(nextObj));
             }
         };
         if (!prefixDone && temp) {
@@ -1176,11 +223,13 @@ var Shockout;
             uristrings.push(Shockout.qq.obj2url(obj));
         }
         else if ((Object.prototype.toString.call(obj) === '[object Array]') && (typeof obj != 'undefined')) {
+            // we wont use a for-in-loop on an array (performance)
             for (var i = 0, len = obj.length; i < len; ++i) {
                 add(obj[i], i);
             }
         }
         else if ((typeof obj != 'undefined') && (obj !== null) && (typeof obj === "object")) {
+            // for anything else but a scalar, we will use for-in-loop
             for (var p in obj) {
                 add(obj[p], p);
             }
@@ -1188,7 +237,9 @@ var Shockout;
         else {
             uristrings.push(encodeURIComponent(temp) + '=' + encodeURIComponent(obj));
         }
-        return uristrings.join(prefix).replace(/^&/, '').replace(/%20/g, '+');
+        return uristrings.join(prefix)
+            .replace(/^&/, '')
+            .replace(/%20/g, '+');
     };
     //
     //
@@ -1213,14 +264,10 @@ var Shockout;
             minSizeLimit: 0,
             // events
             // return false to cancel submit
-            onSubmit: function (id, fileName) {
-            },
-            onProgress: function (id, fileName, loaded, total) {
-            },
-            onComplete: function (id, fileName, responseJSON) {
-            },
-            onCancel: function (id, fileName) {
-            },
+            onSubmit: function (id, fileName) { },
+            onProgress: function (id, fileName, loaded, total) { },
+            onComplete: function (id, fileName, responseJSON) { },
+            onCancel: function (id, fileName) { },
             // messages                
             messages: {
                 typeError: "{file} has invalid extension. Only {extensions} are allowed.",
@@ -1374,9 +421,7 @@ var Shockout;
         },
         _error: function (code, fileName) {
             var message = this._options.messages[code];
-            function r(name, replacement) {
-                message = message.replace(name, replacement);
-            }
+            function r(name, replacement) { message = message.replace(name, replacement); }
             r('{file}', this._formatFileName(fileName));
             r('{extensions}', this._options.allowedExtensions.join(', '));
             r('{sizeLimit}', this._formatSize(this._options.sizeLimit));
@@ -1423,9 +468,19 @@ var Shockout;
             element: null,
             // if set, will be used instead of qq-upload-list in template
             listElement: null,
-            template: '<div class="qq-uploader">' + '<div class="qq-upload-drop-area"><span>Drop files here to upload</span></div>' + '<div class="qq-upload-button">Attach File</div>' + '<ul class="qq-upload-list"></ul>' + '</div>',
+            template: '<div class="qq-uploader">' +
+                '<div class="qq-upload-drop-area"><span>Drop files here to upload</span></div>' +
+                '<div class="qq-upload-button">Attach File</div>' +
+                '<ul class="qq-upload-list"></ul>' +
+                '</div>',
             // template for one item in file list
-            fileTemplate: '<li>' + '<span class="qq-upload-file"></span>' + '<span class="qq-upload-spinner"></span>' + '<span class="qq-upload-size"></span>' + '<a class="qq-upload-cancel" href="#">Cancel</a>' + '<span class="qq-upload-failed-text">Failed</span>' + '</li>',
+            fileTemplate: '<li>' +
+                '<span class="qq-upload-file"></span>' +
+                '<span class="qq-upload-spinner"></span>' +
+                '<span class="qq-upload-size"></span>' +
+                '<a class="qq-upload-cancel" href="#">Cancel</a>' +
+                '<span class="qq-upload-failed-text">Failed</span>' +
+                '</li>',
             classes: {
                 // used to get elements from templates
                 button: 'qq-upload-button',
@@ -1542,6 +597,8 @@ var Shockout;
         },
         _getItemByFileId: function (id) {
             var item = this._listElement.firstChild;
+            // there can't be txt nodes in dynamically created list
+            // and we can  use nextSibling
             while (item) {
                 if (item.qqFileId == id)
                     return item;
@@ -1568,15 +625,11 @@ var Shockout;
     Shockout.qq.UploadDropZone = function (o) {
         this._options = {
             element: null,
-            onEnter: function (e) {
-            },
-            onLeave: function (e) {
-            },
+            onEnter: function (e) { },
+            onLeave: function (e) { },
             // is not fired when leaving element by hovering descendants   
-            onLeaveNotDescendants: function (e) {
-            },
-            onDrop: function (e) {
-            }
+            onLeaveNotDescendants: function (e) { },
+            onDrop: function (e) { }
         };
         Shockout.qq.extend(this._options, o);
         this._element = this._options.element;
@@ -1639,7 +692,8 @@ var Shockout;
             isWebkit = navigator.userAgent.indexOf("AppleWebKit") > -1;
             // dt.effectAllowed is none in Safari 5
             // dt.types.contains check is for firefox            
-            return dt && dt.effectAllowed != 'none' && (dt.files || (!isWebkit && dt.types.contains && dt.types.contains('Files')));
+            return dt && dt.effectAllowed != 'none' &&
+                (dt.files || (!isWebkit && dt.types.contains && dt.types.contains('Files')));
         }
     };
     Shockout.qq.UploadButton = function (o) {
@@ -1649,8 +703,7 @@ var Shockout;
             multiple: false,
             // name attribute of file input
             name: 'file',
-            onChange: function (input) {
-            },
+            onChange: function (input) { },
             hoverClass: 'qq-upload-button-hover',
             focusClass: 'qq-upload-button-focus'
         };
@@ -1736,12 +789,9 @@ var Shockout;
             action: '/upload.php',
             // maximum number of concurrent uploads        
             maxConnections: 999,
-            onProgress: function (id, fileName, loaded, total) {
-            },
-            onComplete: function (id, fileName, response) {
-            },
-            onCancel: function (id, fileName) {
-            }
+            onProgress: function (id, fileName, loaded, total) { },
+            onComplete: function (id, fileName, response) { },
+            onCancel: function (id, fileName) { }
         };
         Shockout.qq.extend(this._options, o);
         this._queue = [];
@@ -1757,8 +807,7 @@ var Shockout;
          * Adds file or file input to the queue
          * @returns id
          **/
-        add: function (file) {
-        },
+        add: function (file) { },
         /**
          * Sends the file identified by id and additional query params to the server
          */
@@ -1791,13 +840,11 @@ var Shockout;
         /**
          * Returns name of the file identified by id
          */
-        getName: function (id) {
-        },
+        getName: function (id) { },
         /**
          * Returns size of the file identified by id
          */
-        getSize: function (id) {
-        },
+        getSize: function (id) { },
         /**
          * Returns id of files being uploaded or
          * waiting for their turn
@@ -1808,13 +855,11 @@ var Shockout;
         /**
          * Actual upload method
          */
-        _upload: function (id) {
-        },
+        _upload: function (id) { },
         /**
          * Actual cancel method
          */
-        _cancel: function (id) {
-        },
+        _cancel: function (id) { },
         /**
          * Removes element from queue, starts upload of next
          */
@@ -1899,7 +944,9 @@ var Shockout;
                     return;
                 }
                 // fixing Opera 10.53
-                if (iframe.contentDocument && iframe.contentDocument.body && iframe.contentDocument.body.innerHTML == "false") {
+                if (iframe.contentDocument &&
+                    iframe.contentDocument.body &&
+                    iframe.contentDocument.body.innerHTML == "false") {
                     // In Opera event is fired second time
                     // when body.innerHTML changed from false
                     // to server response approx. after 1 sec
@@ -1974,7 +1021,9 @@ var Shockout;
     Shockout.qq.UploadHandlerXhr.isSupported = function () {
         var input = document.createElement('input');
         input.type = 'file';
-        return ('multiple' in input && typeof File != "undefined" && typeof (new XMLHttpRequest()).upload != "undefined");
+        return ('multiple' in input &&
+            typeof File != "undefined" &&
+            typeof (new XMLHttpRequest()).upload != "undefined");
     };
     // @inherits qq.UploadHandlerAbstract
     Shockout.qq.extend(Shockout.qq.UploadHandlerXhr.prototype, Shockout.qq.UploadHandlerAbstract.prototype);
@@ -2081,7 +1130,10 @@ var Shockout;
                 //ko.utils.registerEventHandler(element, "keydown", update);
                 //ko.utils.registerEventHandler(element, "change", update);
                 //ko.utils.registerEventHandler(element, "mousedown", update);
-                $(element).on('blur', update).on('keydown', update).on('change', update).on('mousedown', update);
+                $(element).on('blur', update)
+                    .on('keydown', update)
+                    .on('change', update)
+                    .on('mousedown', update);
                 function update() {
                     var modelValue = valueAccessor();
                     var elementValue = element.innerHTML;
@@ -2174,13 +1226,9 @@ var Shockout;
                         select: function (event, ui) {
                             modelValue(ui.item.value);
                         }
-                    }).on('focus', function () {
-                        $(this).removeClass('valid');
-                    }).on('blur', function () {
-                        onChangeSpPersonEvent(this, modelValue);
-                    }).on('mouseout', function () {
-                        onChangeSpPersonEvent(this, modelValue);
-                    });
+                    }).on('focus', function () { $(this).removeClass('valid'); })
+                        .on('blur', function () { onChangeSpPersonEvent(this, modelValue); })
+                        .on('mouseout', function () { onChangeSpPersonEvent(this, modelValue); });
                 }
                 catch (e) {
                     var msg = 'Error in Knockout handler spPerson init(): ' + JSON.stringify(e);
@@ -2205,6 +1253,9 @@ var Shockout;
                 ;
             },
             update: function (element, valueAccessor, allBindings, bindingContext) {
+                // This will be called once when the binding is first applied to an element,
+                // and again whenever any observables/computeds that are accessed change
+                // Update the DOM element based on the supplied values here.
                 try {
                     var viewModel = bindingContext.$data;
                     // First get the latest data that we're bound to
@@ -2316,7 +1367,8 @@ var Shockout;
                         'style': 'width:6em;',
                         'class': (required ? 'required' : ''),
                         'placeholder': 'HH:MM PM'
-                    }).insertAfter($element).on('change', function () {
+                    }).insertAfter($element)
+                        .on('change', function () {
                         try {
                             $error.hide();
                             var time = this.value.toString().toUpperCase().replace(/[^\d\:AMP\s]/g, '');
@@ -2491,26 +1543,1010 @@ var Shockout;
         };
     })(ko);
 })(Shockout || (Shockout = {}));
+/// <reference path="../typings/knockout.d.ts" />
+/// <reference path="../typings/jquery.d.ts" />
+/// <reference path="../typings/jquery.ui.datetimepicker.d.ts" />
+/// <reference path="../typings/jqueryui.d.ts" />
+'use strict';
+/**
+* -----------------
+* Shockout SP Form
+* -----------------
+* By John Bonfardeci <john.bonfardeci@gmail.com>
+*
+* A Replacement for InfoPath and XSLT Forms
+* Leverage the power Knockout JS databinding with SharePoint services for modern and dynamic web form development.
+*
+* Minimum Usage:
+* `var spForm = new Shockout.SPForm('My SharePoint List Name', 'my-form-ID', {});`
+*
+* Dependencies: jQuery 1.72+, jQuery UI<any>, KnockoutJS 3.2+
+*
+*   Copyright (C) 2015  John T. Bonfardeci
+*
+*   This program is free software: you can redistribute it and/or modify
+*   it under the terms of the GNU Affero General Public License as
+*   published by the Free Software Foundation, either version 3 of the
+*   License, or (at your option) any later version.
+*
+*   This program is distributed in the hope that it will be useful,
+*   but WITHOUT ANY WARRANTY; without even the implied warranty of
+*   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+*   GNU Affero General Public License for more details.
+*
+*   You should have received a copy of the GNU Affero General Public License
+*   along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/
+var Shockout;
+(function (Shockout) {
+    var SPForm = (function () {
+        function SPForm(listName, formId, options) {
+            //////////////////
+            // Public Options
+            //////////////////
+            // Allow users to delete a form
+            this.allowDelete = false;
+            // Allow users to print
+            this.allowPrint = true;
+            // Enable users to save their form before submitting
+            this.allowSave = false;
+            // Allowed extensions for file attachments
+            this.allowedExtensions = ['txt', 'rtf', 'zip', 'pdf', 'doc', 'docx', 'jpg', 'gif', 'png', 'ppt', 'tif', 'pptx', 'csv', 'pub', 'msg'];
+            // Message to display if a file attachment is required - good for receipts attached to purchase requisitions and such
+            this.attachmentMessage = 'An attachment is required.';
+            // Redeirect users after form submission to this page.
+            this.confirmationUrl = '/SitePages/Confirmation.aspx';
+            // Run in debug mode with extra logging; disables error logging to SP list.
+            this.debug = false;
+            // Override the SP List fields a user is allowed to submit. 
+            this.editableFields = [];
+            // Enable users to attach files.
+            this.enableAttachments = false;
+            // Enable error logging to SP List. Good if you want to track and debug errors that users may run into.
+            this.enableErrorLog = true;
+            // The name of the SP List to log errors to
+            this.errorLogListName = 'Error Log';
+            // The relative URL of the Handler that attaches fiel uploads to list items.
+            this.fileHandlerUrl = '/_layouts/webster/SPFormFileHandler.ashx';
+            // Display the user profiles of the users that created and last modified a form. Includes photos. See `Shockout.Templates.getUserProfileTemplate()` in `templates.ts`.
+            this.includeUserProfiles = true;
+            // Display logs from the workflow history list assigned to form workflows.
+            this.includeWorkflowHistory = true;
+            // Set to true if at least one attachment is required for a form. Good requriring receipts to purchase requisitions and such. 
+            this.requireAttachments = false;
+            // The relative URL of the SP subsite where the target SP list is located.
+            this.siteUrl = '';
+            // Utility methods for internal and external use.
+            this.utils = Shockout.Utils;
+            // The SP list name of the workflow history list where form workflow entries are stored.
+            // Displays workflow history to viewer so they know the status of their form. Depends on writing workflows with good logging.
+            // Be careful,. Workflow History lsits can exceed the maximum amount of items regular users are allowed to view. Be sure to implement
+            // a good Powershell script to clean up your workflow history lists with Task Scheduler on the server. Good luck doing that with Office 365! 
+            this.workflowHistoryListName = 'Workflow History';
+            /**
+            * Requires user to checkout the list item?
+            * @return boolean
+            */
+            this.requireCheckout = false;
+            /**
+            * Get the SP site root URL
+            * @return string
+            */
+            this.rootUrl = window.location.protocol + '//' + window.location.hostname + (!!window.location.port ? ':' + window.location.port : '');
+            this.version = '0.0.1';
+            this.viewModelIsBound = false;
+            var self = this;
+            var error;
+            if (!(this instanceof SPForm)) {
+                error = 'You must declare an instance of this class with `new`.';
+                alert(error);
+                throw error;
+                return;
+            }
+            if (!!!formId || !!!listName) {
+                var errors = ['Missing required parameters:'];
+                if (!!!this.formId) {
+                    errors.push(' `formId`');
+                }
+                if (!!!this.listName) {
+                    errors.push(' `listName`');
+                }
+                errors = errors.join('');
+                alert(errors);
+                throw errors;
+                return;
+            }
+            this.formId = formId;
+            this.listName = listName;
+            if (!!Shockout.Utils.getQueryParam("id")) {
+                this.itemId = parseInt(Shockout.Utils.getQueryParam("id"));
+            }
+            else if (!!Shockout.Utils.getQueryParam("formid")) {
+                this.itemId = parseInt(Shockout.Utils.getQueryParam("formid"));
+            }
+            this.sourceUrl = Shockout.Utils.getQueryParam("source"); //if accessing the form from a SP list, take user back to the list on close
+            if (!!this.sourceUrl) {
+                this.sourceUrl = decodeURIComponent(this.sourceUrl);
+            }
+            // override default instance variables with key-value pairs from options
+            if (options && options.constructor === Object) {
+                for (var p in options) {
+                    this[p] = options[p];
+                }
+            }
+            // get the form container element
+            this.form = document.getElementById(this.formId);
+            this.$form = $(this.form).addClass('sp-form');
+            self.$formStatus = $('<div>', { 'class': 'form-status' }).appendTo(self.$form);
+            self.$dialog = $('<div>', { 'id': 'formdialog' })
+                .appendTo(self.$form)
+                .dialog({
+                autoOpen: false,
+                show: {
+                    effect: "blind",
+                    duration: 1000
+                },
+                hide: {
+                    effect: "explode",
+                    duration: 1000
+                }
+            });
+            SPForm.errorLogListName = this.errorLogListName;
+            this.viewModel = new Shockout.ViewModel(this);
+            // Cascading Asynchronous Function Execution (CAFE) Array
+            // Don't change the order of these unless you know what you're doing.
+            this.asyncFns = [
+                self.getListAsync,
+                function (self) {
+                    if (self.preRender) {
+                        self.preRender(self);
+                    }
+                    self.nextAsync(true);
+                },
+                self.getCurrentUserAsync,
+                self.getUsersGroupsAsync,
+                self.restrictSpGroupElementsAsync,
+                self.initFormAsync,
+                self.getListItemAsync,
+                self.getAttachmentsAsync,
+                self.getHistoryAsync,
+                function (self) {
+                    if (self.postRender) {
+                        self.postRender(self);
+                    }
+                    self.nextAsync(true);
+                },
+                function (self) { self.$formStatus.hide(); }
+            ];
+            //start CAFE
+            this.nextAsync(true, 'Begin initialization...');
+        }
+        /////////////////////////////////////
+        // Private Set Public Get Properties
+        /////////////////////////////////////
+        /**
+        * Get the current logged in user profile.
+        * @return ICurrentUser
+        */
+        SPForm.prototype.getCurrentUser = function () { return this.currentUser; };
+        /**
+        * Get the default view for the list.
+        * @return string
+        */
+        SPForm.prototype.getDefaultViewUrl = function () { return this.defaultViewUrl; };
+        /**
+        * Get the default mobile view for the list.
+        * @return string
+        */
+        SPForm.prototype.getDefailtMobileViewUrl = function () { return this.defailtMobileViewUrl; };
+        /**
+        * Get a reference to the form element.
+        * @return HTMLElement
+        */
+        SPForm.prototype.getForm = function () { return this.form; };
+        /**
+        * Get the SP list item ID number.
+        * @return number
+        */
+        SPForm.prototype.getItemId = function () { return this.itemId; };
+        /**
+        * Get the GUID of the SP list.
+        * @return HTMLElement
+        */
+        SPForm.prototype.getListId = function () { return this.listId; };
+        /**
+        * Get a reference to the original SP list item.
+        * @return ISpItem
+        */
+        SPForm.prototype.getListItem = function () { return this.listItem; };
+        SPForm.prototype.requiresCheckout = function () { return this.requireCheckout; };
+        SPForm.prototype.getRootUrl = function () { return this.rootUrl; };
+        SPForm.prototype.getSourceUrl = function () { return this.sourceUrl; };
+        /**
+        * Get a reference to the form's Knockout view model.
+        * @return string
+        */
+        SPForm.prototype.getViewModel = function () { return this.viewModel; };
+        /**
+        * Get the version number for this framework.
+        * @return string
+        */
+        SPForm.prototype.getVersion = function () { return this.version; };
+        /**
+        * Execute the next asynchronous function from `asyncFns`.
+        */
+        SPForm.prototype.nextAsync = function (success, msg, args) {
+            if (success === void 0) { success = undefined; }
+            if (msg === void 0) { msg = undefined; }
+            if (args === void 0) { args = undefined; }
+            var self = this;
+            success = success || true;
+            if (msg) {
+                this.updateStatus(msg, success);
+            }
+            if (!success) {
+                return;
+            }
+            if (this.asyncFns.length == 0) {
+                setTimeout(function () {
+                    self.$formStatus.slideDown();
+                }, 2000);
+                return;
+            }
+            // execute the next function in the array
+            this.asyncFns.shift()(self, args);
+        };
+        /**
+        * Initialize the form.
+        */
+        SPForm.prototype.initFormAsync = function (self, args) {
+            if (args === void 0) { args = undefined; }
+            try {
+                self.updateStatus("Initializing dynamic form features...");
+                self.$createdInfo = self.$form.find(".created-info");
+                // append action buttons
+                self.$formAction = $(Shockout.Templates.getFormAction(self.allowSave, self.allowDelete, self.allowPrint)).appendTo(self.$form);
+                //append Created/Modified info to predefined section or append to form
+                if (!!self.itemId) {
+                    self.$createdInfo.html(Shockout.Templates.getCreatedModifiedInfo().innerHTML);
+                    //append Workflow history section
+                    if (self.includeWorkflowHistory) {
+                        self.$form.append(Shockout.Templates.getHistoryTemplate());
+                    }
+                }
+                if (self.editableFields.length == 0) {
+                    //make array of SP field names and those that are editable from elements w/ data-bind attribute
+                    self.$form.find('[data-bind]').each(function (i, e) {
+                        var key = Shockout.Utils.observableNameFromControl(e);
+                        //skip observable keys that have already been added or begins with an underscore '_' or dollar sign '$'
+                        if (!!!key || self.editableFields.indexOf(key) > -1 || key.match(/^(_|\$)/) != null) {
+                            return;
+                        }
+                        if (e.tagName == 'INPUT' || e.tagName == 'SELECT' || e.tagName == 'TEXTAREA' || $(e).attr('contenteditable') == 'true') {
+                            self.editableFields.push(key);
+                        }
+                    });
+                    self.editableFields.sort();
+                }
+                self.fileUploaderSettings = {
+                    element: null,
+                    action: self.fileHandlerUrl,
+                    debug: self.debug,
+                    multiple: false,
+                    maxConnections: 3,
+                    allowedExtensions: self.allowedExtensions,
+                    params: {
+                        listId: self.listId,
+                        itemId: self.itemId
+                    },
+                    onSubmit: function (id, fileName) { },
+                    onComplete: function (id, fileName, json) {
+                        if (self.itemId == null) {
+                            self.viewModel['Id'](json.itemId);
+                            self.itemId = json.itemId;
+                            self.saveListItem(self.viewModel, false);
+                        }
+                        if (json.error == null && json.fileName != null) {
+                            self.getAttachmentsAsync();
+                        }
+                    },
+                    template: Shockout.Templates.getFileUploadTemplate()
+                };
+                //setup attachments module
+                self.$form.find(".attachments").each(function (i, att) {
+                    var id = 'fileuploader_' + i;
+                    $(att).append(Shockout.Templates.getAttachmentsTemplate(id));
+                    self.fileUploaderSettings.element = document.getElementById(id);
+                    self.fileUploader = new Shockout.qq.FileUploader(self.fileUploaderSettings);
+                });
+                self.$form.find('[required]').addClass('required');
+                self.nextAsync(true, "Form initialized.");
+            }
+            catch (e) {
+                if (self.debug) {
+                    console.warn(e);
+                }
+                self.logError("initFormAsync: " + e);
+                self.nextAsync(false, "Failed to initialize form. " + e);
+            }
+        };
+        /**
+        * Get the current logged in user's profile.
+        */
+        SPForm.prototype.getCurrentUserAsync = function (self, args) {
+            if (args === void 0) { args = undefined; }
+            try {
+                var currentUser;
+                var query = '<Query><Where><Eq><FieldRef Name="ID" /><Value Type="Counter"><UserID /></Value></Eq></Where></Query>';
+                var viewFields = '<ViewFields><FieldRef Name="ID" /><FieldRef Name="Name" /><FieldRef Name="EMail" /><FieldRef Name="Department" /><FieldRef Name="JobTitle" /><FieldRef Name="UserName" /><FieldRef Name="Office" /></ViewFields>';
+                self.getListItemsSoap('', 'User Information List', viewFields, query, function (xData, Sstatus) {
+                    var user = {
+                        id: null,
+                        title: null,
+                        login: null,
+                        email: null,
+                        account: null,
+                        jobtitle: null,
+                        department: null,
+                        groups: []
+                    };
+                    $(xData.responseXML).find('*').filter(function () {
+                        return this.nodeName === 'z:row';
+                    }).each(function (i, node) {
+                        user.id = parseInt($(node).attr('ows_ID'));
+                        user.title = $(node).attr('ows_Name');
+                        user.login = $(node).attr('ows_UserName');
+                        user.email = $(node).attr('ows_EMail');
+                        user.jobtitle = $(node).attr('ows_JobTitle');
+                        user.department = $(node).attr('ows_Department');
+                        user.account = user.id + ';#' + user.login;
+                    });
+                    self.currentUser = user;
+                    self.viewModel.currentUser(user);
+                    self.nextAsync(true, 'Retrieved your account.');
+                });
+            }
+            catch (e) {
+                if (self.debug) {
+                    console.warn(e);
+                }
+                self.logError('getCurrentUserAsync():' + e);
+                self.nextAsync(false, 'Failed to retrieve your account.');
+            }
+        };
+        /**
+        * Get the SP user groups this user is a member of for removing/showing protected form sections.
+        */
+        SPForm.prototype.getUsersGroupsAsync = function (self, args) {
+            if (args === void 0) { args = undefined; }
+            try {
+                var msg = "Retrieved your groups.";
+                if (self.$form.find("[user-groups]").length == 0) {
+                    self.nextAsync(true, msg);
+                    return;
+                }
+                var packet = '<soap:Envelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">' +
+                    '<soap:Body>' +
+                    '<GetGroupCollectionFromUser xmlns="http://schemas.microsoft.com/sharepoint/soap/directory/">' +
+                    '<userLoginName>' + self.currentUser.login + '</userLoginName>' +
+                    '</GetGroupCollectionFromUser>' +
+                    '</soap:Body>' +
+                    '</soap:Envelope>';
+                var $jqXhr = $.ajax({
+                    url: self.rootUrl + self.siteUrl + '/_vti_bin/usergroup.asmx',
+                    type: 'POST',
+                    dataType: 'xml',
+                    data: packet,
+                    contentType: 'text/xml; charset="utf-8"'
+                });
+                $jqXhr.done(function (doc, statusText, response) {
+                    $(response.responseXML).find("Group").each(function (i, el) {
+                        self.currentUser.groups.push({
+                            id: parseInt($(el).attr("ID")),
+                            name: $(el).attr("Name")
+                        });
+                    });
+                    self.nextAsync(true, "Retrieved your groups.");
+                });
+                $jqXhr.fail(function (xData, status) {
+                    var msg = "Failed to retrieve your groups: " + status;
+                    self.logError(msg);
+                    self.nextAsync(false, msg);
+                });
+                self.updateStatus("Retrieving your groups...");
+            }
+            catch (e) {
+                if (self.debug) {
+                    console.warn(e);
+                }
+                self.logError("getUsersGroupsAsync: " + e);
+                self.nextAsync(false, "Failed to retrieve your groups.");
+            }
+        };
+        /**
+        * Removes form sections the user doesn't have access to from the DOM.
+        */
+        SPForm.prototype.restrictSpGroupElementsAsync = function (self, args) {
+            if (args === void 0) { args = undefined; }
+            try {
+                self.updateStatus("Retrieving your permissions...");
+                self.$form.find("[user-groups]").each(function (i, el) {
+                    var groups = $(el).attr("user-groups");
+                    var groupNames = groups.match(/\,/) != null ? groups.split(',') : [groups];
+                    var ct = 0;
+                    $.each(groupNames, function (i, group) {
+                        group = group.match(/\;#/) != null ? group.split(';')[0] : group; //either id;#groupname or groupname
+                        group = $.trim(group);
+                        $.each(self.currentUser.groups, function (j, g) {
+                            if (group == g.name || parseInt(group) == g.id) {
+                                ct++;
+                            }
+                        });
+                    });
+                    if (ct > 0) {
+                        $(el).show();
+                    }
+                    else {
+                        $(el).remove();
+                    }
+                });
+                self.nextAsync(true, "Retrieved your permissions.");
+            }
+            catch (e) {
+                if (self.debug) {
+                    console.warn(e);
+                }
+                self.logError("restrictSpGroupElementsAsync: " + e);
+                self.nextAsync(true, "Failed to retrieve your permissions.");
+            }
+        };
+        /**
+        * Get the SP list item data and build the Knockout view model.
+        */
+        SPForm.prototype.getListItemAsync = function (self, args) {
+            if (args === void 0) { args = undefined; }
+            try {
+                self.updateStatus("Retrieving form values...");
+                if (!!!self.itemId) {
+                    self.nextAsync(true, "This is a New form.");
+                    return;
+                }
+                var uri = self.rootUrl + self.siteUrl + '/_vti_bin/listdata.svc/' + self.listName.replace(/\s/g, '') + '(' + self.itemId + ')';
+                // get the list item data
+                self.getListItemsRest(uri, bind, fail);
+            }
+            catch (e) {
+                if (self.debug) {
+                    console.warn(e);
+                }
+            }
+            function bind(data, status, jqXhr) {
+                self.listItem = Shockout.Utils.clone(data.d); //store copy of the original SharePoint list item
+                self.bindListItemValues(self);
+                self.nextAsync(true, "Retrieved form data.");
+            }
+            ;
+            function fail(obj, status, jqXhr) {
+                if (obj.status && obj.status == '404') {
+                    var msg = obj.statusText + ". The form may have been deleted by another user.";
+                }
+                else {
+                    msg = status + ' ' + jqXhr;
+                }
+                self.showDialog(msg);
+                self.nextAsync(false, msg);
+            }
+            ;
+        };
+        /**
+        * Get the workflow history for this form, if any.
+        */
+        SPForm.prototype.getHistoryAsync = function (self, args) {
+            if (args === void 0) { args = undefined; }
+            try {
+                if (!!!self.itemId || !self.includeWorkflowHistory) {
+                    self.nextAsync(true);
+                    return;
+                }
+                var historyItems = [];
+                var uri = self.rootUrl + self.siteUrl + "/_vti_bin/listdata.svc/" + self.workflowHistoryListName.replace(/\s/g, '') +
+                    "?$filter=ListID eq '" + self.listId + "' and PrimaryItemID eq " + self.itemId + "&$select=Description,DateOccurred&$orderby=DateOccurred asc";
+                self.getListItemsRest(uri, function (data, status, jqXhr) {
+                    $(data.d.results).each(function (i, item) {
+                        historyItems.push(new Shockout.HistoryItem(item.Description, Shockout.Utils.parseJsonDate(item.DateOccurred)));
+                    });
+                    self.viewModel.history(historyItems);
+                    self.nextAsync(true, "Retrieved workflow history.");
+                });
+            }
+            catch (ex) {
+                var wfUrl = self.rootUrl + self.siteUrl + '/Lists/' + self.workflowHistoryListName.replace(/\s/g, '%20');
+                self.logError('The Workflow History list may be full at <a href="{url}">{url}</a>. Failed to retrieve workflow history in method, getHistoryAsync(). Error: '
+                    .replace(/\{url\}/g, wfUrl) + JSON.stringify(ex));
+                self.nextAsync(true, 'Failed to retrieve workflow history.');
+            }
+        };
+        /**
+        * Bind the SP list item values to the view model.
+        */
+        SPForm.prototype.bindListItemValues = function (self) {
+            if (self === void 0) { self = undefined; }
+            self = self || this;
+            // Exclude these read-only metadata fields from the Knockout view model.
+            var rxExclude = new RegExp("^(__metadata|ContentTypeID|ContentType|CreatedBy|ModifiedBy|Owshiddenversion|Version|Attachments|Path)");
+            var item = self.listItem;
+            for (var key in item) {
+                if (rxExclude.test(key) || !!self.viewModel[key]) {
+                    continue;
+                }
+                // Object types will have a corresponding key name plus the suffix `Value` or `Id` for lookups.
+                // For example: `SupervisorApproval` is an object container for `__deferred` that corresponds to `SupervisorApprovalValue` 
+                // which is an ID or string value.
+                if (item[key] != null && item[key].constructor === Object && item[key]['__deferred']) {
+                    if (item[key + 'Value']) {
+                        self.viewModel[key] = ko.observable(item[key + 'Value']);
+                    }
+                    else if (item[key + 'Id']) {
+                        self.viewModel[key] = ko.observable(item[key + 'Id']);
+                    }
+                }
+                else if (item[key] != null && Shockout.Utils.isJsonDate(item[key])) {
+                    // parse JSON dates
+                    self.viewModel[key] = ko.observable(Shockout.Utils.parseJsonDate(item[key]));
+                }
+                else {
+                    // if there is a boolean field for storing the state of a form's submission status 
+                    if (/submitted/i.test(key)) {
+                        self.allowSave = true;
+                        self.$formAction.find('.btn.save').show();
+                        Shockout.ViewModel.isSubmittedKey = key;
+                    }
+                    self.viewModel[key] = ko.observable(item[key]);
+                }
+            }
+            // apply Knockout bindings if not already bound.
+            if (!self.viewModelIsBound) {
+                ko.applyBindings(self.viewModel, self.form);
+                self.viewModelIsBound = true;
+            }
+            // get CreatedBy profile
+            self.getListItemsRest(item.CreatedBy.__deferred.uri, function (data, status, jqXhr) {
+                var person = data.d;
+                self.viewModel.CreatedBy(person);
+                self.viewModel.isAuthor(self.currentUser.id == person.Id);
+                self.viewModel.CreatedByName(person.Name);
+                self.viewModel.CreatedByEmail(person.WorkEMail);
+                if (self.includeUserProfiles) {
+                    self.$createdInfo.find('.create-mod-info').prepend(Shockout.Templates.getUserProfileTemplate(person, "Created By"));
+                }
+            });
+            // get ModifiedBy profile
+            self.getListItemsRest(item.ModifiedBy.__deferred.uri, function (data, status, jqXhr) {
+                var person = data.d;
+                self.viewModel.ModifiedBy(person);
+                self.viewModel.ModifiedByName(person.Name);
+                self.viewModel.ModifiedByEmail(person.WorkEMail);
+                if (self.includeUserProfiles) {
+                    self.$createdInfo.find('.create-mod-info').append(Shockout.Templates.getUserProfileTemplate(person, "Last Modified By"));
+                }
+            });
+        };
+        /**
+        * Delete the list item.
+        */
+        SPForm.prototype.deleteListItem = function (model) {
+            var self = model.parent;
+            var item = self.listItem;
+            var timeout = 3000;
+            $.ajax({
+                url: item.__metadata.uri,
+                type: 'POST',
+                headers: {
+                    'Accept': 'application/json;odata=verbose',
+                    'X-Http-Method': 'DELETE',
+                    'If-Match': item.__metadata.etag
+                },
+                success: function (data) {
+                    self.showDialog("The form was deleted. You'll be redirected in " + timeout / 1000 + " seconds.");
+                    setTimeout(function () {
+                        window.location.replace(self.sourceUrl != null ? self.sourceUrl : self.rootUrl);
+                    }, timeout);
+                },
+                error: function (data) {
+                    throw data.responseJSON.error;
+                }
+            });
+        };
+        /**
+        * Save the list item.
+        */
+        // http://blog.vgrem.com/2014/03/22/list-items-manipulation-via-rest-api-in-sharepoint-2010/
+        SPForm.prototype.saveListItem = function (model, isSubmit, refresh, customMsg) {
+            if (isSubmit === void 0) { isSubmit = true; }
+            if (refresh === void 0) { refresh = true; }
+            if (customMsg === void 0) { customMsg = undefined; }
+            var self = model.parent, isNew = !!!self.itemId, timeout = 3000, saveMsg = customMsg || "<p>Your form has been saved.</p>", postData = {}, headers = { Accept: 'application/json;odata=verbose' }, url, contentType = 'application/json';
+            // run presave action and stop if the presave action returns false
+            if (self.preSave) {
+                var retVal = self.preSave(self);
+                if (typeof (retVal) != 'undefined' && !!!retVal) {
+                    return;
+                }
+            }
+            // validate the form
+            if (isSubmit && !self.formIsValid(model, true)) {
+                return;
+            }
+            // prepare data to post
+            $.each(self.editableFields, function (i, key) {
+                postData[key] = model[key]();
+            });
+            //Only update IsSubmitted if it's != true -- if it was already submitted.
+            //Otherwise pressing Save would set it from true back to false - breaking any workflow logic in place!
+            if (typeof model[Shockout.ViewModel.isSubmittedKey] != "undefined" && (model[Shockout.ViewModel.isSubmittedKey]() == null || model[Shockout.ViewModel.isSubmittedKey]() == false)) {
+                postData[Shockout.ViewModel.isSubmittedKey] = isSubmit;
+            }
+            if (isNew) {
+                url = self.rootUrl + self.siteUrl + '/_vti_bin/listdata.svc/' + self.listName.replace(/\s/g, '') + '(' + self.itemId + ')';
+                //postData = JSON.stringify(postData);
+                contentType += ';odata=verbose';
+            }
+            else {
+                url = self.listItem.__metadata.uri;
+                headers['X-HTTP-Method'] = 'MERGE';
+                headers['If-Match'] = self.listItem.__metadata.etag;
+            }
+            var $jqXhr = $.ajax({
+                url: url,
+                type: 'POST',
+                processData: false,
+                contentType: contentType,
+                data: JSON.stringify(postData),
+                headers: headers
+            });
+            $jqXhr.done(function (data, status, jqXhr) {
+                self.listItem = Shockout.Utils.clone(data.d);
+                self.itemId = self.listItem.Id;
+                if (isSubmit && !self.debug) {
+                    //submitting form
+                    self.showDialog("<p>Your form has been submitted. You will be redirected in " + timeout / 1000 + " seconds.</p>", "Form Submission Successful");
+                    setTimeout(function () {
+                        window.location.href = self.sourceUrl != null ? self.sourceUrl : self.confirmationUrl;
+                    }, timeout);
+                }
+                else {
+                    //saving form
+                    if (isNew || refresh) {
+                        saveMsg += "<p>This page will refresh in " + timeout / 1000 + " seconds.</p>";
+                    }
+                    self.showDialog(saveMsg, "The form has been saved.", timeout);
+                    if (isNew || refresh) {
+                        setTimeout(function () {
+                            //append list item id to url
+                            window.location.search = "?formid=" + self.itemId;
+                        }, timeout);
+                    }
+                    else {
+                        // update model values
+                        self.bindListItemValues(self);
+                        //give WF History list 5 seconds to update
+                        setTimeout(function () { self.getHistoryAsync(self); }, 5000);
+                    }
+                }
+            });
+            $jqXhr.fail(function (obj, status, jqXhr) {
+                var msg = obj.statusText + '. An error occurred while saving the form.';
+                self.showDialog(msg);
+                self.logError(msg + ': ' + JSON.stringify(arguments));
+            });
+        };
+        /**
+        * Get attachments for this form.
+        */
+        SPForm.prototype.getAttachmentsAsync = function (self, args) {
+            if (self === void 0) { self = undefined; }
+            if (args === void 0) { args = undefined; }
+            self = self || this;
+            if (!!!self.listItem || !self.enableAttachments) {
+                self.nextAsync(true);
+                return;
+            }
+            try {
+                self.getListItemsRest(self.listItem.Attachments.__deferred.uri, function (data, status, jqXhr) {
+                    $.each(data.d.results, function (i, att) {
+                        self.viewModel.attachments().push(new Shockout.Attachment(att));
+                    });
+                    self.nextAsync(true, 'Retrieved attachments.');
+                });
+            }
+            catch (e) {
+                if (self.debug) {
+                    console.warn(e);
+                }
+            }
+        };
+        /**
+        * Delete an attachment.
+        */
+        SPForm.prototype.deleteAttachment = function (att) {
+            var self = this, model = self.viewModel;
+            try {
+                var packet = '<?xml version="1.0" encoding="utf-8"?><soap:Envelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">' +
+                    '<soap:Body><DeleteAttachment xmlns="http://schemas.microsoft.com/sharepoint/soap/"><listName>' + self.listName + '</listName><listItemID>' + self.itemId + '</listItemID><url>' + att.href + '</url></DeleteAttachment></soap:Body></soap:Envelope>';
+                var $jqXhr = $.ajax({
+                    url: self.rootUrl + self.siteUrl + '/_vti_bin/lists.asmx',
+                    type: 'POST',
+                    dataType: 'xml',
+                    data: packet,
+                    contentType: "text/xml; charset='utf-8'",
+                    headers: {
+                        "SOAPAction": "http://schemas.microsoft.com/sharepoint/soap/DeleteAttachment",
+                        "Content-Type": "text/xml; charset=utf-8"
+                    }
+                });
+                $jqXhr.done(function (xData, status) {
+                    var attachments = model.attachments;
+                    attachments.remove(att);
+                });
+                $jqXhr.fail(function (xData, status) {
+                    var msg = "Failed to delete attachment: " + status;
+                    self.logError(msg);
+                });
+            }
+            catch (e) {
+                self.logError(e);
+            }
+        };
+        /**
+        * Get list items via SOAP.
+        */
+        SPForm.prototype.getListItemsSoap = function (siteUrl, listName, viewFields, query, callback, rowLimit, viewName, queryOptions) {
+            if (rowLimit === void 0) { rowLimit = 25; }
+            if (viewName === void 0) { viewName = '<ViewName/>'; }
+            if (queryOptions === void 0) { queryOptions = '<QueryOptions/>'; }
+            var self = this;
+            try {
+                var packet = '<?xml version="1.0" encoding="utf-8"?>' +
+                    '<soap:Envelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">' +
+                    '<soap:Body>' +
+                    '<GetListItems xmlns="http://schemas.microsoft.com/sharepoint/soap/">' +
+                    '<listName>' + listName + '</listName>' +
+                    //'<viewName>' + viewName + '</viewName>' +
+                    '<query>' + query + '</query>' +
+                    '<viewFields>' + viewFields + '</viewFields>' +
+                    '<rowLimit>' + rowLimit + '</rowLimit>' +
+                    //'<queryOptions>' + queryOptions + '</queryOptions>' +
+                    '</GetListItems>' +
+                    '</soap:Body>' +
+                    '</soap:Envelope>';
+                var $jqXhr = $.ajax({
+                    url: siteUrl + '/_vti_bin/lists.asmx',
+                    type: 'POST',
+                    dataType: 'xml',
+                    data: packet,
+                    headers: {
+                        "SOAPAction": "http://schemas.microsoft.com/sharepoint/soap/GetListItems",
+                        "Content-Type": "text/xml; charset=utf-8"
+                    }
+                });
+                $jqXhr.done(callback);
+                $jqXhr.fail(function (xData, status) {
+                    self.logError('<pre>' + xData + '</pre>');
+                });
+            }
+            catch (e) {
+                self.logError(e);
+            }
+        };
+        /**
+        * Get metadata about an SP list.
+        * Needed to determine the list GUID, if attachments are allowed, and if checkout/in is required.
+        */
+        SPForm.prototype.getListAsync = function (self, args) {
+            if (args === void 0) { args = undefined; }
+            var packet = '<?xml version="1.0" encoding="utf-8"?><soap:Envelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/"><soap:Body><GetList xmlns="http://schemas.microsoft.com/sharepoint/soap/"><listName>{0}</listName></GetList></soap:Body></soap:Envelope>';
+            var $jqXhr = $.ajax({
+                url: self.rootUrl + self.siteUrl + '/_vti_bin/lists.asmx',
+                type: 'POST',
+                cache: false,
+                dataType: "xml",
+                data: packet.replace('{0}', self.listName),
+                headers: {
+                    "SOAPAction": "http://schemas.microsoft.com/sharepoint/soap/GetList",
+                    "Content-Type": "text/xml; charset=utf-8"
+                }
+            });
+            $jqXhr.done(function (xmlDoc, status, jqXhr) {
+                var $list = $(xmlDoc).find('List').first();
+                self.listId = $list.attr('ID');
+                self.requireCheckout = $list.attr('RequireCheckout').toLowerCase() == 'true';
+                self.enableAttachments = $list.attr('EnableAttachments').toLowerCase() == 'true';
+                self.defaultViewUrl = $list.attr('DefaultViewUrl');
+                self.defailtMobileViewUrl = $list.attr('MobileDefaultViewUrl');
+                self.nextAsync(true);
+            });
+            $jqXhr.fail(function () {
+                self.nextAsync(false, 'Failed to retrieve list data.');
+            });
+        };
+        /**
+        * Log to console in degug mode.
+        */
+        SPForm.prototype.log = function (msg) {
+            if (this.debug) {
+                console.log(msg);
+            }
+        };
+        /**
+        * Update the form status to display feedback to the user.
+        */
+        SPForm.prototype.updateStatus = function (msg, success) {
+            if (success === void 0) { success = undefined; }
+            success = success || true;
+            this.$formStatus
+                .html(msg)
+                .css('color', (success ? "#ff0" : "$f00"))
+                .slideUp();
+        };
+        /**
+        * Display a message to the user with jQuery UI Dialog.
+        */
+        SPForm.prototype.showDialog = function (msg, title, timeout) {
+            if (title === void 0) { title = undefined; }
+            if (timeout === void 0) { timeout = undefined; }
+            var self = this;
+            title = title || "Form Dialog";
+            msg = (msg).toString().match(/<\w>\w*/) == null ? '<p>' + msg + '</p>' : msg; //wrap non-html in <p>
+            self.$dialog.html(msg).dialog('open');
+            if (timeout) {
+                setTimeout(function () { self.$dialog.dialog.close(); }, timeout);
+            }
+        };
+        /**
+        * Get list items via REST.
+        */
+        SPForm.prototype.getListItemsRest = function (uri, done, fail, always) {
+            if (fail === void 0) { fail = undefined; }
+            if (always === void 0) { always = undefined; }
+            var self = this;
+            var $jqXhr = $.ajax({
+                url: uri,
+                type: 'GET',
+                cache: false,
+                dataType: 'json',
+                contentType: 'application/json; charset=utf-8',
+                headers: {
+                    'Accept': 'application/json'
+                }
+            });
+            $jqXhr.done(done);
+            var fail = fail || function (obj, status, jqXhr) {
+                if (obj.status && obj.status == '404') {
+                    var msg = obj.statusText + ". The data may have been deleted by another user.";
+                }
+                else {
+                    msg = status + ' ' + jqXhr;
+                }
+                self.showDialog(msg);
+            };
+            $jqXhr.fail(fail);
+            if (always) {
+                $jqXhr.always(always);
+            }
+        };
+        /**
+        * Validate the View Model's required fields
+        * @returns: bool
+        */
+        SPForm.prototype.formIsValid = function (model, showDialog) {
+            if (showDialog === void 0) { showDialog = false; }
+            var self = model.parent, labels = [], errorCount = 0, invalidCount = 0, invalidLabels = [];
+            try {
+                self.$form.find('.required, [required]').each(function checkRequired(i, n) {
+                    var p = Shockout.Utils.observableNameFromControl(n);
+                    if (!!p && model[p]) {
+                        var val = model[p]();
+                        if (val == null) {
+                            var label = $(n).parent().find('label:first').html();
+                            if (!!!label) {
+                                $(n).parent().first().html();
+                            }
+                            if (labels.indexOf(label) < 0) {
+                                labels.push(label);
+                                errorCount++;
+                            }
+                        }
+                    }
+                });
+                //check for sp object data errors before saving
+                self.$form.find(".invalid").each(function (i, el) {
+                    var $parent = $(el).parent();
+                    invalidLabels.push($(parent).first().html());
+                    invalidCount++;
+                });
+                if (invalidCount > 0) {
+                    labels.push('<p class="warning">There are validation errors with the following fields. Please correct before saving.</p><p style="color:#f00;">' + invalidLabels.join('<br />') + '</p>');
+                }
+                //if attachment(s) are required
+                if (self.enableAttachments && self.requireAttachments && model.attachments().length == 0) {
+                    errorCount++;
+                    labels.push(self.attachmentMessage);
+                }
+                if (errorCount > 0) {
+                    if (showDialog) {
+                        self.showDialog('<p class="warning">The following are required:</p><p class="error"><strong>' + labels.join('<br/>') + '</strong></p>');
+                    }
+                    return false;
+                }
+                return true;
+            }
+            catch (e) {
+                self.logError("Form validation error at formIsValid(): " + JSON.stringify(e));
+                return false;
+            }
+        };
+        /**
+        * Log errors to designated SP list.
+        */
+        SPForm.prototype.logError = function (msg, self) {
+            if (self === void 0) { self = undefined; }
+            self = self || this;
+            self.showDialog('<p>An error has occurred and the web administrator has been notified.</p><p>Error Details: <pre>' + msg + '</pre></p>');
+            if (self.enableErrorLog) {
+                Shockout.Utils.logError(msg, self.errorLogListName, self.rootUrl, self.debug);
+            }
+        };
+        return SPForm;
+    })();
+    Shockout.SPForm = SPForm;
+})(Shockout || (Shockout = {}));
 var Shockout;
 (function (Shockout) {
     var Templates = (function () {
         function Templates() {
         }
         Templates.getFileUploadTemplate = function () {
-            return '<div class="qq-uploader">' + '<div class="qq-upload-drop-area"><span>Drop files here to upload</span></div>' + '<div class="btn qq-upload-button">Attach Files</div>' + '<ul class="qq-upload-list"></ul>' + '</div>';
+            return '<div class="qq-uploader">' +
+                '<div class="qq-upload-drop-area"><span>Drop files here to upload</span></div>' +
+                '<div class="btn btn-primary qq-upload-button"><span class="glyphicon glyphicon-paperclip"></span> Attach File</div>' +
+                '<ul class="qq-upload-list"></ul>' +
+                '</div>';
         };
         Templates.getCreatedModifiedInfo = function () {
-            var template = '<h4>Created/Modified Information</h4>' + '<ul>' + '<li class="create-mod-info no-print"></li>' + '<li><label>Created By</label><a data-bind="text: {0}, attr:{href: \'mailto:\'+{1}()}" class="email"></a></li>' + '<li><label>Created</label><span data-bind="spDateTime: {2}"></span></li>' + '<li><label>Modified By</label><a data-bind="text: {3}, attr:{href: \'mailto:\'+{4}()}" class="email"></a></li>' + '<li><label>Modified</label><span data-bind="spDateTime: {5}"></span></li>' + '</ul>';
+            var template = '<div class="create-mod-info no-print"></div>' +
+                '<div class="row">' +
+                '   <div class="col-md-3"><label>Created By</label> <a data-bind="text: {0}, attr:{href: \'mailto:\'+{1}()}" class="email" > </a></div>' +
+                '   <div class="col-md-3"><label>Created</label> <span data-bind="spDateTime: {2}"></span></div>' +
+                '   <div class="col-md-3"><label>Modified By</label> <a data-bind="text: {3}, attr:{href: \'mailto:\'+{4}()}" class="email"></a></div>' +
+                '   <div class="col-md-3"><label>Modified</label> <span data-bind="spDateTime: {5}"></span></div>' +
+                '</div>';
             var section = document.createElement('section');
             section.className = 'created-mod-info';
-            section.innerHTML = template.replace(/\{0\}/g, Shockout.ViewModel.createdByKey).replace(/\{1\}/g, Shockout.ViewModel.createdByEmailKey).replace(/\{2\}/g, Shockout.ViewModel.createdKey).replace(/\{3\}/g, Shockout.ViewModel.modifiedByKey).replace(/\{4\}/g, Shockout.ViewModel.modifiedByEmailKey).replace(/\{5\}/g, Shockout.ViewModel.modifiedKey);
+            section.innerHTML = template
+                .replace(/\{0\}/g, Shockout.ViewModel.createdByKey)
+                .replace(/\{1\}/g, Shockout.ViewModel.createdByEmailKey)
+                .replace(/\{2\}/g, Shockout.ViewModel.createdKey)
+                .replace(/\{3\}/g, Shockout.ViewModel.modifiedByKey)
+                .replace(/\{4\}/g, Shockout.ViewModel.modifiedByEmailKey)
+                .replace(/\{5\}/g, Shockout.ViewModel.modifiedKey);
             return section;
         };
         Templates.getHistoryTemplate = function () {
-            var template = '<h4>Workflow History</h4>' + '<table border="1" cellpadding="5" cellspacing="0" class="data-table" style="width:100%;border-collapse:collapse;">' + '<thead>' + '<tr><th>Description</th><th>Date</th></tr>' + '</thead>' + '<tbody data-bind="foreach: {0}">' + '<tr><td data-bind="text: {1}"></td><td data-bind="text: {2}"></td></tr>' + '</tbody>' + '</table>';
+            var template = '<h4>Workflow History</h4>' +
+                '<table border="1" cellpadding="5" cellspacing="0" class="data-table" style="width:100%;border-collapse:collapse;">' +
+                '   <thead>' +
+                '       <tr><th>Description</th><th>Date</th></tr>' +
+                '   </thead>' +
+                '   <tbody data-bind="foreach: {0}">' +
+                '       <tr><td data-bind="text: {1}"></td><td data-bind="text: {2}"></td></tr>' +
+                '   </tbody>' +
+                '</table>';
             var section = document.createElement('section');
             section.setAttribute('data-bind', 'visible: {0}.length > 0'.replace(/\{0\}/i, Shockout.ViewModel.historyKey));
-            section.innerHTML = template.replace(/\{0\}/g, Shockout.ViewModel.historyKey).replace(/\{1\}/g, Shockout.ViewModel.historyDescriptionKey).replace(/\{2\}/g, Shockout.ViewModel.historyDateKey);
+            section.innerHTML = template
+                .replace(/\{0\}/g, Shockout.ViewModel.historyKey)
+                .replace(/\{1\}/g, Shockout.ViewModel.historyDescriptionKey)
+                .replace(/\{2\}/g, Shockout.ViewModel.historyDateKey);
             return section;
         };
         Templates.getFormAction = function (allowSave, allowDelete, allowPrint) {
@@ -2518,34 +2554,60 @@ var Shockout;
             if (allowDelete === void 0) { allowDelete = true; }
             if (allowPrint === void 0) { allowPrint = true; }
             var template = [];
-            template.push('<div class="form-breadcrumbs"><a href="/">Home</a> &gt; eForms</div>');
-            template.push('<button class="btn cancel" data-bind="event: { click: cancel }"><span>Close</span></button>');
+            //template.push('<div class="form-breadcrumbs"><a href="/">Home</a> &gt; eForms</div>');
+            template.push('<button class="btn btn-default cancel" data-bind="event: { click: cancel }"><span>Close</span></button>');
             if (allowPrint) {
-                template.push('<button class="btn print" data-bind="visible: Id() != null, event: {click: print}"><span>Print</span></button>');
+                template.push('<button class="btn btn-primary print" data-bind="visible: Id() != null, event: {click: print}"><span class="glyphicon glyphicon-print"></span><span>Print</span></button>');
             }
             if (allowDelete) {
-                template.push('<button class="btn delete" data-bind="visible: Id() != null, event: {click: deleteItem}"><span>Delete</span></button>');
+                template.push('<button class="btn btn-warning delete" data-bind="visible: Id() != null, event: {click: deleteItem}"><span class="glyphicon glyphicon-remove"></span><span>Delete</span></button>');
             }
             if (allowSave) {
-                template.push('<button class="btn save" data-bind="event: { click: save }"><span>Save</span></button>');
+                template.push('<button class="btn btn-success save" data-bind="event: { click: save }"><span class="glyphicon glyphicon-floppy-disk"></span><span>Save</span></button>');
             }
-            template.push('<button class="btn submit" data-bind="event: { click: submit }, visible: isValid"><span>Submit</span></button>');
+            template.push('<button class="btn btn-danger submit" data-bind="event: { click: submit }, visible: isValid"><span class="glyphicon glyphicon-floppy-open"></span><span>Submit</span></button>');
             var div = document.createElement('div');
-            div.className = 'form-action';
+            div.className = 'form-action no-print';
             div.innerHTML = template.join('');
             return div;
         };
         Templates.getAttachmentsTemplate = function (fileuploaderId) {
-            var template = '<h4>Attachments</h4>' + '<div id="{0}"></div>' + '<table class="attachments-table">' + '<tbody data-bind="foreach: attachments">' + '<tr>' + '<td><a href="" data-bind="text: title, attr: {href: href, \'class\': ext}"></a></td>' + '<td><button data-bind="event: {click: $root.deleteAttachment}" class="btn del" title="Delete"><span>Delete</span></button></td>' + '</tr>' + '</tbody>' + '</table>';
+            var template = '<h4>Attachments</h4>' +
+                '<div id="{0}"></div>' +
+                '<table class="attachments-table">' +
+                '   <tbody data-bind="foreach: attachments">' +
+                '       <tr>' +
+                '           <td><a href="" data-bind="text: title, attr: {href: href, \'class\': ext}"></a></td>' +
+                '           <td><button data-bind="event: {click: $root.deleteAttachment}" class="btn del" title="Delete"><span class="glyphicon glyphicon-remove"></span><span>Delete</span></button></td>' +
+                '       </tr>' +
+                '   </tbody>' +
+                '</table>';
             var div = document.createElement('div');
             div.innerHTML = template.replace(/\{0\}/, fileuploaderId);
             return div;
         };
         Templates.getUserProfileTemplate = function (profile, headerTxt) {
-            var template = '<h4>{header}</h4>' + '<img src="{pictureurl}" alt="{name}" />' + '<ul>' + '<li><label>Name</label>{name}</li>' + '<li><label>Title</label>{jobtitle}</li>' + '<li><label>Department</label>{department}</li>' + '<li><label>Email</label><a href="mailto:{workemail}">{workemail}</a></li>' + '<li><label>Phone</label>{workphone}</li>' + '<li><label>Office</label>{office}</li>' + '</ul>';
+            var template = '<h4>{header}</h4>' +
+                '<img src="{pictureurl}" alt="{name}" />' +
+                '<ul>' +
+                '   <li><label>Name</label>{name}<li>' +
+                '   <li><label>Title</label>{jobtitle}</li>' +
+                '   <li><label>Department</label>{department}</li>' +
+                '   <li><label>Email</label><a href="mailto:{workemail}">{workemail}</a></li>' +
+                '   <li><label>Phone</label>{workphone}</li>' +
+                '   <li><label>Office</label>{office}</li>' +
+                '</ul>';
             var div = document.createElement("div");
             div.className = "user-profile-card";
-            div.innerHTML = template.replace(/\{header\}/g, headerTxt).replace(/\{pictureurl\}/g, (profile.Picture.indexOf(',') > 0 ? profile.Picture.split(',')[0] : profile.Picture)).replace(/\{name\}/g, (profile.Name || '')).replace(/\{jobtitle\}/g, profile.Title || '').replace(/\{department\}/g, profile.Department || '').replace(/\{workemail\}/g, profile.WorkEMail || '').replace(/\{workphone\}/g, profile.WorkPhone || '').replace(/\{office\}/g, profile.Office || '');
+            div.innerHTML = template
+                .replace(/\{header\}/g, headerTxt)
+                .replace(/\{pictureurl\}/g, (profile.Picture.indexOf(',') > 0 ? profile.Picture.split(',')[0] : profile.Picture))
+                .replace(/\{name\}/g, (profile.Name || ''))
+                .replace(/\{jobtitle\}/g, profile.Title || '')
+                .replace(/\{department\}/g, profile.Department || '')
+                .replace(/\{workemail\}/g, profile.WorkEMail || '')
+                .replace(/\{workphone\}/g, profile.WorkPhone || '')
+                .replace(/\{office\}/g, profile.Office || '');
             return div;
         };
         return Templates;
@@ -2562,7 +2624,8 @@ var Shockout;
             if (siteUrl === void 0) { siteUrl = ''; }
             var page = !!take ? take.toString() : '10';
             // Allowed system query options are $filter, $select, $orderby, $skip, $top, $count, $search, $expand, and $levels.
-            var uri = siteUrl + "/_vti_bin/listdata.svc/UserInformationList?$filter=startswith(Name,'{0}')&$select=Id,Account,Name,WorkEMail&$orderby=Name&$top={1}".replace(/\{0\}/, term).replace(/\{1\}/, page);
+            var uri = siteUrl + "/_vti_bin/listdata.svc/UserInformationList?$filter=startswith(Name,'{0}')&$select=Id,Account,Name,WorkEMail&$orderby=Name&$top={1}"
+                .replace(/\{0\}/, term).replace(/\{1\}/, page);
             var $jqXhr = $.ajax({
                 url: uri,
                 type: 'GET',
@@ -2626,6 +2689,7 @@ var Shockout;
             // Filter out special objects.
             var Constructor = objectToBeCloned.constructor;
             switch (Constructor) {
+                // Implement other special objects here.
                 case RegExp:
                     objectClone = new Constructor(objectToBeCloned);
                     break;
@@ -2635,6 +2699,7 @@ var Shockout;
                 default:
                     objectClone = new Constructor();
             }
+            // Clone each property.
             for (var prop in objectToBeCloned) {
                 objectClone[prop] = this.clone(objectToBeCloned[prop]);
             }
@@ -2761,7 +2826,9 @@ var Shockout;
             // Clean up number:
             var num = Utils.unformatNumber(value), format = '%s%v', neg = format.replace('%v', '-%v'), useFormat = num > 0 ? format : num < 0 ? neg : format, numFormat = Utils.formatNumber(Math.abs(num), Utils.checkPrecision(precision));
             // Return with currency symbol added:
-            return useFormat.replace('%s', symbol).replace('%v', numFormat);
+            return useFormat
+                .replace('%s', symbol)
+                .replace('%v', numFormat);
         };
         /**
         * Addapted from accounting.js library. http://josscrowcroft.github.com/accounting.js/
@@ -2781,7 +2848,9 @@ var Shockout;
             if (typeof value === "number")
                 return value;
             // Build regex to strip out everything except digits, decimal point and minus sign:
-            var unformatted = parseFloat((value + '').replace(/\((.*)\)/, '-$1').replace(/[^0-9-.]/g, ''));
+            var unformatted = parseFloat((value + '')
+                .replace(/\((.*)\)/, '-$1') // replace parenthesis for negative numbers
+                .replace(/[^0-9-.]/g, ''));
             return !isNaN(unformatted) ? unformatted : 0;
         };
         /**

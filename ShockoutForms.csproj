@@ -41,7 +41,7 @@
     <Content Include="_layouts\SPFormFileHandler.ashx" />
   </ItemGroup>
   <ItemGroup>
-    <Folder Include="content\" />
+    <None Include="content\shockout.spform.scss" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="ShockoutForms-0.0.1.js.map" />

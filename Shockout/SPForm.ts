@@ -280,7 +280,7 @@ module Shockout {
 
             // get the form container element
             this.form = document.getElementById(this.formId);
-            this.$form = $(this.form);
+            this.$form = $(this.form).addClass('sp-form');
 
             self.$formStatus = $('<div>', { 'class': 'form-status' }).appendTo(self.$form);
 
@@ -306,7 +306,7 @@ module Shockout {
             // Don't change the order of these unless you know what you're doing.
             this.asyncFns = [
                 self.getListAsync
-                , function () {
+                , function (self: SPForm) {
                     if (self.preRender) {
                         self.preRender(self);
                     }
@@ -319,12 +319,13 @@ module Shockout {
                 , self.getListItemAsync
                 , self.getAttachmentsAsync
                 , self.getHistoryAsync
-                , function () {
+                , function (self: SPForm) {
                     if (self.postRender) {
                         self.postRender(self);
                     }
                     self.nextAsync(true);
                 }
+                , function (self: SPForm) { self.$formStatus.hide(); }
             ];
 
             //start CAFE
