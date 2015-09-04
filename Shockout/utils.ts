@@ -26,8 +26,8 @@
                 }
             });
 
-            $jqXhr.done(function (data: ISpCollectionWrapper<ISpPersonSearchResult>, status: string, jqXhr: any) {
-                callback(data.d.results);
+            $jqXhr.done(function (data: ISpWrapper<ISpPersonSearchResult>, status: string, jqXhr: any) {
+                callback(data.d);
             });
 
             $jqXhr.fail(function (obj: any, status: string, jqXhr: any) {

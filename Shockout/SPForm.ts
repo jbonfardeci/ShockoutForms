@@ -287,6 +287,8 @@ module Shockout {
             self.$dialog = $('<div>', { 'id': 'formdialog' })
                 .appendTo(self.$form)
                 .dialog({
+                    width: 400,
+                    height: 250,
                     autoOpen: false,
                     show: {
                         effect: "blind",
@@ -311,6 +313,7 @@ module Shockout {
                         self.preRender(self);
                     }
                     self.nextAsync(true);
+                    return;
                 }
                 , self.getCurrentUserAsync
                 , self.getUsersGroupsAsync
@@ -324,6 +327,7 @@ module Shockout {
                         self.postRender(self);
                     }
                     self.nextAsync(true);
+                    return;
                 }
                 , function (self: SPForm) { self.$formStatus.hide(); }
             ];
@@ -369,7 +373,7 @@ module Shockout {
                 
                 //append Created/Modified info to predefined section or append to form
                 if (!!self.itemId) {
-                    self.$createdInfo.html(Templates.getCreatedModifiedInfo().innerHTML);
+                    self.$createdInfo.html(Templates.getCreatedModifiedHtml());
 
                     //append Workflow history section
                     if (self.includeWorkflowHistory) {
@@ -387,6 +391,7 @@ module Shockout {
 
                         if (e.tagName == 'INPUT' || e.tagName == 'SELECT' || e.tagName == 'TEXTAREA' || $(e).attr('contenteditable') == 'true') {
                             self.editableFields.push(key);
+                            self.viewModel[key] = ko.observable(null);
                         }
                     });
 
@@ -426,17 +431,26 @@ module Shockout {
                     self.fileUploader = new Shockout.qq.FileUploader(self.fileUploaderSettings);
                 });
 
-                self.$form.find('[required]').addClass('required');
+                // add control validation to Bootstrap form elements
+                // http://getbootstrap.com/css/#forms-control-validation 
+                self.$form.find('[required], .required').each(function (i: number, el: HTMLElement) {
+                    var koName = Utils.observableNameFromControl(el);
+                    var $parent = $(el).closest('.form-group')
+                        .attr("data-bind", "css: { 'has-error': !!!" + koName + "(), 'has-success has-feedback': !!" + koName + "()}")
+                        .append('<span class="glyphicon glyphicon-ok form-control-feedback" aria-hidden="true"></span>');
+                });
 
                 self.nextAsync(true, "Form initialized.");
+                return;
 
             }
             catch (e) {
                 if (self.debug) {
-                    console.warn(e);
+                    throw e;
                 }
                 self.logError("initFormAsync: " + e);
                 self.nextAsync(false, "Failed to initialize form. " + e);
+                return;
             }
         }
 
@@ -477,14 +491,16 @@ module Shockout {
                     self.currentUser = user;
                     self.viewModel.currentUser(user);
                     self.nextAsync(true, 'Retrieved your account.');
+                    return;
                 });
             }
             catch (e) {
                 if (self.debug) {
-                    console.warn(e);
+                    throw e;
                 }
                 self.logError('getCurrentUserAsync():' + e);
                 self.nextAsync(false, 'Failed to retrieve your account.');
+                return;
             }
         }
 
@@ -524,22 +540,25 @@ module Shockout {
                         });
                     });
                     self.nextAsync(true, "Retrieved your groups.");
+                    return;
                 });
 
                 $jqXhr.fail(function (xData, status) {
                     var msg = "Failed to retrieve your groups: " + status;
                     self.logError(msg);
                     self.nextAsync(false, msg);
+                    return;
                 });
 
                 self.updateStatus("Retrieving your groups...");
             }
             catch (e) {
                 if (self.debug) {
-                    console.warn(e);
+                    throw e;
                 }
                 self.logError("getUsersGroupsAsync: " + e);
                 self.nextAsync(false, "Failed to retrieve your groups.");
+                return;
             }
         }
 
@@ -572,13 +591,15 @@ module Shockout {
                 });
 
                 self.nextAsync(true, "Retrieved your permissions.");
+                return;
             }
             catch (e) {
                 if (self.debug) {
-                    console.warn(e);
+                    throw e;
                 }
                 self.logError("restrictSpGroupElementsAsync: " + e);
                 self.nextAsync(true, "Failed to retrieve your permissions.");
+                return;
             }
         }
 
@@ -590,36 +611,45 @@ module Shockout {
                 self.updateStatus("Retrieving form values...");
 
                 if (!!!self.itemId) {
+
+                    // apply Knockout bindings if not already bound.
+                    if (!self.viewModelIsBound) {
+                        ko.applyBindings(self.viewModel, self.form);
+                        self.viewModelIsBound = true;
+                    }
+
                     self.nextAsync(true, "This is a New form.");
                     return;
                 }
 
                 var uri = self.rootUrl + self.siteUrl + '/_vti_bin/listdata.svc/' + self.listName.replace(/\s/g, '') + '(' + self.itemId + ')';
                 // get the list item data
-                self.getListItemsRest(uri, bind, fail);
+                self.getListItemsRest(uri, function bind(data: ISpWrapper<ISpItem>, status: string, jqXhr: any): void {
+                    self.listItem = Utils.clone(data.d); //store copy of the original SharePoint list item
+                    self.bindListItemValues(self);
+                    self.nextAsync(true, "Retrieved form data.");
+                    return;
+
+                }, function fail(obj: any, status: string, jqXhr: any): void {
+                    if (obj.status && obj.status == '404') {
+                        var msg = obj.statusText + ". The form may have been deleted by another user."
+                    }
+                    else {
+                        msg = status + ' ' + jqXhr;
+                    }
+                    self.showDialog(msg);
+                    self.nextAsync(false, msg);
+                    return;
+
+                });
             }
             catch (e) {
                 if (self.debug) {
-                    console.warn(e);
+                    throw e;
                 }
+                self.nextAsync(false, e);
+                return;
             }
-
-            function bind(data: ISpWrapper<ISpItem>, status: string, jqXhr: any) {
-                self.listItem = Utils.clone(data.d); //store copy of the original SharePoint list item
-                self.bindListItemValues(self);
-                self.nextAsync(true, "Retrieved form data.");
-            };
-
-            function fail(obj: any, status: string, jqXhr: any) {
-                if (obj.status && obj.status == '404') {
-                    var msg = obj.statusText + ". The form may have been deleted by another user."
-                }
-                else {
-                    msg = status + ' ' + jqXhr;
-                }
-                self.showDialog(msg);
-                self.nextAsync(false, msg);
-            };
         }
 
         /**
@@ -641,6 +671,7 @@ module Shockout {
                     });
                     self.viewModel.history(historyItems);
                     self.nextAsync(true, "Retrieved workflow history.");
+                    return;
                 });
             }
             catch (ex) {
@@ -648,11 +679,28 @@ module Shockout {
                 self.logError('The Workflow History list may be full at <a href="{url}">{url}</a>. Failed to retrieve workflow history in method, getHistoryAsync(). Error: '
                     .replace(/\{url\}/g, wfUrl) + JSON.stringify(ex));
                 self.nextAsync(true, 'Failed to retrieve workflow history.');
+                return;
+            }
+        }
+
+        bindObservable(key: string, val: any, self: SPForm = undefined): void {
+            self = self || this;
+            if (key in self.viewModel) {
+                self.viewModel[key](val);
+            }
+            else {
+                self.viewModel[key] = val != null && /Array/.test(val.constructor)
+                    ? ko.observableArray(val)
+                    : ko.observable(val);
             }
         }
 
         /**
         * Bind the SP list item values to the view model.
+
+        - new form - bind input values
+        - existing form - get list item values, create observables
+        - on saving form - update observables
         */
         bindListItemValues(self: SPForm = undefined): void {
             self = self || this;
@@ -661,24 +709,28 @@ module Shockout {
             var rxExclude = new RegExp("^(__metadata|ContentTypeID|ContentType|CreatedBy|ModifiedBy|Owshiddenversion|Version|Attachments|Path)");
             var item: ISpItem = self.listItem;
 
+            var isObj: RegExp = new RegExp("Object");
+
             for (var key in item) {
 
-                if (rxExclude.test(key) || !!self.viewModel[key]) { continue; }
+                if (rxExclude.test(key)) { continue; }
+
+                var val: any = null;
 
                 // Object types will have a corresponding key name plus the suffix `Value` or `Id` for lookups.
                 // For example: `SupervisorApproval` is an object container for `__deferred` that corresponds to `SupervisorApprovalValue` 
                 // which is an ID or string value.
-                if (item[key] != null && item[key].constructor === Object && item[key]['__deferred']) {
-                    if (item[key + 'Value']) {
-                        self.viewModel[key] = ko.observable(item[key + 'Value']);
+                if (item[key] != null && isObj.test(item[key].constructor + '') && '__deferred' in item[key]) {
+                    if (key + 'Value' in item) {
+                        val = item[key + 'Value'];
                     }
-                    else if (item[key + 'Id']) {
-                        self.viewModel[key] = ko.observable(item[key + 'Id']);
+                    else if (key + 'Id' in item) {
+                        val = item[key + 'Id'];
                     }
                 }
                 else if (item[key] != null && Utils.isJsonDate(item[key])) {
                     // parse JSON dates
-                    self.viewModel[key] = ko.observable(Utils.parseJsonDate(item[key]));
+                    val = Utils.parseJsonDate(item[key]);
                 }
                 else {
                     // if there is a boolean field for storing the state of a form's submission status 
@@ -687,16 +739,20 @@ module Shockout {
                         self.$formAction.find('.btn.save').show();
                         ViewModel.isSubmittedKey = key;
                     }
-                    self.viewModel[key] = ko.observable(item[key]);
+                    val = item[key];
                 }
-            } 
-                
+
+                self.bindObservable(key, val, self);
+            }
+
             // apply Knockout bindings if not already bound.
             if (!self.viewModelIsBound) {
                 ko.applyBindings(self.viewModel, self.form);
                 self.viewModelIsBound = true;
             }
 
+            var $info = self.$createdInfo.find('.create-mod-info').empty();
+                
             // get CreatedBy profile
             self.getListItemsRest(item.CreatedBy.__deferred.uri, function (data: ISpWrapper<ISpPerson>, status: string, jqXhr: any) {
                 var person: ISpPerson = data.d;
@@ -705,7 +761,7 @@ module Shockout {
                 self.viewModel.CreatedByName(person.Name);
                 self.viewModel.CreatedByEmail(person.WorkEMail);
                 if (self.includeUserProfiles) {
-                    self.$createdInfo.find('.create-mod-info').prepend(Templates.getUserProfileTemplate(person, "Created By"));
+                    $info.prepend(Templates.getUserProfileTemplate(person, "Created By"));
                 }
             });
 
@@ -716,7 +772,7 @@ module Shockout {
                 self.viewModel.ModifiedByName(person.Name);
                 self.viewModel.ModifiedByEmail(person.WorkEMail);
                 if (self.includeUserProfiles) {
-                    self.$createdInfo.find('.create-mod-info').append(Templates.getUserProfileTemplate(person, "Last Modified By"));
+                    $info.append(Templates.getUserProfileTemplate(person, "Last Modified By"));
                 }
             });
         }
@@ -858,21 +914,27 @@ module Shockout {
         */
         getAttachmentsAsync(self: SPForm = undefined, args: any = undefined): void {
             self = self || this;
-            if (!!!self.listItem || !self.enableAttachments) {
-                self.nextAsync(true);
-                return;
-            }
+            
             try {
+
+                if (!!!self.listItem || !self.enableAttachments) {
+                    self.nextAsync(true);
+                    return;
+                }
+
+                var attachments: Array<Attachment> = [];
                 self.getListItemsRest(self.listItem.Attachments.__deferred.uri, function (data: ISpCollectionWrapper<ISpAttachment>, status: string, jqXhr: any) {
                     $.each(data.d.results, function (i: number, att: ISpAttachment) {
-                        self.viewModel.attachments().push(new Attachment(att));
+                        attachments.push(new Attachment(att));
                     });
+                    self.viewModel.attachments(attachments);
                     self.nextAsync(true, 'Retrieved attachments.');
+                    return;
                 });
             }
             catch (e) {
                 if (self.debug) {
-                    console.warn(e);
+                    throw e;
                 }
             }
         }
@@ -983,11 +1045,48 @@ module Shockout {
                 self.enableAttachments = $list.attr('EnableAttachments').toLowerCase() == 'true';
                 self.defaultViewUrl = $list.attr('DefaultViewUrl');
                 self.defailtMobileViewUrl = $list.attr('MobileDefaultViewUrl');
+
+                // create observableArrays for the options in SP choice field types
+                $(xmlDoc).find('Field').filter(function () {
+                    return /choice/i.test( $(this).attr('Type') ); // `Choice` or `MultiChoice`
+
+                }).each(function (i: number, el: any) {
+
+                    var displayName = $(el).attr('DisplayName').replace(/\s/g, '');
+
+                    // add the field to the veiw model
+                    self.viewModel[displayName] = ko.observableArray([]);
+
+                    // add options array to view model
+                    var koName = '_options_' + displayName;
+
+                    if (koName in self.viewModel) { return; }
+
+                    var required = $(el).attr('Required') == 'True';
+                    var format: string = $(el).attr('Format'); // `Dropdown`, `Radio`, `Checkboxes`
+                    var isFillInChoice: boolean = $(el).attr('FillInChoice') == 'True'; // alow fill-in choices
+                    var defaultChoice: string = $(el).find('Default').text();
+                    var choices: Array<string> = [];
+
+                    $(el).find('CHOICE').each(function (j: number, choice: any) {
+                        choices.push($(choice).text());
+                    });
+                   
+                    self.viewModel[koName] = ko.observableArray(choices);
+                    self.viewModel[koName]._required = required;
+                    self.viewModel[koName]._format = format;
+                    self.viewModel[koName]._isFillInChoice = isFillInChoice;
+                    self.viewModel[koName]._defaultChoice = defaultChoice;
+                    self.viewModel[koName]._multiChoice = $(el).attr('Type') == 'MultiChoice';
+                });
+
                 self.nextAsync(true);
+                return;
             });
 
             $jqXhr.fail(function () {
                 self.nextAsync(false, 'Failed to retrieve list data.');
+                return;
             });
         }
 
@@ -1078,7 +1177,7 @@ module Shockout {
                     var p = Utils.observableNameFromControl(n);
                     if (!!p && model[p]) {
                         var val = model[p]();
-                        if (val == null) {
+                        if (val == null || $.trim(val+'').length == 0) {
                             var label = $(n).parent().find('label:first').html();
                             if (!!!label) {
                                 $(n).parent().first().html();
@@ -1119,6 +1218,54 @@ module Shockout {
             catch (e) {
                 self.logError("Form validation error at formIsValid(): " + JSON.stringify(e));
                 return false;
+            }
+        }
+
+        checkInFile(pageUrl: string, checkinType: string, comment: string = '') {
+            var action = 'http://schemas.microsoft.com/sharepoint/soap/CheckInFile';
+            var params = [pageUrl, comment, checkinType];
+            var packet = '<?xml version="1.0" encoding="utf-8"?><soap:Envelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/"><soap:Body><CheckInFile xmlns="http://schemas.microsoft.com/sharepoint/soap/"><pageUrl>{0}</pageUrl><comment>{1}</comment><CheckinType>{2}</CheckinType></CheckInFile></soap:Body></soap:Envelope>';
+
+            return this.executeRequest(action, packet, params);
+        }
+
+        checkOutFile(pageUrl: string, checkoutToLocal: string, lastmodified: string) {
+            var action = 'http://schemas.microsoft.com/sharepoint/soap/CheckOutFile';
+            var params = [pageUrl, checkoutToLocal, lastmodified];
+            var packet = '<?xml version="1.0" encoding="utf-8"?><soap:Envelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/"><soap:Body><CheckOutFile xmlns="http://schemas.microsoft.com/sharepoint/soap/"><pageUrl>{0}</pageUrl><checkoutToLocal>{1}</checkoutToLocal><lastmodified>{2}</lastmodified></CheckOutFile></soap:Body></soap:Envelope>';
+
+            return this.executeRequest(action, packet, params);
+        }
+
+        executeRequest = function (action, packet, params, callback: Function = undefined, serviceUrl: string = this.rootUrl + this.siteUrl + '/_vti_bin/lists.asmx'): void {
+            try {
+                if (params != null) {
+                    for (var i = 0; i < params.length; i++) {
+                        packet = packet.replace('{' + i.toString() + '}', (params[i] == null ? '' : params[i]));
+                    }
+                }
+
+                var $jqXhr: JQueryXHR = $.ajax({
+                    url: serviceUrl,
+                    cache: false,
+                    type: 'POST',
+                    data: packet,
+                    headers: {
+                        'Content-Type': 'text/xml; charset=utf-8',
+                        'SOAPAction': action
+                    }
+                });
+
+                if (callback) {
+                    $jqXhr.done(<JQueryPromiseCallback<any>>callback);
+                }
+
+                $jqXhr.fail(function () { });
+            }
+            catch (e) {
+                if (this.debug) {
+                    throw e;
+                }
             }
         }
 

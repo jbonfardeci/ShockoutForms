@@ -1,8 +1,12 @@
 ﻿@media screen {
+
+    .company-branding{
+        text-align:center;
+        margin-top:30px;
+    }
+
     .sp-form{
-
-        margin-top:55px;
-
+        
         .req {
             color: #f00;
             padding: 0 5px;
@@ -56,11 +60,6 @@
             .btn{margin:0 .2em;}
 		}
 
-        .required, 
-        *[required]{
-		    border:1px solid #F00;
-	    }
-	
 	    .content-editable{
 		    background-color:#fff;
 		    border:1px solid #555;
@@ -75,7 +74,7 @@
 	        border-color: #3466dc;	
 		}
 		
-	    .form-breadcrumbs{
+	    .breadcrumbs{
 		    padding:10px 0 0 10px;
 		    float:left;
 	    }
@@ -136,19 +135,12 @@
         section {
             margin: 20px auto;
             border: 1px solid #ccc;
-            padding: 20px 5px 5px 5px;
+            padding: 2em 1em 1em 1em;
             position: relative;
             -moz-border-radius: 5px;
 			-webkit-border-radius: 5px;
 			border-radius: 5px;
             
-            label {
-                display: inline-block;
-                height: auto;
-                width: 25%;
-                margin-right: 10px;
-            }
-
             h4 {
             	font-size:1em;
             	color:#069;
@@ -179,9 +171,7 @@
             em{font-weight:bold; font-size:.7em; font-style:oblique; color:#069;}
         }
 
-        label::after {
-            content: ':';
-        }
+        label{font-size:.9em; margin-right:.4em;}
 
         .user-profile-card{
 		    position:relative;
