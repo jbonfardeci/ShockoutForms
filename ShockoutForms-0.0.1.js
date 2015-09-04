@@ -182,7 +182,6 @@ var Shockout;
             // Cascading Asynchronous Function Execution (CAFE) Array
             // Don't change the order of these unless you know what you're doing.
             this.asyncFns = [
-                self.getListAsync,
                 function (self) {
                     if (self.preRender) {
                         self.preRender(self);
@@ -190,10 +189,11 @@ var Shockout;
                     self.nextAsync(true);
                     return;
                 },
+                self.initFormAsync,
+                self.getListAsync,
                 self.getCurrentUserAsync,
                 self.getUsersGroupsAsync,
                 self.restrictSpGroupElementsAsync,
-                self.initFormAsync,
                 self.getListItemAsync,
                 self.getAttachmentsAsync,
                 self.getHistoryAsync,
@@ -615,68 +615,70 @@ var Shockout;
         SPForm.prototype.bindListItemValues = function (self) {
             if (self === void 0) { self = undefined; }
             self = self || this;
-            // Exclude these read-only metadata fields from the Knockout view model.
-            var rxExclude = new RegExp("^(__metadata|ContentTypeID|ContentType|CreatedBy|ModifiedBy|Owshiddenversion|Version|Attachments|Path)");
-            var item = self.listItem;
-            var isObj = new RegExp("Object");
-            for (var key in item) {
-                if (rxExclude.test(key)) {
-                    continue;
-                }
-                var val = null;
-                // Object types will have a corresponding key name plus the suffix `Value` or `Id` for lookups.
-                // For example: `SupervisorApproval` is an object container for `__deferred` that corresponds to `SupervisorApprovalValue` 
-                // which is an ID or string value.
-                if (item[key] != null && isObj.test(item[key].constructor + '') && '__deferred' in item[key]) {
-                    if (key + 'Value' in item) {
-                        val = item[key + 'Value'];
+            try {
+                var item = self.listItem;
+                // Exclude these read-only metadata fields from the Knockout view model.
+                var rxExclude = /^(__metadata|ContentTypeID|ContentType|CreatedBy|ModifiedBy|Owshiddenversion|Version|Attachments|Path)/;
+                var isObj = /Object/;
+                self.viewModel.Id(item.Id);
+                self.viewModel.isAuthor(item.CreatedById == self.currentUser.id);
+                for (var key in self.viewModel) {
+                    console.log('getting: ' + key);
+                    if (key in item && !rxExclude.test(key)) {
+                        var val = null;
+                        if (Shockout.Utils.isJsonDate(item[key])) {
+                            val = Shockout.Utils.parseJsonDate(item[key]);
+                        }
+                        else if (item[key] != null && isObj.test(item[key].constructor + '') && '__deferred' in item[key]) {
+                            if (key + 'Value' in item) {
+                                val = item[key + 'Value'];
+                            }
+                            else if (key + 'Id' in item) {
+                                val = item[key + 'Id'];
+                            }
+                        }
+                        else {
+                            val = item[key];
+                        }
+                        if ('_choices' in self.viewModel[key]) {
+                            self.viewModel[key](val || []);
+                        }
+                        else {
+                            self.viewModel[key](val || null);
+                        }
+                        if (self.debug) {
+                            console.info('assigned value ' + val + ' to ' + key);
+                        }
                     }
-                    else if (key + 'Id' in item) {
-                        val = item[key + 'Id'];
+                }
+                var $info = self.$createdInfo.find('.create-mod-info').empty();
+                // get CreatedBy profile
+                self.getListItemsRest(item.CreatedBy.__deferred.uri, function (data, status, jqXhr) {
+                    var person = data.d;
+                    self.viewModel.CreatedBy(person);
+                    self.viewModel.isAuthor(self.currentUser.id == person.Id);
+                    self.viewModel.CreatedByName(person.Name);
+                    self.viewModel.CreatedByEmail(person.WorkEMail);
+                    if (self.includeUserProfiles) {
+                        $info.prepend(Shockout.Templates.getUserProfileTemplate(person, "Created By"));
                     }
-                }
-                else if (item[key] != null && Shockout.Utils.isJsonDate(item[key])) {
-                    // parse JSON dates
-                    val = Shockout.Utils.parseJsonDate(item[key]);
-                }
-                else {
-                    // if there is a boolean field for storing the state of a form's submission status 
-                    if (/submitted/i.test(key)) {
-                        self.allowSave = true;
-                        self.$formAction.find('.btn.save').show();
-                        Shockout.ViewModel.isSubmittedKey = key;
+                });
+                // get ModifiedBy profile
+                self.getListItemsRest(item.ModifiedBy.__deferred.uri, function (data, status, jqXhr) {
+                    var person = data.d;
+                    self.viewModel.ModifiedBy(person);
+                    self.viewModel.ModifiedByName(person.Name);
+                    self.viewModel.ModifiedByEmail(person.WorkEMail);
+                    if (self.includeUserProfiles) {
+                        $info.append(Shockout.Templates.getUserProfileTemplate(person, "Last Modified By"));
                     }
-                    val = item[key];
-                }
-                self.bindObservable(key, val, self);
+                });
             }
-            // apply Knockout bindings if not already bound.
-            if (!self.viewModelIsBound) {
-                ko.applyBindings(self.viewModel, self.form);
-                self.viewModelIsBound = true;
+            catch (e) {
+                if (self.debug) {
+                    throw e;
+                }
             }
-            var $info = self.$createdInfo.find('.create-mod-info').empty();
-            // get CreatedBy profile
-            self.getListItemsRest(item.CreatedBy.__deferred.uri, function (data, status, jqXhr) {
-                var person = data.d;
-                self.viewModel.CreatedBy(person);
-                self.viewModel.isAuthor(self.currentUser.id == person.Id);
-                self.viewModel.CreatedByName(person.Name);
-                self.viewModel.CreatedByEmail(person.WorkEMail);
-                if (self.includeUserProfiles) {
-                    $info.prepend(Shockout.Templates.getUserProfileTemplate(person, "Created By"));
-                }
-            });
-            // get ModifiedBy profile
-            self.getListItemsRest(item.ModifiedBy.__deferred.uri, function (data, status, jqXhr) {
-                var person = data.d;
-                self.viewModel.ModifiedBy(person);
-                self.viewModel.ModifiedByName(person.Name);
-                self.viewModel.ModifiedByEmail(person.WorkEMail);
-                if (self.includeUserProfiles) {
-                    $info.append(Shockout.Templates.getUserProfileTemplate(person, "Last Modified By"));
-                }
-            });
         };
         /**
         * Delete the list item.
@@ -878,7 +880,7 @@ var Shockout;
             }
         };
         /**
-        * Get metadata about an SP list.
+        * Get metadata about an SP list and the fields to build the Knockout model.
         * Needed to determine the list GUID, if attachments are allowed, and if checkout/in is required.
         */
         SPForm.prototype.getListAsync = function (self, args) {
@@ -902,33 +904,59 @@ var Shockout;
                 self.enableAttachments = $list.attr('EnableAttachments').toLowerCase() == 'true';
                 self.defaultViewUrl = $list.attr('DefaultViewUrl');
                 self.defailtMobileViewUrl = $list.attr('MobileDefaultViewUrl');
-                // create observableArrays for the options in SP choice field types
-                $(xmlDoc).find('Field').filter(function () {
-                    return /choice/i.test($(this).attr('Type')); // `Choice` or `MultiChoice`
+                // Find out if the list allows saving before submitting.
+                // The field name should be named `IsSubmitted` or anything with the word `submitted` in the name
+                var rxAllowsSave = /submitted/i;
+                // Determine if the field is a `Choice` or `MultiChoice` field with choices.
+                var rxIsChoice = /choice/i;
+                // Build the Knockout view model
+                $(xmlDoc).find('Field').filter(function (i, el) {
+                    return !!!($(el).attr('Hidden')) && !!($(el).attr('DisplayName')); // exclude hidden fields
                 }).each(function (i, el) {
-                    var displayName = $(el).attr('DisplayName').replace(/\s/g, '');
-                    // add the field to the veiw model
-                    self.viewModel[displayName] = ko.observableArray([]);
-                    // add options array to view model
-                    var koName = '_options_' + displayName;
-                    if (koName in self.viewModel) {
-                        return;
-                    }
-                    var required = $(el).attr('Required') == 'True';
-                    var format = $(el).attr('Format'); // `Dropdown`, `Radio`, `Checkboxes`
-                    var isFillInChoice = $(el).attr('FillInChoice') == 'True'; // alow fill-in choices
-                    var defaultChoice = $(el).find('Default').text();
-                    var choices = [];
-                    $(el).find('CHOICE').each(function (j, choice) {
-                        choices.push($(choice).text());
+                    var $el = $(el);
+                    var displayName = $el.attr('DisplayName');
+                    // convert Display Name to equal format REST returns field names with.
+                    // For example, convert 'Computer Name (if applicable)' to 'ComputerNameIfApplicable'.
+                    // The we can reference our fields choices with predictable variable names.
+                    // So for a field named 'ComputerNameIfApplicable' will have a corresponding observable array names '_options_ComputerNameIfApplicable'.
+                    var koName = displayName.replace(/[^A-Za-z0-9\s]/g, '').replace(/\s[A-Za-z]/g, function (x) {
+                        return x[1].toUpperCase();
                     });
-                    self.viewModel[koName] = ko.observableArray(choices);
-                    self.viewModel[koName]._required = required;
-                    self.viewModel[koName]._format = format;
-                    self.viewModel[koName]._isFillInChoice = isFillInChoice;
-                    self.viewModel[koName]._defaultChoice = defaultChoice;
-                    self.viewModel[koName]._multiChoice = $(el).attr('Type') == 'MultiChoice';
+                    //if (koName in self.viewModel) { return; }
+                    if (rxAllowsSave.test(displayName) && $el.attr('Type') == 'Boolean') {
+                        self.allowSave = true;
+                        self.$formAction.find('.btn.save').show();
+                        Shockout.ViewModel.isSubmittedKey = koName;
+                    }
+                    // create the KO object based on the SP type.
+                    self.viewModel[koName] = rxIsChoice.test($el.attr('Type')) ? ko.observableArray([]) : ko.observable(null);
+                    // add metadata to the KO object
+                    self.viewModel[koName]._koName = koName;
+                    self.viewModel[koName]._displayName = displayName;
+                    self.viewModel[koName]._name = $el.attr('Name');
+                    self.viewModel[koName]._format = $el.attr('Format');
+                    self.viewModel[koName]._required = $el.attr('Required') == 'True';
+                    self.viewModel[koName]._readOnly = !!($el.attr('ReadOnly'));
+                    self.viewModel[koName]._description = $el.attr('Description');
+                    // Create and attach arrays for the choices in SP field's choice fields.
+                    if (rxIsChoice.test($el.attr('Type'))) {
+                        self.viewModel[koName]._isFillInChoice = $el.attr('FillInChoice') == 'True'; // allow fill-in choices
+                        var choices = [];
+                        $el.find('CHOICE').each(function (j, choice) {
+                            choices.push({ 'value': $(choice).text(), 'selected': false });
+                        });
+                        self.viewModel[koName]._choices = choices;
+                        self.viewModel[koName]._multiChoice = $el.attr('Type') == 'MultiChoice';
+                    }
+                    if (self.debug) {
+                        console.info('Created KO object: ' + koName + (!!self.viewModel[koName]._choices ? ', numChoices: ' + self.viewModel[koName]._choices.length : ''));
+                    }
                 });
+                // apply Knockout bindings if not already bound.
+                if (!self.viewModelIsBound) {
+                    ko.applyBindings(self.viewModel, self.form);
+                    self.viewModelIsBound = true;
+                }
                 self.nextAsync(true);
                 return;
             });
@@ -2649,9 +2677,7 @@ var Shockout;
             if (allowDelete) {
                 template.push('<button class="btn btn-warning delete" data-bind="visible: Id() != null, event: {click: deleteItem}"><span class="glyphicon glyphicon-remove"></span><span>Delete</span></button>');
             }
-            if (allowSave) {
-                template.push('<button class="btn btn-success save" data-bind="event: { click: save }"><span class="glyphicon glyphicon-floppy-disk"></span><span>Save</span></button>');
-            }
+            template.push('<button class="btn btn-success save" data-bind="event: { click: save }" style="display:none;"><span class="glyphicon glyphicon-floppy-disk"></span><span>Save</span></button>');
             template.push('<button class="btn btn-danger submit" data-bind="event: { click: submit }, disable: !isValid()"><span class="glyphicon glyphicon-floppy-open"></span><span>Submit</span></button>');
             var $div = $('<div>', { 'class': 'form-action no-print', 'html': template.join('') });
             return $div;
@@ -2954,7 +2980,6 @@ var Shockout;
 (function (Shockout) {
     var ViewModel = (function () {
         function ViewModel(instance) {
-            this.Title = ko.observable(null);
             this.Id = ko.observable(null);
             this.CreatedBy = ko.observable(null);
             this.CreatedByName = ko.observable(null);

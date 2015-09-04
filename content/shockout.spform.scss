@@ -252,6 +252,9 @@
 	
 	    .qq-upload-failed-text {display:none;}
 	    .qq-upload-fail .qq-upload-failed-text {display:inline;}
+
+        /* Boostrap overrides */
+        .form-control-feedback{right:1em;}
     }
 }
 

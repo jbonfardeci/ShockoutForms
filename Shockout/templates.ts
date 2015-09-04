@@ -62,9 +62,7 @@
             if (allowDelete) {
                 template.push('<button class="btn btn-warning delete" data-bind="visible: Id() != null, event: {click: deleteItem}"><span class="glyphicon glyphicon-remove"></span><span>Delete</span></button>');
             }
-            if (allowSave) {
-                template.push('<button class="btn btn-success save" data-bind="event: { click: save }"><span class="glyphicon glyphicon-floppy-disk"></span><span>Save</span></button>');
-            }
+            template.push('<button class="btn btn-success save" data-bind="event: { click: save }" style="display:none;"><span class="glyphicon glyphicon-floppy-disk"></span><span>Save</span></button>');
 
             template.push('<button class="btn btn-danger submit" data-bind="event: { click: submit }, disable: !isValid()"><span class="glyphicon glyphicon-floppy-open"></span><span>Submit</span></button>');
 

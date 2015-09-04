@@ -307,18 +307,19 @@ module Shockout {
             // Cascading Asynchronous Function Execution (CAFE) Array
             // Don't change the order of these unless you know what you're doing.
             this.asyncFns = [
-                self.getListAsync
-                , function (self: SPForm) {
+                function (self: SPForm) {
                     if (self.preRender) {
                         self.preRender(self);
                     }
                     self.nextAsync(true);
                     return;
                 }
+                , self.initFormAsync
+                , self.getListAsync
                 , self.getCurrentUserAsync
                 , self.getUsersGroupsAsync
                 , self.restrictSpGroupElementsAsync
-                , self.initFormAsync
+                //, self.initFormAsync
                 , self.getListItemAsync
                 , self.getAttachmentsAsync
                 , self.getHistoryAsync
@@ -704,77 +705,83 @@ module Shockout {
         */
         bindListItemValues(self: SPForm = undefined): void {
             self = self || this;
+            try {
+                var item: ISpItem = self.listItem;
 
-            // Exclude these read-only metadata fields from the Knockout view model.
-            var rxExclude = new RegExp("^(__metadata|ContentTypeID|ContentType|CreatedBy|ModifiedBy|Owshiddenversion|Version|Attachments|Path)");
-            var item: ISpItem = self.listItem;
+                // Exclude these read-only metadata fields from the Knockout view model.
+                var rxExclude: RegExp = /^(__metadata|ContentTypeID|ContentType|CreatedBy|ModifiedBy|Owshiddenversion|Version|Attachments|Path)/;
+                var isObj: RegExp = /Object/;
 
-            var isObj: RegExp = new RegExp("Object");
+                self.viewModel.Id(item.Id);
+                self.viewModel.isAuthor(item.CreatedById == self.currentUser.id);
 
-            for (var key in item) {
+                for (var key in self.viewModel) {
 
-                if (rxExclude.test(key)) { continue; }
+                    console.log('getting: ' + key);
 
-                var val: any = null;
+                    if (key in item && !rxExclude.test(key)) {
+                        var val = null;
 
-                // Object types will have a corresponding key name plus the suffix `Value` or `Id` for lookups.
-                // For example: `SupervisorApproval` is an object container for `__deferred` that corresponds to `SupervisorApprovalValue` 
-                // which is an ID or string value.
-                if (item[key] != null && isObj.test(item[key].constructor + '') && '__deferred' in item[key]) {
-                    if (key + 'Value' in item) {
-                        val = item[key + 'Value'];
-                    }
-                    else if (key + 'Id' in item) {
-                        val = item[key + 'Id'];
+                        if (Utils.isJsonDate(item[key])) {
+                            val = Utils.parseJsonDate(item[key]);
+                        }
+                        // Object types will have a corresponding key name plus the suffix `Value` or `Id` for lookups.
+                        // For example: `SupervisorApproval` is an object container for `__deferred` that corresponds to `SupervisorApprovalValue` 
+                        // which is an ID or string value.
+                        else if (item[key] != null && isObj.test(item[key].constructor + '') && '__deferred' in item[key]) {
+                            if (key + 'Value' in item) {
+                                val = item[key + 'Value'];
+                            }
+                            else if (key + 'Id' in item) {
+                                val = item[key + 'Id'];
+                            }
+                        }
+                        else {
+                            val = item[key];
+                        }
+
+                        if ('_choices' in self.viewModel[key]) {
+                            self.viewModel[key](val || []);
+                        } else {
+                            self.viewModel[key](val || null);
+                        }
+
+                        if (self.debug) {
+                            console.info('assigned value ' + val + ' to ' + key);
+                        }
                     }
                 }
-                else if (item[key] != null && Utils.isJsonDate(item[key])) {
-                    // parse JSON dates
-                    val = Utils.parseJsonDate(item[key]);
-                }
-                else {
-                    // if there is a boolean field for storing the state of a form's submission status 
-                    if (/submitted/i.test(key)) {
-                        self.allowSave = true;
-                        self.$formAction.find('.btn.save').show();
-                        ViewModel.isSubmittedKey = key;
-                    }
-                    val = item[key];
-                }
 
-                self.bindObservable(key, val, self);
-            }
-
-            // apply Knockout bindings if not already bound.
-            if (!self.viewModelIsBound) {
-                ko.applyBindings(self.viewModel, self.form);
-                self.viewModelIsBound = true;
-            }
-
-            var $info = self.$createdInfo.find('.create-mod-info').empty();
+                var $info = self.$createdInfo.find('.create-mod-info').empty();
                 
-            // get CreatedBy profile
-            self.getListItemsRest(item.CreatedBy.__deferred.uri, function (data: ISpWrapper<ISpPerson>, status: string, jqXhr: any) {
-                var person: ISpPerson = data.d;
-                self.viewModel.CreatedBy(person);
-                self.viewModel.isAuthor(self.currentUser.id == person.Id);
-                self.viewModel.CreatedByName(person.Name);
-                self.viewModel.CreatedByEmail(person.WorkEMail);
-                if (self.includeUserProfiles) {
-                    $info.prepend(Templates.getUserProfileTemplate(person, "Created By"));
-                }
-            });
+                // get CreatedBy profile
+                self.getListItemsRest(item.CreatedBy.__deferred.uri, function (data: ISpWrapper<ISpPerson>, status: string, jqXhr: any) {
+                    var person: ISpPerson = data.d;
+                    self.viewModel.CreatedBy(person);
+                    self.viewModel.isAuthor(self.currentUser.id == person.Id);
+                    self.viewModel.CreatedByName(person.Name);
+                    self.viewModel.CreatedByEmail(person.WorkEMail);
+                    if (self.includeUserProfiles) {
+                        $info.prepend(Templates.getUserProfileTemplate(person, "Created By"));
+                    }
+                });
 
-            // get ModifiedBy profile
-            self.getListItemsRest(item.ModifiedBy.__deferred.uri, function (data: ISpWrapper<ISpPerson>, status: string, jqXhr: any) {
-                var person: ISpPerson = data.d;
-                self.viewModel.ModifiedBy(person);
-                self.viewModel.ModifiedByName(person.Name);
-                self.viewModel.ModifiedByEmail(person.WorkEMail);
-                if (self.includeUserProfiles) {
-                    $info.append(Templates.getUserProfileTemplate(person, "Last Modified By"));
+                // get ModifiedBy profile
+                self.getListItemsRest(item.ModifiedBy.__deferred.uri, function (data: ISpWrapper<ISpPerson>, status: string, jqXhr: any) {
+                    var person: ISpPerson = data.d;
+                    self.viewModel.ModifiedBy(person);
+                    self.viewModel.ModifiedByName(person.Name);
+                    self.viewModel.ModifiedByEmail(person.WorkEMail);
+                    if (self.includeUserProfiles) {
+                        $info.append(Templates.getUserProfileTemplate(person, "Last Modified By"));
+                    }
+                });
+            }
+            catch (e) {
+                if (self.debug) {
+                    throw e;
                 }
-            });
+            }
         }
 
         /**
@@ -1020,7 +1027,7 @@ module Shockout {
         }
 
         /**
-        * Get metadata about an SP list.
+        * Get metadata about an SP list and the fields to build the Knockout model.
         * Needed to determine the list GUID, if attachments are allowed, and if checkout/in is required.
         */
         getListAsync(self: SPForm, args: any = undefined): void {
@@ -1046,39 +1053,76 @@ module Shockout {
                 self.defaultViewUrl = $list.attr('DefaultViewUrl');
                 self.defailtMobileViewUrl = $list.attr('MobileDefaultViewUrl');
 
-                // create observableArrays for the options in SP choice field types
-                $(xmlDoc).find('Field').filter(function () {
-                    return /choice/i.test( $(this).attr('Type') ); // `Choice` or `MultiChoice`
+                // Find out if the list allows saving before submitting.
+                // The field name should be named `IsSubmitted` or anything with the word `submitted` in the name
+                var rxAllowsSave = /submitted/i;
+
+                // Determine if the field is a `Choice` or `MultiChoice` field with choices.
+                var rxIsChoice = /choice/i;
+
+                // Build the Knockout view model
+                $(xmlDoc).find('Field').filter(function (i: number, el: any) {
+                    return !!!($(el).attr('Hidden')) && !!($(el).attr('DisplayName')); // exclude hidden fields
 
                 }).each(function (i: number, el: any) {
 
-                    var displayName = $(el).attr('DisplayName').replace(/\s/g, '');
+                    var $el = $(el);
+                    var displayName = $el.attr('DisplayName');
 
-                    // add the field to the veiw model
-                    self.viewModel[displayName] = ko.observableArray([]);
+                    // convert Display Name to equal format REST returns field names with.
+                    // For example, convert 'Computer Name (if applicable)' to 'ComputerNameIfApplicable'.
+                    // The we can reference our fields choices with predictable variable names.
+                    // So for a field named 'ComputerNameIfApplicable' will have a corresponding observable array names '_options_ComputerNameIfApplicable'.
+                    var koName = displayName
+                        .replace(/[^A-Za-z0-9\s]/g, '')
+                        .replace(/\s[A-Za-z]/g, function (x) {
+                            return x[1].toUpperCase();
+                        });
 
-                    // add options array to view model
-                    var koName = '_options_' + displayName;
+                    //if (koName in self.viewModel) { return; }
 
-                    if (koName in self.viewModel) { return; }
+                    if (rxAllowsSave.test(displayName) && $el.attr('Type') == 'Boolean') {
+                        self.allowSave = true;
+                        self.$formAction.find('.btn.save').show();
+                        ViewModel.isSubmittedKey = koName;
+                    }
 
-                    var required = $(el).attr('Required') == 'True';
-                    var format: string = $(el).attr('Format'); // `Dropdown`, `Radio`, `Checkboxes`
-                    var isFillInChoice: boolean = $(el).attr('FillInChoice') == 'True'; // alow fill-in choices
-                    var defaultChoice: string = $(el).find('Default').text();
-                    var choices: Array<string> = [];
+                    // create the KO object based on the SP type.
+                    self.viewModel[koName] = rxIsChoice.test($el.attr('Type')) ? ko.observableArray([]) : ko.observable(null);
 
-                    $(el).find('CHOICE').each(function (j: number, choice: any) {
-                        choices.push($(choice).text());
-                    });
-                   
-                    self.viewModel[koName] = ko.observableArray(choices);
-                    self.viewModel[koName]._required = required;
-                    self.viewModel[koName]._format = format;
-                    self.viewModel[koName]._isFillInChoice = isFillInChoice;
-                    self.viewModel[koName]._defaultChoice = defaultChoice;
-                    self.viewModel[koName]._multiChoice = $(el).attr('Type') == 'MultiChoice';
+                    // add metadata to the KO object
+                    self.viewModel[koName]._koName = koName;
+                    self.viewModel[koName]._displayName = displayName;
+                    self.viewModel[koName]._name = $el.attr('Name');
+                    self.viewModel[koName]._format = $el.attr('Format');
+                    self.viewModel[koName]._required = $el.attr('Required') == 'True';
+                    self.viewModel[koName]._readOnly = !!($el.attr('ReadOnly'));
+                    self.viewModel[koName]._description = $el.attr('Description');
+
+                    // Create and attach arrays for the choices in SP field's choice fields.
+                    if (rxIsChoice.test($el.attr('Type'))) {
+                        self.viewModel[koName]._isFillInChoice = $el.attr('FillInChoice') == 'True'; // allow fill-in choices
+                        var choices = [];
+
+                        $el.find('CHOICE').each(function (j: number, choice: any) {
+                            choices.push({ 'value': $(choice).text(), 'selected': false });
+                        });
+
+                        self.viewModel[koName]._choices = choices;
+                        self.viewModel[koName]._multiChoice = $el.attr('Type') == 'MultiChoice';
+                    }
+
+                    if (self.debug) {
+                        console.info('Created KO object: ' + koName + (!!self.viewModel[koName]._choices ? ', numChoices: ' + self.viewModel[koName]._choices.length : '') );
+                    }
+
                 });
+
+                // apply Knockout bindings if not already bound.
+                if (!self.viewModelIsBound) {
+                    ko.applyBindings(self.viewModel, self.form);
+                    self.viewModelIsBound = true;
+                }
 
                 self.nextAsync(true);
                 return;

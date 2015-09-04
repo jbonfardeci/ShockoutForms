@@ -1,7 +1,6 @@
 ﻿module Shockout {
     
     export interface IViewModel {
-        Title: KnockoutObservable<string>;
         Id: KnockoutObservable<number>;
         CreatedBy: KnockoutObservable<ISpPerson>;
         CreatedByName: KnockoutObservable<string>;
@@ -38,7 +37,6 @@
         public static historyDateKey: string = 'date';
         public static isSubmittedKey: string;
 
-        public Title: KnockoutObservable<string> = ko.observable(null);
         public Id: KnockoutObservable<number> = ko.observable(null);
         public CreatedBy: KnockoutObservable<ISpPerson> = ko.observable(null);
         public CreatedByName: KnockoutObservable<string> = ko.observable(null);
