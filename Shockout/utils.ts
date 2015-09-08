@@ -8,12 +8,19 @@
     
     export class Utils {
     
-        public static peopleSearch(term: string, callback: Function, take: number = 10, siteUrl: string = ''): void {
+        /**
+        * Search the User Information list.
+        * @param term: string
+        * @param callback: Function
+        * @param take?: number = 10
+        * @return void
+        */
+        public static peopleSearch(term: string, callback: Function, take: number = 10): void {
 
             var page: string = !!take ? take.toString() : '10';
             // Allowed system query options are $filter, $select, $orderby, $skip, $top, $count, $search, $expand, and $levels.
-            var uri = siteUrl + "/_vti_bin/listdata.svc/UserInformationList?$filter=startswith(Name,'{0}')&$select=Id,Account,Name,WorkEMail&$orderby=Name&$top={1}"
-                .replace(/\{0\}/, term).replace(/\{1\}/, page);
+            var uri = "/_vti_bin/listdata.svc/UserInformationList?$filter=startswith(Name,'{0}') or startswith(LastName,'{0}')&$select=Id,Account,Name,WorkEMail&$orderby=Name&$top={1}"
+                .replace(/\{0\}/g, term).replace(/\{1\}/, page);
 
             var $jqXhr: JQueryXHR = $.ajax({
                 url: uri,
@@ -32,6 +39,35 @@
 
             $jqXhr.fail(function (obj: any, status: string, jqXhr: any) {
                 var msg = 'People Search error. Status: ' + obj.statusText + ' ' + status + ' ' + JSON.stringify(jqXhr);
+                Utils.logError(msg, SPForm.errorLogListName);
+                throw msg;
+            });
+        }
+
+        /**
+        * Get a person by their ID from the User Information list.
+        * @param id: number
+        * @param callback: Function
+        * @return void
+        */
+        public static getPersonById(id: number, callback: Function): void {
+            var $jqXhr: JQueryXHR = $.ajax({
+                url: "/_vti_bin/listdata.svc/UserInformationList(" + id + ")?$select=Id,Name,Account",
+                type: 'GET',
+                cache: false,
+                dataType: 'json',
+                contentType: 'application/json; charset=utf-8',
+                headers: {
+                    'Accept': 'application/json'
+                }
+            });
+
+            $jqXhr.done(function (data: ISpWrapper<ISpPerson>, status: string, jqXhr: any) {
+                callback(data.d);
+            });
+
+            $jqXhr.fail(function (obj: any, status: string, jqXhr: any) {
+                var msg = 'Get person by ID error. Status: ' + obj.statusText + ' ' + status + ' ' + JSON.stringify(jqXhr);
                 Utils.logError(msg, SPForm.errorLogListName);
                 throw msg;
             });

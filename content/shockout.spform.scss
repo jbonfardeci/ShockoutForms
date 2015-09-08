@@ -224,7 +224,11 @@
 		        color:#777;
                 margin-right:.8em;
 	        }
-	    }	
+
+        }/*.user-profile-card*/
+
+         /* Boostrap overrides */
+        .form-control-feedback{right:1.5em;}
 
         /*Valum's QQ File Uploader*/
 	    .qq-uploader { position:relative; width: 100%;}	
@@ -241,7 +245,7 @@
 	    }
 	    .qq-upload-drop-area-active {background:#FF7171;}
 	
-	    .qq-upload-list {
+	    .qq-upload-list {       
             margin:15px 35px; padding:0; list-style:disc;
             li { margin:0; padding:0; line-height:15px; font-size:12px;}
 	    }
@@ -252,10 +256,7 @@
 	
 	    .qq-upload-failed-text {display:none;}
 	    .qq-upload-fail .qq-upload-failed-text {display:inline;}
-
-        /* Boostrap overrides */
-        .form-control-feedback{right:1em;}
-    }
+    }/*.sp-form*/
 }
 
 

@@ -76,6 +76,8 @@ module Shockout {
         // Allowed extensions for file attachments
         public allowedExtensions: Array<string> = ['txt', 'rtf', 'zip', 'pdf', 'doc', 'docx', 'jpg', 'gif', 'png', 'ppt', 'tif', 'pptx', 'csv', 'pub', 'msg'];
 
+        public asyncFns: Array<any>;
+
         // Message to display if a file attachment is required - good for receipts attached to purchase requisitions and such
         public attachmentMessage: string = 'An attachment is required.';
         
@@ -135,6 +137,8 @@ module Shockout {
 
         // The form's Knockout view model.
         public viewModel: IViewModel;
+
+        public viewModelIsBound: boolean = false;
            
         // The SP list name of the workflow history list where form workflow entries are stored.
         // Displays workflow history to viewer so they know the status of their form. Depends on writing workflows with good logging.
@@ -228,12 +232,6 @@ module Shockout {
         public getVersion(): string { return this.version; }
         private version: string = '0.0.1';
 
-        /////////////////////////////
-        // Privte GET/SET Properties
-        /////////////////////////////
-        private asyncFns: Array<any>;
-        private viewModelIsBound: boolean = false;
-        
         constructor(listName: string, formId: string, options: Object) {
             var self = this;
             var error;
@@ -319,7 +317,6 @@ module Shockout {
                 , self.getCurrentUserAsync
                 , self.getUsersGroupsAsync
                 , self.restrictSpGroupElementsAsync
-                //, self.initFormAsync
                 , self.getListItemAsync
                 , self.getAttachmentsAsync
                 , self.getHistoryAsync
@@ -330,7 +327,6 @@ module Shockout {
                     self.nextAsync(true);
                     return;
                 }
-                , function (self: SPForm) { self.$formStatus.hide(); }
             ];
 
             //start CAFE
@@ -352,7 +348,7 @@ module Shockout {
 
             if (this.asyncFns.length == 0) {
                 setTimeout(function () {
-                    self.$formStatus.slideDown();
+                    self.$formStatus.hide();
                 }, 2000);
                 return;
             }
@@ -707,20 +703,23 @@ module Shockout {
             self = self || this;
             try {
                 var item: ISpItem = self.listItem;
+                var vm: IViewModel = self.viewModel;
 
                 // Exclude these read-only metadata fields from the Knockout view model.
                 var rxExclude: RegExp = /^(__metadata|ContentTypeID|ContentType|CreatedBy|ModifiedBy|Owshiddenversion|Version|Attachments|Path)/;
                 var isObj: RegExp = /Object/;
 
-                self.viewModel.Id(item.Id);
-                self.viewModel.isAuthor(item.CreatedById == self.currentUser.id);
+                vm.Id(item.Id);
+                vm.isAuthor(item.CreatedById == self.currentUser.id);
 
                 for (var key in self.viewModel) {
 
-                    console.log('getting: ' + key);
+                    if (self.debug) {
+                        console.log('getting: ' + key);
+                    }
 
                     if (key in item && !rxExclude.test(key)) {
-                        var val = null;
+                        var val: any = null;
 
                         if (Utils.isJsonDate(item[key])) {
                             val = Utils.parseJsonDate(item[key]);
@@ -741,9 +740,14 @@ module Shockout {
                         }
 
                         if ('_choices' in self.viewModel[key]) {
-                            self.viewModel[key](val || []);
-                        } else {
-                            self.viewModel[key](val || null);
+                            vm[key](val || []);
+                        }
+                        // this is a SP User field type. Get the user profile by the person ID.
+                        else if (vm[key]._type == 'User' && !!val && val.constructor === Number) {
+                            self.getPersonById(parseInt(val), vm[key]);
+                        }
+                        else {
+                            vm[key](val || null);
                         }
 
                         if (self.debug) {
@@ -757,10 +761,10 @@ module Shockout {
                 // get CreatedBy profile
                 self.getListItemsRest(item.CreatedBy.__deferred.uri, function (data: ISpWrapper<ISpPerson>, status: string, jqXhr: any) {
                     var person: ISpPerson = data.d;
-                    self.viewModel.CreatedBy(person);
-                    self.viewModel.isAuthor(self.currentUser.id == person.Id);
-                    self.viewModel.CreatedByName(person.Name);
-                    self.viewModel.CreatedByEmail(person.WorkEMail);
+                    vm.CreatedBy(person);
+                    vm.isAuthor(self.currentUser.id == person.Id);
+                    vm.CreatedByName(person.Name);
+                    vm.CreatedByEmail(person.WorkEMail);
                     if (self.includeUserProfiles) {
                         $info.prepend(Templates.getUserProfileTemplate(person, "Created By"));
                     }
@@ -769,9 +773,9 @@ module Shockout {
                 // get ModifiedBy profile
                 self.getListItemsRest(item.ModifiedBy.__deferred.uri, function (data: ISpWrapper<ISpPerson>, status: string, jqXhr: any) {
                     var person: ISpPerson = data.d;
-                    self.viewModel.ModifiedBy(person);
-                    self.viewModel.ModifiedByName(person.Name);
-                    self.viewModel.ModifiedByEmail(person.WorkEMail);
+                    vm.ModifiedBy(person);
+                    vm.ModifiedByName(person.Name);
+                    vm.ModifiedByEmail(person.WorkEMail);
                     if (self.includeUserProfiles) {
                         $info.append(Templates.getUserProfileTemplate(person, "Last Modified By"));
                     }
@@ -819,7 +823,7 @@ module Shockout {
         saveListItem(model: IViewModel, isSubmit: boolean = true, refresh: boolean = true, customMsg: string = undefined): void {
 
             var self: SPForm = model.parent,
-                isNew: boolean = !!!self.itemId,
+                isNew: boolean = !!!self['itemId'],
                 timeout: number = 3000,
                 saveMsg: string = customMsg || "<p>Your form has been saved.</p>",
                 postData = {},
@@ -1068,6 +1072,7 @@ module Shockout {
 
                     var $el = $(el);
                     var displayName = $el.attr('DisplayName');
+                    var spType = $el.attr('Type');
 
                     // convert Display Name to equal format REST returns field names with.
                     // For example, convert 'Computer Name (if applicable)' to 'ComputerNameIfApplicable'.
@@ -1098,9 +1103,10 @@ module Shockout {
                     self.viewModel[koName]._required = $el.attr('Required') == 'True';
                     self.viewModel[koName]._readOnly = !!($el.attr('ReadOnly'));
                     self.viewModel[koName]._description = $el.attr('Description');
+                    self.viewModel[koName]._type = spType;
 
                     // Create and attach arrays for the choices in SP field's choice fields.
-                    if (rxIsChoice.test($el.attr('Type'))) {
+                    if (rxIsChoice.test(spType)) {
                         self.viewModel[koName]._isFillInChoice = $el.attr('FillInChoice') == 'True'; // allow fill-in choices
                         var choices = [];
 
@@ -1311,6 +1317,44 @@ module Shockout {
                     throw e;
                 }
             }
+        }
+
+        /**
+        * Get a person by their ID from the User Information list.
+        * @param id: number
+        * @param callback: Function
+        * @return void
+        */
+        getPersonById(id: number, koField: KnockoutObservable<string>): void {
+            var self = this;
+            if (self.debug) {
+                console.warn('Getting person by ID...' + id);
+            }
+            var $jqXhr: JQueryXHR = $.ajax({
+                url: "/_vti_bin/listdata.svc/UserInformationList(" + id + ")?$select=Id,Account",
+                type: 'GET',
+                cache: false,
+                dataType: 'json',
+                contentType: 'application/json; charset=utf-8',
+                headers: {
+                    'Accept': 'application/json'
+                }
+            });
+
+            $jqXhr.done(function (data: ISpWrapper<ISpPerson>, status: string, jqXhr: any) {
+                var d: ISpPerson = data.d;
+                var name: string = d.Id + ';#' + d.Account.replace(/\\/, '\\');
+                koField(name);
+                if (self.debug) {
+                    console.warn('Retrieved person by ID... ' + name);
+                }
+            });
+
+            $jqXhr.fail(function (obj: any, status: string, jqXhr: any) {
+                var msg = 'Get person by ID error. Status: ' + obj.statusText + ' ' + status + ' ' + JSON.stringify(jqXhr);
+                Utils.logError(msg, SPForm.errorLogListName);
+                throw msg;
+            });
         }
 
         /**
