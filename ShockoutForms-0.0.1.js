@@ -210,6 +210,7 @@ var Shockout;
             });
             SPForm.errorLogListName = this.errorLogListName;
             this.viewModel = new Shockout.ViewModel(this);
+            Shockout.KoHandlers.bindKoHandlers();
             // Cascading Asynchronous Function Execution (CAFE) Array
             // Don't change the order of these unless you know what you're doing.
             this.asyncFns = [
@@ -345,6 +346,23 @@ var Shockout;
             if (args === void 0) { args = undefined; }
             try {
                 self.updateStatus("Initializing dynamic form features...");
+                self.$form.find(".rte, [data-bind*='spHtml']").each(function (i, el) {
+                    var $el = $(el);
+                    var koName = Shockout.Utils.observableNameFromControl(el);
+                    var $rte = $('<div>', {
+                        'data-bind': 'spHtmlEditor: ' + koName,
+                        'class': 'content-editable',
+                        'contenteditable': 'true'
+                    });
+                    if (!!$el.attr('required') || !!!$el.hasClass('required')) {
+                        $rte.attr('required', '');
+                        $rte.addClass('required');
+                    }
+                    $rte.insertBefore($el);
+                    if (!self.debug) {
+                        $el.hide();
+                    }
+                });
                 self.$createdInfo = self.$form.find(".created-info");
                 // append action buttons
                 self.$formAction = $(Shockout.Templates.getFormAction(self.allowSave, self.allowDelete, self.allowPrint)).appendTo(self.$form);
@@ -370,7 +388,6 @@ var Shockout;
                     var $parent = $(el).closest('.form-group').attr("data-bind", "css: { 'has-error': !!!" + koName + "(), 'has-success has-feedback': !!" + koName + "()}").append('<span class="glyphicon glyphicon-ok form-control-feedback" aria-hidden="true"></span>');
                 });
                 self.nextAsync(true, "Form initialized.");
-                return;
             }
             catch (e) {
                 if (self.debug) {
@@ -378,7 +395,6 @@ var Shockout;
                 }
                 self.logError("initFormAsync: " + e);
                 self.nextAsync(false, "Failed to initialize form. " + e);
-                return;
             }
         };
         /**
@@ -501,7 +517,6 @@ var Shockout;
                     }
                 });
                 self.nextAsync(true, "Retrieved your permissions.");
-                return;
             }
             catch (e) {
                 if (self.debug) {
@@ -509,7 +524,6 @@ var Shockout;
                 }
                 self.logError("restrictSpGroupElementsAsync: " + e);
                 self.nextAsync(true, "Failed to retrieve your permissions.");
-                return;
             }
         };
         /**
@@ -526,7 +540,6 @@ var Shockout;
                         self.viewModelIsBound = true;
                     }
                     self.nextAsync(true, "This is a New form.");
-                    return;
                 }
                 var uri = self.rootUrl + self.siteUrl + '/_vti_bin/listdata.svc/' + self.listName.replace(/\s/g, '') + '(' + self.itemId + ')';
                 // get the list item data
@@ -534,7 +547,6 @@ var Shockout;
                     self.listItem = Shockout.Utils.clone(data.d); //store copy of the original SharePoint list item
                     self.bindListItemValues(self);
                     self.nextAsync(true, "Retrieved form data.");
-                    return;
                 }, function fail(obj, status, jqXhr) {
                     var msg = null;
                     if (obj.status && obj.status == '404') {
@@ -545,7 +557,6 @@ var Shockout;
                     }
                     self.showDialog(msg);
                     self.nextAsync(false, msg);
-                    return;
                 });
             }
             catch (e) {
@@ -553,7 +564,6 @@ var Shockout;
                     throw e;
                 }
                 self.nextAsync(false, e);
-                return;
             }
         };
         /**
@@ -564,7 +574,6 @@ var Shockout;
             try {
                 if (!!!self.itemId || !self.includeWorkflowHistory) {
                     self.nextAsync(true);
-                    return;
                 }
                 var historyItems = [];
                 var uri = self.rootUrl + self.siteUrl + "/_vti_bin/listdata.svc/" + self.workflowHistoryListName.replace(/\s/g, '') + "?$filter=ListID eq '" + self.listId + "' and PrimaryItemID eq " + self.itemId + "&$select=Description,DateOccurred&$orderby=DateOccurred asc";
@@ -574,14 +583,12 @@ var Shockout;
                     });
                     self.viewModel.history(historyItems);
                     self.nextAsync(true, "Retrieved workflow history.");
-                    return;
                 });
             }
             catch (ex) {
                 var wfUrl = self.rootUrl + self.siteUrl + '/Lists/' + self.workflowHistoryListName.replace(/\s/g, '%20');
                 self.logError('The Workflow History list may be full at <a href="{url}">{url}</a>. Failed to retrieve workflow history in method, getHistoryAsync(). Error: '.replace(/\{url\}/g, wfUrl) + JSON.stringify(ex));
                 self.nextAsync(true, 'Failed to retrieve workflow history.');
-                return;
             }
         };
         /**
@@ -745,6 +752,9 @@ var Shockout;
                     else if (val != null && val.constructor == Date) {
                         val = new Date(val).toISOString();
                     }
+                    else if (vm[key]._type == 'Note') {
+                        val = '<![CDATA[' + $('<div>').html(val).html() + ']]>';
+                    }
                     fields.push([vm[key]._name, val]);
                 });
                 self.updateListItem(self.listName, fields, isNew, callback);
@@ -882,9 +892,19 @@ var Shockout;
             if (self === void 0) { self = undefined; }
             if (args === void 0) { args = undefined; }
             self = self || this;
+            self.getAttachments(self, function () {
+                self.nextAsync(true, 'Retrieved attachments.');
+            });
+        };
+        SPForm.prototype.getAttachments = function (self, callback) {
+            if (self === void 0) { self = undefined; }
+            if (callback === void 0) { callback = undefined; }
+            self = self || this;
             try {
-                if (!!!self.listItem || !self.enableAttachments) {
-                    self.nextAsync(true);
+                if (!!!self.itemId || !self.enableAttachments) {
+                    if (callback) {
+                        callback(null);
+                    }
                     return;
                 }
                 var attachments = [];
@@ -894,8 +914,9 @@ var Shockout;
                     });
                     self.viewModel.attachments(attachments);
                     self.viewModel.attachments.valueHasMutated();
-                    self.nextAsync(true, 'Retrieved attachments.');
-                    return;
+                    if (callback) {
+                        callback(attachments);
+                    }
                 });
             }
             catch (e) {
@@ -909,6 +930,9 @@ var Shockout;
         * Delete an attachment.
         */
         SPForm.prototype.deleteAttachment = function (att, event) {
+            if (!confirm('Are you sure you want to delete ' + att.Name + '? This can\'t be undone.')) {
+                return;
+            }
             try {
                 var $jqXhr = $.ajax({
                     url: att.__metadata.uri,
@@ -1000,14 +1024,21 @@ var Shockout;
                     onSubmit: function (id, fileName) {
                     },
                     onComplete: function (id, fileName, json) {
+                        if (json.error != null) {
+                            self.logError(json.error);
+                            if (self.debug) {
+                                throw json.error;
+                            }
+                            return;
+                        }
                         if (self.itemId == null) {
-                            self.viewModel['Id'](json.itemId);
-                            self.itemId = json.itemId;
+                            var itemId = parseInt(json.itemId);
+                            self.viewModel['Id'](itemId);
+                            self.itemId = itemId;
                             self.saveListItem(self.viewModel, false);
+                            return;
                         }
-                        if (json.error == null && json.fileName != null) {
-                            self.getAttachmentsAsync(self);
-                        }
+                        self.getAttachments(self);
                     },
                     template: Shockout.Templates.getFileUploadTemplate()
                 };
@@ -1066,7 +1097,7 @@ var Shockout;
                         vm[koName]._multiChoice = $el.attr('Type') == 'MultiChoice';
                     }
                     if (self.debug) {
-                        console.info('Created KO object: ' + koName + (!!vm[koName]._choices ? ', numChoices: ' + vm[koName]._choices.length : ''));
+                        console.info('Created KO ' + spType + ' object: ' + koName + (!!vm[koName]._choices ? ', numChoices: ' + vm[koName]._choices.length : ''));
                     }
                 });
                 // apply Knockout bindings if not already bound.
@@ -1075,11 +1106,9 @@ var Shockout;
                     self.viewModelIsBound = true;
                 }
                 self.nextAsync(true);
-                return;
             });
             $jqXhr.fail(function () {
                 self.nextAsync(false, 'Failed to retrieve list data.');
-                return;
             });
         };
         /**
@@ -1215,9 +1244,6 @@ var Shockout;
         */
         SPForm.prototype.getPersonById = function (id, koField) {
             var self = this;
-            if (self.debug) {
-                console.warn('Getting person by ID...' + id);
-            }
             var $jqXhr = $.ajax({
                 url: "/_vti_bin/listdata.svc/UserInformationList(" + id + ")?$select=Id,Account",
                 type: 'GET',
@@ -1274,25 +1300,6 @@ var Shockout;
         return HistoryItem;
     })();
     Shockout.HistoryItem = HistoryItem;
-    var Attachment = (function () {
-        function Attachment(att) {
-            this.title = att.Name;
-            this.href = att.__metadata.media_src;
-            this.ext = att.Name.match(/\./) != null ? att.Name.substring(att.Name.lastIndexOf('.') + 1, att.Name.length) : '';
-        }
-        return Attachment;
-    })();
-    Shockout.Attachment = Attachment;
-    var SpAttachment = (function () {
-        function SpAttachment(__metadata, entitySet, itemId, name) {
-            this.__metadata = __metadata;
-            this.EntitySet = entitySet;
-            this.ItemId = itemId;
-            this.Name = name;
-        }
-        return SpAttachment;
-    })();
-    Shockout.SpAttachment = SpAttachment;
     var SpItem = (function () {
         function SpItem() {
         }
@@ -2389,57 +2396,30 @@ var Shockout;
 })(Shockout || (Shockout = {}));
 var Shockout;
 (function (Shockout) {
+    var KoHandlers = (function () {
+        function KoHandlers() {
+        }
+        KoHandlers.bindKoHandlers = function () {
+            bindKoHandlers(ko);
+        };
+        return KoHandlers;
+    })();
+    Shockout.KoHandlers = KoHandlers;
     /* Knockout Custom handlers */
-    (function bindKoHandlers(ko) {
-        //http://stackoverflow.com/questions/7904522/knockout-content-editable-custom-binding?lq=1
-        ko.bindingHandlers['spContentHtml'] = {
-            init: function (element, valueAccessor, allBindingsAccessor) {
-                //ko.utils.registerEventHandler(element, "blur", update);
-                //ko.utils.registerEventHandler(element, "keydown", update);
-                //ko.utils.registerEventHandler(element, "change", update);
-                //ko.utils.registerEventHandler(element, "mousedown", update);
-                $(element).on('blur', update).on('keydown', update).on('change', update).on('mousedown', update);
+    function bindKoHandlers(ko) {
+        ko.bindingHandlers['spHtmlEditor'] = {
+            init: function (element, valueAccessor, allBindings, vm) {
+                var koName = Shockout.Utils.observableNameFromControl(element);
+                $(element).blur(update).change(update).keydown(update);
                 function update() {
-                    var modelValue = valueAccessor();
-                    var elementValue = element.innerHTML;
-                    if (ko.isWriteableObservable(modelValue)) {
-                        modelValue(elementValue);
-                    }
-                    else {
-                        var allBindings = allBindingsAccessor();
-                        if (allBindings['_ko_property_writers'] && allBindings['_ko_property_writers']['spContentHtml']) {
-                            allBindings['_ko_property_writers']['spContentHtml'](elementValue);
-                        }
-                    }
+                    vm[koName]($(this).html());
                 }
             },
-            update: function (element, valueAccessor) {
+            update: function (element, valueAccessor, allBindings, vm) {
                 var value = ko.utils.unwrapObservable(valueAccessor()) || "";
                 if (element.innerHTML !== value) {
                     element.innerHTML = value;
                 }
-            }
-        };
-        ko.bindingHandlers['spContentEditor'] = {
-            init: function (element, valueAccessor, allBindings, bindingContext) {
-                // This will be called when the binding is first applied to an element
-                // Set up any initial state, event handlers, etc. here
-                var viewModel = bindingContext.$data, modelValue = valueAccessor(), person = ko.unwrap(modelValue), $element = $(element);
-                var key = Shockout.Utils.observableNameFromControl(element);
-                if (!!!key) {
-                    return;
-                }
-                var $rte = $('<div>', {
-                    'data-bind': 'spContentHtml: ' + key,
-                    'class': 'content-editable',
-                    'contenteditable': true
-                });
-                if (!!$element.attr('required') && !!!$element.hasClass('required')) {
-                    $rte.attr('required', '');
-                    $rte.addClass('required');
-                }
-                $rte.insertBefore($element);
-                $element.hide();
             }
         };
         /* SharePoint People Picker */
@@ -2806,7 +2786,7 @@ var Shockout;
                 }
             }
         };
-    })(ko);
+    }
 })(Shockout || (Shockout = {}));
 var Shockout;
 (function (Shockout) {
@@ -2849,19 +2829,20 @@ var Shockout;
             return $div;
         };
         Templates.getAttachmentsTemplate = function (fileuploaderId) {
-            var template = '<h4>Attachments (<span data-bind="text: attachments().length"></span>)</h4>' + '<div id="' + fileuploaderId + '"></div>' + '<div data-bind="foreach: attachments">' + '<div>' + '<a href="" data-bind="attr: {href: __metadata.media_src}"><span class="glyphicon glyphicon-paperclip"></span> <span data-bind="text: Name"></span></a>&nbsp;' + '<button data-bind="event: {click: $root.deleteAttachment}" class="btn btn-sm btn-danger" title="Delete Attachment"><span class="glyphicon glyphicon-remove"></span></button>' + '</div>' + '</div>';
+            var template = Templates.attachmentsTemplate.replace(/\{0\}/, fileuploaderId);
             var $div = $('<div>', { 'html': template });
             return $div;
         };
         Templates.getUserProfileTemplate = function (profile, headerTxt) {
-            var template = '<h4>{header}</h4>' + '<img src="{pictureurl}" alt="{name}" />' + '<ul>' + '<li><label>Name</label>{name}<li>' + '<li><label>Title</label>{jobtitle}</li>' + '<li><label>Department</label>{department}</li>' + '<li><label>Email</label><a href="mailto:{workemail}">{workemail}</a></li>' + '<li><label>Phone</label>{workphone}</li>' + '<li><label>Office</label>{office}</li>' + '</ul>';
-            template = template.replace(/\{header\}/g, headerTxt).replace(/\{pictureurl\}/g, (profile.Picture.indexOf(',') > 0 ? profile.Picture.split(',')[0] : profile.Picture)).replace(/\{name\}/g, (profile.Name || '')).replace(/\{jobtitle\}/g, profile.Title || '').replace(/\{department\}/g, profile.Department || '').replace(/\{workemail\}/g, profile.WorkEMail || '').replace(/\{workphone\}/g, profile.WorkPhone || '').replace(/\{office\}/g, profile.Office || '');
+            var template = Templates.userProfileTemplate.replace(/\{header\}/g, headerTxt).replace(/\{pictureurl\}/g, (profile.Picture.indexOf(',') > 0 ? profile.Picture.split(',')[0] : profile.Picture)).replace(/\{name\}/g, (profile.Name || '')).replace(/\{jobtitle\}/g, profile.Title || '').replace(/\{department\}/g, profile.Department || '').replace(/\{workemail\}/g, profile.WorkEMail || '').replace(/\{workphone\}/g, profile.WorkPhone || '').replace(/\{office\}/g, profile.Office || '');
             var $div = $('<div>', { 'class': 'user-profile-card', 'html': template });
             return $div;
         };
+        Templates.attachmentsTemplate = '<h4>Attachments (<span data-bind="text: attachments().length"></span>)</h4>' + '<div id="{0}"></div>' + '<div data-bind="foreach: attachments">' + '<div>' + '<a href="" data-bind="attr: {href: __metadata.media_src}"><span class="glyphicon glyphicon-paperclip"></span> <span data-bind="text: Name"></span></a>&nbsp;' + '<button data-bind="event: {click: $root.deleteAttachment}" class="btn btn-sm btn-danger" title="Delete Attachment"><span class="glyphicon glyphicon-remove"></span></button>' + '</div>' + '</div>';
         Templates.fileuploadTemplate = '<div class="qq-uploader">' + '<div class="qq-upload-drop-area"><span>Drop files here to upload</span></div>' + '<div class="btn btn-primary qq-upload-button"><span class="glyphicon glyphicon-paperclip"></span> Attach File</div>' + '<ul class="qq-upload-list"></ul></div>';
         Templates.createdModifiedTemplate = '<div class="create-mod-info no-print hidden-xs"></div>' + '<div class="row">' + '<div class="col-md-3"><label>Created By</label> <a data-bind="text: {0}, attr:{href: \'mailto:\'+{1}()}" class="email" > </a></div>' + '<div class="col-md-3"><label>Created</label> <span data-bind="spDateTime: {2}"></span></div>' + '<div class="col-md-3"><label>Modified By</label> <a data-bind="text: {3}, attr:{href: \'mailto:\'+{4}()}" class="email"></a></div>' + '<div class="col-md-3"><label>Modified</label> <span data-bind="spDateTime: {5}"></span></div>' + '</div>';
         Templates.historyTemplate = '<h4>Workflow History</h4>' + '<div class="row">' + '<div class="col-md-8 col-xs-8"><strong>Description</strong></div>' + '<div class="col-md-4 col-xs-4"><strong>Date</strong></div>' + '</div>' + '<div class="row" data-bind="foreach: {0}">' + '<div data-bind="text: {1}" class="col-md-8 col-xs-8"></div>' + '<div data-bind="spDateTime: {2}" class="col-md-4 col-xs-4"></div>' + '</div>';
+        Templates.userProfileTemplate = '<h4>{header}</h4>' + '<img src="{pictureurl}" alt="{name}" />' + '<ul>' + '<li><label>Name</label>{name}<li>' + '<li><label>Title</label>{jobtitle}</li>' + '<li><label>Department</label>{department}</li>' + '<li><label>Email</label><a href="mailto:{workemail}">{workemail}</a></li>' + '<li><label>Phone</label>{workphone}</li>' + '<li><label>Office</label>{office}</li>' + '</ul>';
         return Templates;
     })();
     Shockout.Templates = Templates;

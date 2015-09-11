@@ -304,6 +304,8 @@ module Shockout {
 
             this.viewModel = new ViewModel(this);
 
+            KoHandlers.bindKoHandlers();
+
             // Cascading Asynchronous Function Execution (CAFE) Array
             // Don't change the order of these unless you know what you're doing.
             this.asyncFns = [
@@ -365,6 +367,27 @@ module Shockout {
             try {
                 self.updateStatus("Initializing dynamic form features...");
 
+                self.$form.find(".rte, [data-bind*='spHtml']").each(function (i: number, el: HTMLElement) {
+                    var $el = $(el);
+                    var koName = Utils.observableNameFromControl(el);
+
+                    var $rte = $('<div>', {
+                        'data-bind': 'spHtmlEditor: ' + koName,
+                        'class': 'content-editable',
+                        'contenteditable': 'true'
+                    });
+
+                    if (!!$el.attr('required') || !!!$el.hasClass('required')) {
+                        $rte.attr('required', '');
+                        $rte.addClass('required');
+                    }
+
+                    $rte.insertBefore($el);
+                    if (!self.debug) {
+                        $el.hide();
+                    }
+                });
+
                 self.$createdInfo = self.$form.find(".created-info");
 
                 // append action buttons
@@ -400,8 +423,6 @@ module Shockout {
                 });
 
                 self.nextAsync(true, "Form initialized.");
-                return;
-
             }
             catch (e) {
                 if (self.debug) {
@@ -409,7 +430,6 @@ module Shockout {
                 }
                 self.logError("initFormAsync: " + e);
                 self.nextAsync(false, "Failed to initialize form. " + e);
-                return;
             }
         }
 
@@ -550,7 +570,6 @@ module Shockout {
                 });
 
                 self.nextAsync(true, "Retrieved your permissions.");
-                return;
             }
             catch (e) {
                 if (self.debug) {
@@ -558,7 +577,6 @@ module Shockout {
                 }
                 self.logError("restrictSpGroupElementsAsync: " + e);
                 self.nextAsync(true, "Failed to retrieve your permissions.");
-                return;
             }
         }
 
@@ -578,7 +596,6 @@ module Shockout {
                     }
 
                     self.nextAsync(true, "This is a New form.");
-                    return;
                 }
 
                 var uri = self.rootUrl + self.siteUrl + '/_vti_bin/listdata.svc/' + self.listName.replace(/\s/g, '') + '(' + self.itemId + ')';
@@ -587,7 +604,6 @@ module Shockout {
                     self.listItem = Utils.clone(data.d); //store copy of the original SharePoint list item
                     self.bindListItemValues(self);
                     self.nextAsync(true, "Retrieved form data.");
-                    return;
 
                 }, function fail(obj: any, status: string, jqXhr: any): void {
                     var msg = null;
@@ -599,8 +615,6 @@ module Shockout {
                     }
                     self.showDialog(msg);
                     self.nextAsync(false, msg);
-                    return;
-
                 });
             }
             catch (e) {
@@ -608,7 +622,6 @@ module Shockout {
                     throw e;
                 }
                 self.nextAsync(false, e);
-                return;
             }
         }
 
@@ -619,7 +632,6 @@ module Shockout {
             try {
                 if (!!!self.itemId || !self.includeWorkflowHistory) {
                     self.nextAsync(true);
-                    return;
                 }
                 var historyItems: Array<any> = [];
                 var uri = self.rootUrl + self.siteUrl + "/_vti_bin/listdata.svc/" + self.workflowHistoryListName.replace(/\s/g, '') +
@@ -631,7 +643,6 @@ module Shockout {
                     });
                     self.viewModel.history(historyItems);
                     self.nextAsync(true, "Retrieved workflow history.");
-                    return;
                 });
             }
             catch (ex) {
@@ -639,7 +650,6 @@ module Shockout {
                 self.logError('The Workflow History list may be full at <a href="{url}">{url}</a>. Failed to retrieve workflow history in method, getHistoryAsync(). Error: '
                     .replace(/\{url\}/g, wfUrl) + JSON.stringify(ex));
                 self.nextAsync(true, 'Failed to retrieve workflow history.');
-                return;
             }
         }
 
@@ -821,6 +831,9 @@ module Shockout {
                     else if (val != null && val.constructor == Date) {
                         val = new Date(val).toISOString();
                     }
+                    else if (vm[key]._type == 'Note') {
+                        val = '<![CDATA[' + $('<div>').html(val).html() + ']]>';
+                    }
 
                     fields.push([vm[key]._name, val]);
                 });
@@ -980,23 +993,33 @@ module Shockout {
         */
         getAttachmentsAsync(self: SPForm = undefined, args: any = undefined): void {
             self = self || this;
-            
+            self.getAttachments(self, function () {
+                self.nextAsync(true, 'Retrieved attachments.');
+            });
+        }
+
+        getAttachments(self: SPForm = undefined, callback: Function = undefined): void {
+            self = self || this;
+
             try {
 
-                if (!!!self.listItem || !self.enableAttachments) {
-                    self.nextAsync(true);
+                if (!!!self.itemId || !self.enableAttachments) {
+                    if (callback) {
+                        callback(null);
+                    }
                     return;
                 }
 
                 var attachments: Array<ISpAttachment> = [];
-                self.getListItemsRest(self.listItem.Attachments.__deferred.uri, function (data: ISpCollectionWrapper<ISpAttachment>, status: string, jqXhr: any) {
+                self.getListItemsRest(self.listItem.Attachments.__deferred.uri, function (data: ISpCollectionWrapper<ISpAttachment>, status: string, jqXhr: any): void {
                     $.each(data.d.results, function (i: number, att: ISpAttachment) {
                         attachments.push(att);
                     });
                     self.viewModel.attachments(attachments);
                     self.viewModel.attachments.valueHasMutated();
-                    self.nextAsync(true, 'Retrieved attachments.');
-                    return;
+                    if (callback) {
+                        callback(attachments);
+                    }
                 });
             }
             catch (e) {
@@ -1011,6 +1034,8 @@ module Shockout {
         * Delete an attachment.
         */
         deleteAttachment(att: ISpAttachment, event: any): void {
+
+            if (!confirm('Are you sure you want to delete ' + att.Name + '? This can\'t be undone.')) { return; }
 
             try {
                 var $jqXhr: JQueryXHR = $.ajax({
@@ -1121,14 +1146,21 @@ module Shockout {
                     },
                     onSubmit: function (id, fileName) { },
                     onComplete: function (id, fileName, json) {
+                        if (json.error != null) {
+                            self.logError(json.error);
+                            if (self.debug) {
+                                throw json.error;
+                            }
+                            return;
+                        }
                         if (self.itemId == null) {
-                            self.viewModel['Id'](json.itemId);
-                            self.itemId = json.itemId;
+                            var itemId = parseInt(json.itemId);
+                            self.viewModel['Id'](itemId);
+                            self.itemId = itemId;
                             self.saveListItem(self.viewModel, false);
+                            return;
                         }
-                        if (json.error == null && json.fileName != null) {
-                            self.getAttachmentsAsync(self);
-                        }
+                        self.getAttachments(self);
                     },
                     template: Templates.getFileUploadTemplate()
                 }
@@ -1204,7 +1236,9 @@ module Shockout {
                     }
 
                     if (self.debug) {
-                        console.info('Created KO object: ' + koName + (!!vm[koName]._choices ? ', numChoices: ' + vm[koName]._choices.length : '') );
+                        console.info('Created KO ' + spType + ' object: ' + koName + (!!vm[koName]._choices ? ', numChoices: ' + vm[koName]._choices.length : '') );
+                        //console.info('Created ' + spType + ' field:');
+                        //console.info(vm[koName]);
                     }
 
                 });
@@ -1216,12 +1250,10 @@ module Shockout {
                 }
 
                 self.nextAsync(true);
-                return;
             });
 
             $jqXhr.fail(function () {
                 self.nextAsync(false, 'Failed to retrieve list data.');
-                return;
             });
         }
 
@@ -1453,9 +1485,6 @@ module Shockout {
         */
         getPersonById(id: number, koField: KnockoutObservable<string>): void {
             var self = this;
-            if (self.debug) {
-                console.warn('Getting person by ID...' + id);
-            }
             var $jqXhr: JQueryXHR = $.ajax({
                 url: "/_vti_bin/listdata.svc/UserInformationList(" + id + ")?$select=Id,Account",
                 type: 'GET',

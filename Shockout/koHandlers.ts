@@ -1,70 +1,34 @@
 ﻿module Shockout {
 
+    export class KoHandlers {
+
+        public static bindKoHandlers() {
+            bindKoHandlers(ko);
+        }
+
+    }
+
     /* Knockout Custom handlers */
-    (function bindKoHandlers(ko) {
+    function bindKoHandlers(ko) {
 
-        //http://stackoverflow.com/questions/7904522/knockout-content-editable-custom-binding?lq=1
-        ko.bindingHandlers['spContentHtml'] = {
-            init: function (element, valueAccessor, allBindingsAccessor) {
-                //ko.utils.registerEventHandler(element, "blur", update);
-                //ko.utils.registerEventHandler(element, "keydown", update);
-                //ko.utils.registerEventHandler(element, "change", update);
-                //ko.utils.registerEventHandler(element, "mousedown", update);
+        ko.bindingHandlers['spHtmlEditor'] = {
+            init: function (element: HTMLElement, valueAccessor: Function, allBindings: Function, vm: IViewModel) {
+                var koName: string = Utils.observableNameFromControl(element);
 
-                $(element).on('blur', update)
-                    .on('keydown', update)
-                    .on('change', update)
-                    .on('mousedown', update);
+                $(element)
+                    .blur(update)
+                    .change(update)
+                    .keydown(update);
 
-                function update() {
-                    var modelValue = valueAccessor();
-                    var elementValue = element.innerHTML;
-                    if (ko.isWriteableObservable(modelValue)) {
-                        modelValue(elementValue);
-                    }
-                    else { //handle non-observable one-way binding
-                        var allBindings = allBindingsAccessor();
-                        if (allBindings['_ko_property_writers'] && allBindings['_ko_property_writers']['spContentHtml']) {
-                            allBindings['_ko_property_writers']['spContentHtml'](elementValue);
-                        }
-                    }
+                function update(): void {
+                    vm[koName]($(this).html());                 
                 }
-            },
-            update: function(element, valueAccessor) {
+            }
+            , update: function (element: HTMLElement, valueAccessor: Function, allBindings: Function, vm: IViewModel) {
                 var value = ko.utils.unwrapObservable(valueAccessor()) || "";
                 if (element.innerHTML !== value) {
                     element.innerHTML = value;
                 }
-            }
-        };
-
-        ko.bindingHandlers['spContentEditor'] = {
-            init: function (element, valueAccessor, allBindings, bindingContext) {
-                // This will be called when the binding is first applied to an element
-                // Set up any initial state, event handlers, etc. here
-                var viewModel = bindingContext.$data
-                    , modelValue = valueAccessor()
-                    , person = ko.unwrap(modelValue)
-                    , $element = $(element)
-                    ;
-
-                var key = Utils.observableNameFromControl(element);
-                if (!!!key) { return; }
-
-                var $rte = $('<div>', {
-                    'data-bind': 'spContentHtml: ' + key,
-                    'class': 'content-editable',
-                    'contenteditable': true
-                });
-
-                if (!!$element.attr('required') && !!!$element.hasClass('required')) {
-                    $rte.attr('required', '');
-                    $rte.addClass('required');
-                }
-
-                $rte.insertBefore($element);
-
-                $element.hide();
             }
         }
 
@@ -476,5 +440,5 @@
             }
         };
 
-    })(ko);  
+    }
 }

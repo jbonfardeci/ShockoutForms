@@ -2,6 +2,15 @@
 
     export class Templates {
 
+        public static attachmentsTemplate = '<h4>Attachments (<span data-bind="text: attachments().length"></span>)</h4>' +
+            '<div id="{0}"></div>' +
+            '<div data-bind="foreach: attachments">' +
+            '<div>' +
+            '<a href="" data-bind="attr: {href: __metadata.media_src}"><span class="glyphicon glyphicon-paperclip"></span> <span data-bind="text: Name"></span></a>&nbsp;' +
+            '<button data-bind="event: {click: $root.deleteAttachment}" class="btn btn-sm btn-danger" title="Delete Attachment"><span class="glyphicon glyphicon-remove"></span></button>' +
+            '</div>' +
+            '</div>';
+
         public static fileuploadTemplate: string = '<div class="qq-uploader">' +
             '<div class="qq-upload-drop-area"><span>Drop files here to upload</span></div>' +
             '<div class="btn btn-primary qq-upload-button"><span class="glyphicon glyphicon-paperclip"></span> Attach File</div>' +
@@ -24,6 +33,17 @@
             '<div data-bind="text: {1}" class="col-md-8 col-xs-8"></div>' +
             '<div data-bind="spDateTime: {2}" class="col-md-4 col-xs-4"></div>' +
             '</div>';
+
+        public static userProfileTemplate = '<h4>{header}</h4>' +
+            '<img src="{pictureurl}" alt="{name}" />' +
+            '<ul>' +
+            '<li><label>Name</label>{name}<li>' +
+            '<li><label>Title</label>{jobtitle}</li>' +
+            '<li><label>Department</label>{department}</li>' +
+            '<li><label>Email</label><a href="mailto:{workemail}">{workemail}</a></li>' +
+            '<li><label>Phone</label>{workphone}</li>' +
+            '<li><label>Office</label>{office}</li>' +
+            '</ul>';
 
         public static getFileUploadTemplate(): string {
             var $div = $('<div>').html(Templates.fileuploadTemplate);
@@ -75,42 +95,20 @@
         }
 
         public static getAttachmentsTemplate(fileuploaderId: string): JQuery {
-            var template =
-                '<h4>Attachments (<span data-bind="text: attachments().length"></span>)</h4>' + 
-                '<div id="' + fileuploaderId + '"></div>' + 
-                '<div data-bind="foreach: attachments">' +
-                '<div>' +
-                '<a href="" data-bind="attr: {href: __metadata.media_src}"><span class="glyphicon glyphicon-paperclip"></span> <span data-bind="text: Name"></span></a>&nbsp;' + 
-                '<button data-bind="event: {click: $root.deleteAttachment}" class="btn btn-sm btn-danger" title="Delete Attachment"><span class="glyphicon glyphicon-remove"></span></button>' +
-                '</div>' +
-                '</div>';
-
+            var template = Templates.attachmentsTemplate.replace(/\{0\}/, fileuploaderId);
             var $div = $('<div>', { 'html': template });
             return $div;
         }
 
         public static getUserProfileTemplate(profile: ISpPerson, headerTxt: string): JQuery{
-
-            var template: string =
-                '<h4>{header}</h4>' + 
-                '<img src="{pictureurl}" alt="{name}" />' + 
-                '<ul>' +  
-                '<li><label>Name</label>{name}<li>' + 
-                '<li><label>Title</label>{jobtitle}</li>' + 
-                '<li><label>Department</label>{department}</li>' + 
-                '<li><label>Email</label><a href="mailto:{workemail}">{workemail}</a></li>' + 
-                '<li><label>Phone</label>{workphone}</li>' +
-                '<li><label>Office</label>{office}</li>' +
-                '</ul>';
-
-            template = template.replace(/\{header\}/g, headerTxt)
-                .replace(/\{pictureurl\}/g, (profile.Picture.indexOf(',') > 0 ? profile.Picture.split(',')[0] : profile.Picture))
-                .replace(/\{name\}/g, (profile.Name || ''))
-                .replace(/\{jobtitle\}/g, profile.Title || '')
-                .replace(/\{department\}/g, profile.Department || '')
-                .replace(/\{workemail\}/g, profile.WorkEMail || '')
-                .replace(/\{workphone\}/g, profile.WorkPhone || '')
-                .replace(/\{office\}/g, profile.Office || '');
+            var template: string = Templates.userProfileTemplate.replace(/\{header\}/g, headerTxt)
+                    .replace(/\{pictureurl\}/g, (profile.Picture.indexOf(',') > 0 ? profile.Picture.split(',')[0] : profile.Picture))
+                    .replace(/\{name\}/g, (profile.Name || ''))
+                    .replace(/\{jobtitle\}/g, profile.Title || '')
+                    .replace(/\{department\}/g, profile.Department || '')
+                    .replace(/\{workemail\}/g, profile.WorkEMail || '')
+                    .replace(/\{workphone\}/g, profile.WorkPhone || '')
+                    .replace(/\{office\}/g, profile.Office || '');
 
             var $div = $('<div>', { 'class': 'user-profile-card', 'html': template });
             return $div;

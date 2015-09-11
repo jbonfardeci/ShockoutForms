@@ -27,23 +27,6 @@
         template: string;
     }
 
-    export interface IAttachment {
-        title: string;
-        href: string;
-        ext: string;
-    }
-
-    export class Attachment implements IAttachment {
-        public title: string;
-        public href: string;
-        public ext: string;
-        constructor(att: ISpAttachment) {
-            this.title = att.Name;
-            this.href = att.__metadata.media_src;
-            this.ext = att.Name.match(/\./) != null ? att.Name.substring(att.Name.lastIndexOf('.') + 1, att.Name.length) : '';
-        }
-    }
-
     export interface ICurrentUser {
         id: number;
         title: string;
@@ -142,19 +125,6 @@
         EntitySet: string;
         ItemId: number;
         Name: string;
-    }
-
-    export class SpAttachment {
-        __metadata: ISpAttachmentMetadata;
-        EntitySet: string;
-        ItemId: number;
-        Name: string;
-        constructor(__metadata: ISpAttachmentMetadata, entitySet: string, itemId: number, name: string) {
-            this.__metadata = __metadata;
-            this.EntitySet = entitySet;
-            this.ItemId = itemId;
-            this.Name = name;
-        }
     }
 
     export interface ISpItem {
