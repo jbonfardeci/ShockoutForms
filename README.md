@@ -33,8 +33,8 @@ Forget the frustrations of legacy InfoPath and XSL SharePoint forms. Leverage th
 
 ### Custom Knockout binding handlers for SP list field types included:
 	
-####spContentEditor
-`<textarea data-bind="spContentEditor: myVar"></textarea>`
+####spHtmlEditor
+`<textarea data-bind="value: Comments, spHtml: true"></textarea>` 
 
 ####spPerson
 `<input type="text" data-bind="spPerson: myVar" />`
