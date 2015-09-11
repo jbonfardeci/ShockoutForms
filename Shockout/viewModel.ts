@@ -36,6 +36,7 @@
         public static historyDescriptionKey: string = 'description';
         public static historyDateKey: string = 'date';
         public static isSubmittedKey: string;
+        public static parent: SPForm;
 
         public Id: KnockoutObservable<number> = ko.observable(null);
         public CreatedBy: KnockoutObservable<ISpPerson> = ko.observable(null);
@@ -47,18 +48,22 @@
 
         public parent: Shockout.SPForm;
         public history: KnockoutObservable<Array<any>> = ko.observableArray([]);
-        public attachments: KnockoutObservableArray<IAttachment> = ko.observableArray([]);
+        public attachments: KnockoutObservableArray<ISpAttachment> = ko.observableArray([]);
         public isAuthor: KnockoutObservable<boolean> = ko.observable(false);
         public currentUser: KnockoutObservable<ICurrentUser> = ko.observable(null);
         public isValid: KnockoutComputed<boolean>;
+        public deleteAttachment;
         
         constructor(instance: Shockout.SPForm) {
             var self = this;
             this.parent = instance;
+            ViewModel.parent = instance;
 
             this.isValid = ko.pureComputed(function (): boolean {
                 return self.parent.formIsValid(self);
             });
+
+            this.deleteAttachment = instance.deleteAttachment;
         }
 
         public deleteItem(): void {
@@ -72,11 +77,6 @@
 
         public print(): void {
             window.print();
-        }
-
-        public deleteAttachment(obj: any, event: any): boolean {
-            this.parent.deleteAttachment(obj);
-            return false;
         }
 
         public save(model: ViewModel, btn: HTMLElement): void {

@@ -1,25 +1,37 @@
 ﻿module Shockout {
 
     export class Templates {
+
+        public static fileuploadTemplate: string = '<div class="qq-uploader">' +
+            '<div class="qq-upload-drop-area"><span>Drop files here to upload</span></div>' +
+            '<div class="btn btn-primary qq-upload-button"><span class="glyphicon glyphicon-paperclip"></span> Attach File</div>' +
+            '<ul class="qq-upload-list"></ul></div>';
+
+        public static createdModifiedTemplate: string = '<div class="create-mod-info no-print hidden-xs"></div>' +
+            '<div class="row">' +
+            '<div class="col-md-3"><label>Created By</label> <a data-bind="text: {0}, attr:{href: \'mailto:\'+{1}()}" class="email" > </a></div>' +
+            '<div class="col-md-3"><label>Created</label> <span data-bind="spDateTime: {2}"></span></div>' +
+            '<div class="col-md-3"><label>Modified By</label> <a data-bind="text: {3}, attr:{href: \'mailto:\'+{4}()}" class="email"></a></div>' +
+            '<div class="col-md-3"><label>Modified</label> <span data-bind="spDateTime: {5}"></span></div>' +
+            '</div>';
         
+        public static historyTemplate: string = '<h4>Workflow History</h4>' +
+            '<div class="row">' +
+            '<div class="col-md-8 col-xs-8"><strong>Description</strong></div>' +
+            '<div class="col-md-4 col-xs-4"><strong>Date</strong></div>' +
+            '</div>' +
+            '<div class="row" data-bind="foreach: {0}">' +
+            '<div data-bind="text: {1}" class="col-md-8 col-xs-8"></div>' +
+            '<div data-bind="spDateTime: {2}" class="col-md-4 col-xs-4"></div>' +
+            '</div>';
+
         public static getFileUploadTemplate(): string {
-            var $div = $('<div>').html('<div class="qq-uploader">' +
-                        '<div class="qq-upload-drop-area"><span>Drop files here to upload</span></div>' +
-                        '<div class="btn btn-primary qq-upload-button"><span class="glyphicon glyphicon-paperclip"></span> Attach File</div>' +
-                        '<ul class="qq-upload-list"></ul></div>');
+            var $div = $('<div>').html(Templates.fileuploadTemplate);
             return $div.html();
         }
 
         public static getCreatedModifiedHtml(): string {
-            var template: string = '<div class="create-mod-info no-print"></div>' +
-                '<div class="row">' +
-                '<div class="col-md-3"><label>Created By</label> <a data-bind="text: {0}, attr:{href: \'mailto:\'+{1}()}" class="email" > </a></div>' +
-                '<div class="col-md-3"><label>Created</label> <span data-bind="spDateTime: {2}"></span></div>' +
-                '<div class="col-md-3"><label>Modified By</label> <a data-bind="text: {3}, attr:{href: \'mailto:\'+{4}()}" class="email"></a></div>' +
-                '<div class="col-md-3"><label>Modified</label> <span data-bind="spDateTime: {5}"></span></div>' +
-                '</div>';
-            
-            template = template.replace(/\{0\}/g, ViewModel.createdByKey)
+            var template: string = Templates.createdModifiedTemplate.replace(/\{0\}/g, ViewModel.createdByKey)
                     .replace(/\{1\}/g, ViewModel.createdByEmailKey)
                     .replace(/\{2\}/g, ViewModel.createdKey)
                     .replace(/\{3\}/g, ViewModel.modifiedByKey)
@@ -31,21 +43,13 @@
         }
 
         public static getHistoryTemplate(): JQuery {
-            var template: string =
-                '<h4>Workflow History</h4>' +
-                '<table border="1" cellpadding="5" cellspacing="0" class="data-table" style="width:100%;border-collapse:collapse;">' +
-                '<thead>' +
-                '<tr><th>Description</th><th>Date</th></tr>' +
-                '</thead>' +
-                '<tbody data-bind="foreach: {0}">' +
-                '<tr><td data-bind="text: {1}"></td><td data-bind="text: {2}"></td></tr>' +
-                '</tbody>' +
-                '</table>'.replace(/\{0\}/g, ViewModel.historyKey)
-                    .replace(/\{1\}/g, ViewModel.historyDescriptionKey)
-                    .replace(/\{2\}/g, ViewModel.historyDateKey);
+            var template: string = Templates.historyTemplate.replace(/\{0\}/g, ViewModel.historyKey)
+                        .replace(/\{1\}/g, ViewModel.historyDescriptionKey)
+                        .replace(/\{2\}/g, ViewModel.historyDateKey);
 
-            var $div = $('<div>', {
-                'data-bind': 'visible: {0}().length > 0'.replace(/\{0\}/i, ViewModel.historyKey)
+            var $div = $('<section>', {
+                'html': template,
+                'data-bind': 'visible: {0}().length > 0'.replace(/\{0\}/, ViewModel.historyKey)
             });
 
             return $div;
@@ -74,15 +78,11 @@
             var template =
                 '<h4>Attachments (<span data-bind="text: attachments().length"></span>)</h4>' + 
                 '<div id="' + fileuploaderId + '"></div>' + 
-                '<div data-bind="visible: attachments().length > 0">' + 
-                '<table class="attachments-table">' +
-                '<tbody data-bind="foreach: attachments">' +
-                '<tr>' +
-                '<td><a href="" data-bind="text: title, attr: {href: href, \'class\': ext}"></a></td>' +
-                '<td><button data-bind="event: {click: $root.deleteAttachment}" class="btn del" title="Delete"><span class="glyphicon glyphicon-remove"></span><span>Delete</span></button></td>' +
-                '</tr>' +
-                '</tbody>' +
-                '</table>' + 
+                '<div data-bind="foreach: attachments">' +
+                '<div>' +
+                '<a href="" data-bind="attr: {href: __metadata.media_src}"><span class="glyphicon glyphicon-paperclip"></span> <span data-bind="text: Name"></span></a>&nbsp;' + 
+                '<button data-bind="event: {click: $root.deleteAttachment}" class="btn btn-sm btn-danger" title="Delete Attachment"><span class="glyphicon glyphicon-remove"></span></button>' +
+                '</div>' +
                 '</div>';
 
             var $div = $('<div>', { 'html': template });

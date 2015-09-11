@@ -26,16 +26,23 @@ public class SPFormFileHandler : IHttpHandler
 
         HttpRequest r = context.Request;
         Response res = new Response(false, null, null, null);
+        Guid listId = new Guid();
+        int? itemId = null;
+        string fileName = null;
+        byte[] fileContent;
+        StringBuilder errors = new StringBuilder();
+
         try
         {
-            Guid listId = new Guid(r["listId"].ToString());
-            int? itemId = null;
-            if (r["itemId"].ToString() != "null")
-            {
+            if (!string.IsNullOrEmpty(r["listId"]))
+                listId = new Guid(r["listId"].ToString());
+            else
+                errors.Append("Missing List ID. ");
+
+            if (!string.IsNullOrEmpty(r["itemId"]))
                 itemId = Convert.ToInt32(r["itemId"].ToString());
-            }
-            string fileName = null;
-            byte[] fileContent;
+            else
+                errors.Append("Missing Item ID. ");
 
             //not IE
             if (!string.IsNullOrEmpty(r["qqfile"]))
@@ -62,11 +69,14 @@ public class SPFormFileHandler : IHttpHandler
         }
         catch (Exception ex)
         {
-            res.error = ex.ToString();
+            errors.AppendFormat("Item ID: {0}, List ID: {1}, Filename: {2}, Error: {3}", itemId, listId.ToString(), fileName, ex.ToString());
         }
-
-        string json = new JavaScriptSerializer().Serialize(res);
-        context.Response.Write(json);
+        finally
+        {
+            res.error = errors.ToString();
+            string json = new JavaScriptSerializer().Serialize(res);
+            context.Response.Write(json);
+        }   
     }
 
     public static Response Import(Guid listId, int? itemId, string fileName, byte[] fileContent)

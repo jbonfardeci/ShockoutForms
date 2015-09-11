@@ -276,6 +276,8 @@ module Shockout {
                 }
             }
 
+            this.fileHandlerUrl = this.rootUrl + this.siteUrl + this.fileHandlerUrl;
+
             // get the form container element
             this.form = document.getElementById(this.formId);
             this.$form = $(this.form).addClass('sp-form');
@@ -378,54 +380,14 @@ module Shockout {
                     }
                 }
 
-                if (self.editableFields.length == 0) {
-                    //make array of SP field names and those that are editable from elements w/ data-bind attribute
-                    self.$form.find('[data-bind]').each(function (i: number, e: HTMLElement) {
-                        var key = Utils.observableNameFromControl(e);
+                
+                //make array of SP field names and those that are editable from elements w/ data-bind attribute
+                self.$form.find('[data-bind]').each(function (i: number, e: HTMLElement) {
+                    var key = Utils.observableNameFromControl(e);
 
-                        //skip observable keys that have already been added or begins with an underscore '_' or dollar sign '$'
-                        if (!!!key || self.editableFields.indexOf(key) > -1 || key.match(/^(_|\$)/) != null) { return; }
-
-                        if (e.tagName == 'INPUT' || e.tagName == 'SELECT' || e.tagName == 'TEXTAREA' || $(e).attr('contenteditable') == 'true') {
-                            self.editableFields.push(key);
-                            self.viewModel[key] = ko.observable(null);
-                        }
-                    });
-
-                    self.editableFields.sort();
-                }
-
-                self.fileUploaderSettings = {
-                    element: null,
-                    action: self.fileHandlerUrl,
-                    debug: self.debug,
-                    multiple: false,
-                    maxConnections: 3,
-                    allowedExtensions: self.allowedExtensions,
-                    params: {
-                        listId: self.listId,
-                        itemId: self.itemId
-                    },
-                    onSubmit: function(id, fileName){},
-                    onComplete: function(id, fileName, json){
-                        if (self.itemId == null) {
-                            self.viewModel['Id'](json.itemId);
-                            self.itemId = json.itemId;
-                            self.saveListItem(self.viewModel, false);
-                        }
-                        if (json.error == null && json.fileName != null) {
-                            self.getAttachmentsAsync();
-                        }
-                    },
-                    template: Templates.getFileUploadTemplate()
-                }
-
-                //setup attachments module
-                self.$form.find(".attachments").each(function (i: number, att: HTMLElement) {
-                    var id = 'fileuploader_' + i;
-                    $(att).append(Templates.getAttachmentsTemplate(id));
-                    self.fileUploaderSettings.element = document.getElementById(id);
-                    self.fileUploader = new Shockout.qq.FileUploader(self.fileUploaderSettings);
+                    if (e.tagName == 'INPUT' || e.tagName == 'SELECT' || e.tagName == 'TEXTAREA' || $(e).attr('contenteditable') == 'true') {
+                        self.pushEditableFieldName(key);
+                    }
                 });
 
                 // add control validation to Bootstrap form elements
@@ -628,8 +590,9 @@ module Shockout {
                     return;
 
                 }, function fail(obj: any, status: string, jqXhr: any): void {
+                    var msg = null;
                     if (obj.status && obj.status == '404') {
-                        var msg = obj.statusText + ". The form may have been deleted by another user."
+                        msg = obj.statusText + ". The form may have been deleted by another user."
                     }
                     else {
                         msg = status + ' ' + jqXhr;
@@ -680,18 +643,6 @@ module Shockout {
             }
         }
 
-        bindObservable(key: string, val: any, self: SPForm = undefined): void {
-            self = self || this;
-            if (key in self.viewModel) {
-                self.viewModel[key](val);
-            }
-            else {
-                self.viewModel[key] = val != null && /Array/.test(val.constructor)
-                    ? ko.observableArray(val)
-                    : ko.observable(val);
-            }
-        }
-
         /**
         * Bind the SP list item values to the view model.
 
@@ -704,56 +655,27 @@ module Shockout {
             try {
                 var item: ISpItem = self.listItem;
                 var vm: IViewModel = self.viewModel;
-
+                
                 // Exclude these read-only metadata fields from the Knockout view model.
                 var rxExclude: RegExp = /^(__metadata|ContentTypeID|ContentType|CreatedBy|ModifiedBy|Owshiddenversion|Version|Attachments|Path)/;
                 var isObj: RegExp = /Object/;
 
+                self.itemId = item.Id;
                 vm.Id(item.Id);
                 vm.isAuthor(item.CreatedById == self.currentUser.id);
 
                 for (var key in self.viewModel) {
 
-                    if (self.debug) {
-                        console.log('getting: ' + key);
+                    if (!(key in item) || rxExclude.test(key) || vm[key]._type == 'MultiChoice' || vm[key]._type == 'User' || vm[key]._type == 'Choice')
+                    { continue; }
+
+                    if (item[key] != null && Utils.isJsonDate(item[key])) {
+                        vm[key](Utils.parseJsonDate(item[key]));
+                        continue;
                     }
 
-                    if (key in item && !rxExclude.test(key)) {
-                        var val: any = null;
-
-                        if (Utils.isJsonDate(item[key])) {
-                            val = Utils.parseJsonDate(item[key]);
-                        }
-                        // Object types will have a corresponding key name plus the suffix `Value` or `Id` for lookups.
-                        // For example: `SupervisorApproval` is an object container for `__deferred` that corresponds to `SupervisorApprovalValue` 
-                        // which is an ID or string value.
-                        else if (item[key] != null && isObj.test(item[key].constructor + '') && '__deferred' in item[key]) {
-                            if (key + 'Value' in item) {
-                                val = item[key + 'Value'];
-                            }
-                            else if (key + 'Id' in item) {
-                                val = item[key + 'Id'];
-                            }
-                        }
-                        else {
-                            val = item[key];
-                        }
-
-                        if ('_choices' in self.viewModel[key]) {
-                            vm[key](val || []);
-                        }
-                        // this is a SP User field type. Get the user profile by the person ID.
-                        else if (vm[key]._type == 'User' && !!val && val.constructor === Number) {
-                            self.getPersonById(parseInt(val), vm[key]);
-                        }
-                        else {
-                            vm[key](val || null);
-                        }
-
-                        if (self.debug) {
-                            console.info('assigned value ' + val + ' to ' + key);
-                        }
-                    }
+                    var val = item[key];
+                    vm[key](val || null);
                 }
 
                 var $info = self.$createdInfo.find('.create-mod-info').empty();
@@ -780,6 +702,40 @@ module Shockout {
                         $info.append(Templates.getUserProfileTemplate(person, "Last Modified By"));
                     }
                 });
+
+                // Object types `Choice` and `User` will have a corresponding key name plus the suffix `Value` or `Id` for lookups.
+                // For example: `SupervisorApproval` is an object container for `__deferred` that corresponds to `SupervisorApprovalValue` which is an ID or string value.
+
+                // query values for the `User` types
+                $(self.editableFields).filter(function (i: number, key: any): boolean {
+                    return self.viewModel[key]._type == 'User';
+                }).each(function (i: number, key: any) {
+                    if (!(key+'Id' in item)) { return; }
+                    self.getPersonById(parseInt(item[key+'Id']), vm[key]);
+                });
+
+                // query values for `Choice` types
+                $(self.editableFields).filter(function (i: number, key: any): boolean {
+                    return self.viewModel[key]._type == 'Choice';
+                }).each(function (i: number, key: any) {
+                    if (!(key + 'Value' in item)) { return; }
+                    vm[key](item[key+'Value']);
+                });
+
+                // query values for `MultiChoice` types
+                $(self.editableFields).filter(function (i: number, key: any): boolean {
+                    return self.viewModel[key]._type == 'MultiChoice';
+                }).each(function (i: number, key: any) {
+                    if (!('__deferred' in item[key])) { return; }
+
+                    self.getListItemsRest(item[key].__deferred.uri, function (data: ISpCollectionWrapper<ISpMultichoiceValue>, status: string, jqXhr: any) {
+                        var values: Array<any> = [];
+                        $.each(data.d.results, function (i: number, choice: ISpMultichoiceValue) {
+                            values.push(choice.Value);
+                        });
+                        vm[key](values);
+                    });
+                });
             }
             catch (e) {
                 if (self.debug) {
@@ -791,7 +747,10 @@ module Shockout {
         /**
         * Delete the list item.
         */
-        deleteListItem(model: IViewModel) {
+        deleteListItem(model: IViewModel): void {
+
+            if (!confirm('Are you sure you want to delete this form?')) { return; }
+
             var self: SPForm = model.parent;
             var item: ISpItem = self.listItem;
             var timeout: number = 3000;
@@ -816,18 +775,114 @@ module Shockout {
             });
         }
 
+        saveListItem(vm: IViewModel, isSubmit: boolean = false, refresh: boolean = false, customMsg: string = undefined): void {
+            var self: SPForm = vm.parent;
+            var isNew = !!(self.itemId == null)
+                , data = []
+                , timeout = 3000
+                , saveMsg = customMsg || '<p>Your form has been saved.</p>'
+                , fields: Array<Array<any>> = []
+                ;
+
+            try {
+                //override form validation for clicking "Save" as opposed to "Submit" button
+                isSubmit = typeof (isSubmit) == "undefined" ? true : isSubmit;
+
+                //run presave action and stop if the presave action returns false
+                if (self.preSave) {
+                    var retVal = self.preSave(self);
+                    if (typeof (retVal) != 'undefined' && !!!retVal) {
+                        return;
+                    }
+                }
+
+                //validate the form
+                if (isSubmit && !self.formIsValid(vm)) {
+                    return;
+                }
+
+                //Only update IsSubmitted if it's != true -- if it was already submitted.
+                //Otherwise pressing Save would set it from true back to false - breaking any workflow logic in place!
+                var isSubmitted: KnockoutObservable<boolean> = vm[ViewModel.isSubmittedKey];
+                if (typeof (isSubmitted) != "undefined" && (isSubmitted() == null || isSubmitted() == false)) {
+                    fields.push([ViewModel.isSubmittedKey, isSubmit]);
+                }
+
+                // build the `fields` array 
+
+                $(self.editableFields).each(function(i: number, key: any): void {
+                    var val: any = vm[key]();
+
+                    if (typeof (val) == "undefined" || key == ViewModel.isSubmittedKey) { return; }
+
+                    if (val != null && val.constructor === Array) {
+                        val = ';#' + val.join(';#') + ';#';
+                    }
+                    else if (val != null && val.constructor == Date) {
+                        val = new Date(val).toISOString();
+                    }
+
+                    fields.push([vm[key]._name, val]);
+                });
+
+                self.updateListItem(self.listName, fields, isNew, callback);
+                 
+            }
+            catch (e) {
+                self.logError(e);
+                if (self.debug) { throw e; }                
+            }
+
+            function callback(xmlDoc: any, status: string, jqXhr: any): void {
+
+                var itemId: number;
+
+                $(xmlDoc).find('*').filter(function(): boolean {
+                    return this.nodeName == 'z:row';
+                }).each(function (i: number, el: any): void {
+                    itemId = parseInt( $(el).attr('ows_ID') );
+                });
+
+                if (isSubmit && !self.debug) {//submitting form
+                    self.showDialog('<p>Your form has been submitted. You will be redirected in ' + timeout / 1000 + ' seconds.</p>', 'Form Submission Successful');
+                    setTimeout(function () {
+                        window.location.href = self.sourceUrl != null ? self.sourceUrl : self.confirmationUrl;
+                    }, timeout);
+                }
+                else {//saving form
+                    if (isNew || refresh) {
+                        saveMsg += '<p>This page will refresh in ' + timeout / 1000 + ' seconds.</p>';
+                    }
+
+                    self.showDialog(saveMsg, 'The form has been saved.', timeout);
+
+                    if (isNew || refresh) {
+                        setTimeout(function () {
+                            //append list item id to url
+                            window.location.search = '?formid=' + itemId;
+                        }, timeout);
+                    }
+                    else {
+                        //give WF History list 5 seconds to update
+                        self.getListItemAsync(self);
+                        setTimeout(function () { self.getHistoryAsync(self); }, 5000);
+                    }
+                }
+            };     
+        }
+
         /**
-        * Save the list item.
+        * Save the list item with REST services.
         */
         // http://blog.vgrem.com/2014/03/22/list-items-manipulation-via-rest-api-in-sharepoint-2010/
-        saveListItem(model: IViewModel, isSubmit: boolean = true, refresh: boolean = true, customMsg: string = undefined): void {
+        saveListItemREST(model: IViewModel, isSubmit: boolean = true, refresh: boolean = true, customMsg: string = undefined): void {
 
             var self: SPForm = model.parent,
                 isNew: boolean = !!!self['itemId'],
                 timeout: number = 3000,
-                saveMsg: string = customMsg || "<p>Your form has been saved.</p>",
+                saveMsg: string = customMsg || '<p>Your form has been saved.</p>',
                 postData = {},
-                headers: any = { Accept: 'application/json;odata=verbose' },
+                headers: any = { 'Accept': 'application/json;odata=verbose' },
                 url: string,
                 contentType: string = 'application/json';
             
@@ -933,17 +988,19 @@ module Shockout {
                     return;
                 }
 
-                var attachments: Array<Attachment> = [];
+                var attachments: Array<ISpAttachment> = [];
                 self.getListItemsRest(self.listItem.Attachments.__deferred.uri, function (data: ISpCollectionWrapper<ISpAttachment>, status: string, jqXhr: any) {
                     $.each(data.d.results, function (i: number, att: ISpAttachment) {
-                        attachments.push(new Attachment(att));
+                        attachments.push(att);
                     });
                     self.viewModel.attachments(attachments);
+                    self.viewModel.attachments.valueHasMutated();
                     self.nextAsync(true, 'Retrieved attachments.');
                     return;
                 });
             }
             catch (e) {
+                self.showDialog("Failed to retrieve attachments: " + JSON.stringify(e));
                 if (self.debug) {
                     throw e;
                 }
@@ -953,37 +1010,31 @@ module Shockout {
         /**
         * Delete an attachment.
         */
-        deleteAttachment(att: Attachment): void {
-            var self = this
-                , model = self.viewModel;
-            try {
-                var packet = '<?xml version="1.0" encoding="utf-8"?><soap:Envelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">' +
-                    '<soap:Body><DeleteAttachment xmlns="http://schemas.microsoft.com/sharepoint/soap/"><listName>' + self.listName + '</listName><listItemID>' + self.itemId + '</listItemID><url>' + att.href + '</url></DeleteAttachment></soap:Body></soap:Envelope>';
+        deleteAttachment(att: ISpAttachment, event: any): void {
 
+            try {
                 var $jqXhr: JQueryXHR = $.ajax({
-                    url: self.rootUrl + self.siteUrl + '/_vti_bin/lists.asmx',
+                    url: att.__metadata.uri,
                     type: 'POST',
-                    dataType: 'xml',
-                    data: packet,
-                    contentType: "text/xml; charset='utf-8'",
+                    dataType: 'json',
+                    contentType: "application/json",
                     headers: {
-                        "SOAPAction": "http://schemas.microsoft.com/sharepoint/soap/DeleteAttachment",
-                        "Content-Type": "text/xml; charset=utf-8"
+                        'Accept': 'application/json;odata=verbose',
+                        'X-HTTP-Method': 'DELETE'
                     }
                 });
 
                 $jqXhr.done(function (xData, status) {
-                    var attachments: any = model.attachments;
+                    var attachments: any = ViewModel.parent.viewModel.attachments;
                     attachments.remove(att);
                 });
 
                 $jqXhr.fail(function (xData, status) {
                     var msg = "Failed to delete attachment: " + status;
-                    self.logError(msg);
                 });
             }
             catch (e) {
-                self.logError(e);
+                throw e;
             }
         }
 
@@ -1057,6 +1108,39 @@ module Shockout {
                 self.defaultViewUrl = $list.attr('DefaultViewUrl');
                 self.defailtMobileViewUrl = $list.attr('MobileDefaultViewUrl');
 
+                self.fileUploaderSettings = {
+                    element: null,
+                    action: self.fileHandlerUrl,
+                    debug: self.debug,
+                    multiple: false,
+                    maxConnections: 3,
+                    allowedExtensions: self.allowedExtensions,
+                    params: {
+                        listId: self.listId,
+                        itemId: self.itemId
+                    },
+                    onSubmit: function (id, fileName) { },
+                    onComplete: function (id, fileName, json) {
+                        if (self.itemId == null) {
+                            self.viewModel['Id'](json.itemId);
+                            self.itemId = json.itemId;
+                            self.saveListItem(self.viewModel, false);
+                        }
+                        if (json.error == null && json.fileName != null) {
+                            self.getAttachmentsAsync(self);
+                        }
+                    },
+                    template: Templates.getFileUploadTemplate()
+                }
+
+                //setup attachments module
+                self.$form.find(".attachments").each(function (i: number, att: HTMLElement) {
+                    var id = 'fileuploader_' + i;
+                    $(att).append(Templates.getAttachmentsTemplate(id));
+                    self.fileUploaderSettings.element = document.getElementById(id);
+                    self.fileUploader = new Shockout.qq.FileUploader(self.fileUploaderSettings);
+                });
+
                 // Find out if the list allows saving before submitting.
                 // The field name should be named `IsSubmitted` or anything with the word `submitted` in the name
                 var rxAllowsSave = /submitted/i;
@@ -1073,6 +1157,7 @@ module Shockout {
                     var $el = $(el);
                     var displayName = $el.attr('DisplayName');
                     var spType = $el.attr('Type');
+                    var vm: IViewModel = self.viewModel;
 
                     // convert Display Name to equal format REST returns field names with.
                     // For example, convert 'Computer Name (if applicable)' to 'ComputerNameIfApplicable'.
@@ -1086,40 +1171,40 @@ module Shockout {
 
                     //if (koName in self.viewModel) { return; }
 
-                    if (rxAllowsSave.test(displayName) && $el.attr('Type') == 'Boolean') {
+                    if (rxAllowsSave.test(displayName) && spType == 'Boolean') {
                         self.allowSave = true;
                         self.$formAction.find('.btn.save').show();
                         ViewModel.isSubmittedKey = koName;
                     }
 
                     // create the KO object based on the SP type.
-                    self.viewModel[koName] = rxIsChoice.test($el.attr('Type')) ? ko.observableArray([]) : ko.observable(null);
+                    vm[koName] = spType == 'MultiChoice' ? ko.observableArray([]) : ko.observable(null);
 
                     // add metadata to the KO object
-                    self.viewModel[koName]._koName = koName;
-                    self.viewModel[koName]._displayName = displayName;
-                    self.viewModel[koName]._name = $el.attr('Name');
-                    self.viewModel[koName]._format = $el.attr('Format');
-                    self.viewModel[koName]._required = $el.attr('Required') == 'True';
-                    self.viewModel[koName]._readOnly = !!($el.attr('ReadOnly'));
-                    self.viewModel[koName]._description = $el.attr('Description');
-                    self.viewModel[koName]._type = spType;
+                    vm[koName]._koName = koName;
+                    vm[koName]._displayName = displayName;
+                    vm[koName]._name = $el.attr('Name');
+                    vm[koName]._format = $el.attr('Format');
+                    vm[koName]._required = $el.attr('Required') == 'True';
+                    vm[koName]._readOnly = !!($el.attr('ReadOnly'));
+                    vm[koName]._description = $el.attr('Description');
+                    vm[koName]._type = spType;
 
                     // Create and attach arrays for the choices in SP field's choice fields.
                     if (rxIsChoice.test(spType)) {
-                        self.viewModel[koName]._isFillInChoice = $el.attr('FillInChoice') == 'True'; // allow fill-in choices
+                        vm[koName]._isFillInChoice = $el.attr('FillInChoice') == 'True'; // allow fill-in choices
                         var choices = [];
 
                         $el.find('CHOICE').each(function (j: number, choice: any) {
                             choices.push({ 'value': $(choice).text(), 'selected': false });
                         });
 
-                        self.viewModel[koName]._choices = choices;
-                        self.viewModel[koName]._multiChoice = $el.attr('Type') == 'MultiChoice';
+                        vm[koName]._choices = choices;
+                        vm[koName]._multiChoice = $el.attr('Type') == 'MultiChoice';
                     }
 
                     if (self.debug) {
-                        console.info('Created KO object: ' + koName + (!!self.viewModel[koName]._choices ? ', numChoices: ' + self.viewModel[koName]._choices.length : '') );
+                        console.info('Created KO object: ' + koName + (!!vm[koName]._choices ? ', numChoices: ' + vm[koName]._choices.length : '') );
                     }
 
                 });
@@ -1169,7 +1254,7 @@ module Shockout {
             msg = (msg).toString().match(/<\w>\w*/) == null ? '<p>' + msg + '</p>' : msg; //wrap non-html in <p>
             self.$dialog.html(msg).dialog('open');
             if (timeout) {
-                setTimeout(function () { self.$dialog.dialog.close(); }, timeout);
+                setTimeout(function () { self.$dialog.dialog('close'); }, timeout);
             }
         }
 
@@ -1258,9 +1343,6 @@ module Shockout {
                 }
 
                 if (errorCount > 0) {
-                    if (showDialog) {
-                        self.showDialog('<p class="warning">The following are required:</p><p class="error"><strong>' + labels.join('<br/>') + '</strong></p>');
-                    }
                     return false;
                 }
                 return true;
@@ -1276,7 +1358,7 @@ module Shockout {
             var params = [pageUrl, comment, checkinType];
             var packet = '<?xml version="1.0" encoding="utf-8"?><soap:Envelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/"><soap:Body><CheckInFile xmlns="http://schemas.microsoft.com/sharepoint/soap/"><pageUrl>{0}</pageUrl><comment>{1}</comment><CheckinType>{2}</CheckinType></CheckInFile></soap:Body></soap:Envelope>';
 
-            return this.executeRequest(action, packet, params);
+            return this.executeSoapRequest(action, packet, params);
         }
 
         checkOutFile(pageUrl: string, checkoutToLocal: string, lastmodified: string) {
@@ -1284,14 +1366,54 @@ module Shockout {
             var params = [pageUrl, checkoutToLocal, lastmodified];
             var packet = '<?xml version="1.0" encoding="utf-8"?><soap:Envelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/"><soap:Body><CheckOutFile xmlns="http://schemas.microsoft.com/sharepoint/soap/"><pageUrl>{0}</pageUrl><checkoutToLocal>{1}</checkoutToLocal><lastmodified>{2}</lastmodified></CheckOutFile></soap:Body></soap:Envelope>';
 
-            return this.executeRequest(action, packet, params);
+            return this.executeSoapRequest(action, packet, params);
         }
 
-        executeRequest = function (action, packet, params, callback: Function = undefined, serviceUrl: string = this.rootUrl + this.siteUrl + '/_vti_bin/lists.asmx'): void {
+        updateListItem = function (listName: string, fields: Array<Array<any>>, isNew: boolean = true, callback: Function = undefined, self: SPForm = undefined): void {
+            self = self || this;
+
+            var action = 'http://schemas.microsoft.com/sharepoint/soap/UpdateListItems';
+            var packet = '<?xml version="1.0" encoding="utf-8"?>' +
+                '<soap:Envelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">' +
+                '<soap:Body>' +
+                '<UpdateListItems xmlns="http://schemas.microsoft.com/sharepoint/soap/">' +
+                '<listName>{0}</listName>' +
+                '<updates>{1}</updates>' +
+                '</UpdateListItems>' +
+                '</soap:Body>' +
+                '</soap:Envelope>';
+
+            var command: string = isNew ? "New" : "Update";
+            var params: Array<any> = [listName];
+            var soapEnvelope: string = "<Batch OnError='Continue'><Method ID='1' Cmd='" + command + "'>";
+            var itemArray: Array<Array<any>> = fields;
+
+            for (var i = 0; i < fields.length; i++) {
+                soapEnvelope += "<Field Name='" + fields[i][0] + "'>" + Utils.escapeColumnValue(fields[i][1]) + "</Field>";
+            }
+
+            if (command !== "New") {
+                soapEnvelope += "<Field Name='ID'>" + self.itemId + "</Field>";
+            }
+            soapEnvelope += "</Method></Batch>";
+
+            params.push(soapEnvelope);
+            
+            self.executeSoapRequest(action, packet, params, self, callback);
+        }
+
+        /**
+        * Execute SOAP Request
+        *
+        */
+        executeSoapRequest = function (action: string, packet: string, params: Array<any>, self: SPForm = undefined, callback: Function = undefined): void {
+            self = self || this;
             try {
+                var serviceUrl: string = self.rootUrl + self.siteUrl + '/_vti_bin/lists.asmx';
+
                 if (params != null) {
                     for (var i = 0; i < params.length; i++) {
-                        packet = packet.replace('{' + i.toString() + '}', (params[i] == null ? '' : params[i]));
+                        packet = packet.replace('{' + i + '}', (params[i] == null ? '' : params[i]));
                     }
                 }
 
@@ -1310,10 +1432,14 @@ module Shockout {
                     $jqXhr.done(<JQueryPromiseCallback<any>>callback);
                 }
 
-                $jqXhr.fail(function () { });
+                $jqXhr.fail(function (obj: any, status: string, jqXhr: any) {
+                    var msg = 'executeSoapRequest() error. Status: ' + obj.statusText + ' ' + status + ' ' + JSON.stringify(jqXhr);
+                    Utils.logError(msg, SPForm.errorLogListName);
+                    throw msg;
+                });
             }
             catch (e) {
-                if (this.debug) {
+                if (self.debug) {
                     throw e;
                 }
             }
@@ -1355,6 +1481,12 @@ module Shockout {
                 Utils.logError(msg, SPForm.errorLogListName);
                 throw msg;
             });
+        }
+
+        pushEditableFieldName(key: string): number {
+            //skip observable keys that have already been added or begins with an underscore '_' or dollar sign '$'
+            if (!!!key || this.editableFields.indexOf(key) > -1 || key.match(/^(_|\$)/) != null) { return -1; }
+            return this.editableFields.push(key);
         }
 
         /**

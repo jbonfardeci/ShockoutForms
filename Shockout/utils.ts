@@ -8,6 +8,18 @@
     
     export class Utils {
     
+        /** 
+        * Escape column values
+        * http://dracoblue.net/dev/encodedecode-special-xml-characters-in-javascript/155/ 
+        */
+        public static escapeColumnValue(s): any {
+            if (typeof s === "string") {
+                return s.replace(/&(?![a-zA-Z]{1,8};)/g, "&amp;");
+            } else {
+                return s;
+            }
+        }
+
         /**
         * Search the User Information list.
         * @param term: string
@@ -79,11 +91,11 @@
         * @return string
         */
         public static observableNameFromControl(control: HTMLElement): string {
-            var attr: string = $(control).attr("data-bind");
+            var attr: string = $(control).attr('data-bind');
             if (!!!attr) { return null; }
-            var rx: RegExp = new RegExp("\\b:(\\s+|)\\w*\\b");
+            var rx: RegExp = /(\b:(\s+|)|\$root.)\w*\b/;
             var exec: Array<string> = rx.exec(attr);
-            var result: string = !!exec ? exec[0].replace(/:(\s+|)/gi, "") : null;
+            var result: string = !!exec ? exec[0].replace(/:(\s+|)/gi, '').replace(/\$root\./, '') : null;
             return result;
         }
 

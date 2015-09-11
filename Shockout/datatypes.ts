@@ -38,9 +38,9 @@
         public href: string;
         public ext: string;
         constructor(att: ISpAttachment) {
-            this.title = att.name;
+            this.title = att.Name;
             this.href = att.__metadata.media_src;
-            this.ext = att.name.match(/./) != null ? att.name.substring(att.name.lastIndexOf('.') + 1, att.name.length) : '';
+            this.ext = att.Name.match(/\./) != null ? att.Name.substring(att.Name.lastIndexOf('.') + 1, att.Name.length) : '';
         }
     }
 
@@ -141,7 +141,20 @@
         __metadata: ISpAttachmentMetadata;
         EntitySet: string;
         ItemId: number;
-        name: string;
+        Name: string;
+    }
+
+    export class SpAttachment {
+        __metadata: ISpAttachmentMetadata;
+        EntitySet: string;
+        ItemId: number;
+        Name: string;
+        constructor(__metadata: ISpAttachmentMetadata, entitySet: string, itemId: number, name: string) {
+            this.__metadata = __metadata;
+            this.EntitySet = entitySet;
+            this.ItemId = itemId;
+            this.Name = name;
+        }
     }
 
     export interface ISpItem {
@@ -179,5 +192,10 @@
         Attachments: ISpDeferred;
         Path: string;
         constructor() { }
+    }
+
+    export interface ISpMultichoiceValue {
+        __metadata: ISpItemMetadata;
+        Value: any;
     }
 }
