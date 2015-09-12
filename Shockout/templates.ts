@@ -101,14 +101,20 @@
         }
 
         public static getUserProfileTemplate(profile: ISpPerson, headerTxt: string): JQuery{
+
+            var pictureUrl = '/_layouts/images/person.gif';
+            if (profile.Picture != null && profile.Picture.indexOf(',') > -1) {
+                pictureUrl = profile.Picture.split(',')[0];
+            }
+
             var template: string = Templates.userProfileTemplate.replace(/\{header\}/g, headerTxt)
-                    .replace(/\{pictureurl\}/g, (profile.Picture.indexOf(',') > 0 ? profile.Picture.split(',')[0] : profile.Picture))
-                    .replace(/\{name\}/g, (profile.Name || ''))
-                    .replace(/\{jobtitle\}/g, profile.Title || '')
-                    .replace(/\{department\}/g, profile.Department || '')
-                    .replace(/\{workemail\}/g, profile.WorkEMail || '')
-                    .replace(/\{workphone\}/g, profile.WorkPhone || '')
-                    .replace(/\{office\}/g, profile.Office || '');
+                .replace(/\{pictureurl\}/g, pictureUrl)
+                .replace(/\{name\}/g, (profile.Name || ''))
+                .replace(/\{jobtitle\}/g, profile.Title || '')
+                .replace(/\{department\}/g, profile.Department || '')
+                .replace(/\{workemail\}/g, profile.WorkEMail || '')
+                .replace(/\{workphone\}/g, profile.WorkPhone || '')
+                .replace(/\{office\}/g, profile.Office || '');
 
             var $div = $('<div>', { 'class': 'user-profile-card', 'html': template });
             return $div;

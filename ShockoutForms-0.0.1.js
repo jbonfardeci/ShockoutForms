@@ -406,7 +406,7 @@ var Shockout;
                 var currentUser;
                 var query = '<Query><Where><Eq><FieldRef Name="ID" /><Value Type="Counter"><UserID /></Value></Eq></Where></Query>';
                 var viewFields = '<ViewFields><FieldRef Name="ID" /><FieldRef Name="Name" /><FieldRef Name="EMail" /><FieldRef Name="Department" /><FieldRef Name="JobTitle" /><FieldRef Name="UserName" /><FieldRef Name="Office" /></ViewFields>';
-                self.getListItemsSoap('', 'User Information List', viewFields, query, function (xData, Sstatus) {
+                self.getListItemsSoap('', 'User Information List', viewFields, query, function (xmlDoc, status, jqXhr) {
                     var user = {
                         id: null,
                         title: null,
@@ -417,16 +417,33 @@ var Shockout;
                         department: null,
                         groups: []
                     };
-                    $(xData.responseXML).find('*').filter(function () {
-                        return this.nodeName === 'z:row';
+                    /*
+                    // Returns
+                    <z:row xmlns:z="#RowsetSchema"
+                        ows_ID="1" ows_Name="DSSWTX\jbonfardeci"
+                        ows_EMail="jbonfardeci@dsswtx.org"
+                        ows_JobTitle="Senior Developer/Analyst"
+                        ows_UserName="jbonfardeci" ows_Office="San Antonio"
+                        ows__ModerationStatus="0" ows__Level="1"
+                        ows_Title="John Bonfardeci"
+                        ows_UniqueId="1;#{2AFFA9A1-87D4-44A7-9D4F-618BCBD990D7}"
+                        ows_owshiddenversion="306" ows_FSObjType="1;#0"
+                        ows_Created="2009-03-17 13:34:11"
+                        ows_PermMask="0x7fffffffffffffff"
+                        ows_Modified="2015-06-03 17:22:08"
+                        ows_FileRef="1;#_catalogs/users/1_.000"
+                        ows_MetaInfo="1;#vti_encoding:SR|utf8-nla876b305-6b7b-4736-a7b5-58fb5d440529__AssetLastLocation:SW|/bi/Lists/Projects/Dashboard.aspx"/>
+                    */
+                    $(xmlDoc).find('*').filter(function () {
+                        return this.nodeName == 'z:row';
                     }).each(function (i, node) {
                         user.id = parseInt($(node).attr('ows_ID'));
-                        user.title = $(node).attr('ows_Name');
+                        user.title = $(node).attr('ows_Name').replace(/\\/, '\\');
                         user.login = $(node).attr('ows_UserName');
                         user.email = $(node).attr('ows_EMail');
                         user.jobtitle = $(node).attr('ows_JobTitle');
                         user.department = $(node).attr('ows_Department');
-                        user.account = user.id + ';#' + user.login;
+                        user.account = user.id + ';#' + user.title;
                     });
                     self.currentUser = user;
                     self.viewModel.currentUser(user);
@@ -609,7 +626,7 @@ var Shockout;
                 var isObj = /Object/;
                 self.itemId = item.Id;
                 vm.Id(item.Id);
-                vm.isAuthor(item.CreatedById == self.currentUser.id);
+                vm.isAuthor(self.currentUser.id == item.CreatedById - 0);
                 for (var key in self.viewModel) {
                     if (!(key in item) || rxExclude.test(key) || vm[key]._type == 'MultiChoice' || vm[key]._type == 'User' || vm[key]._type == 'Choice') {
                         continue;
@@ -626,7 +643,6 @@ var Shockout;
                 self.getListItemsRest(item.CreatedBy.__deferred.uri, function (data, status, jqXhr) {
                     var person = data.d;
                     vm.CreatedBy(person);
-                    vm.isAuthor(self.currentUser.id == person.Id);
                     vm.CreatedByName(person.Name);
                     vm.CreatedByEmail(person.WorkEMail);
                     if (self.includeUserProfiles) {
@@ -2834,7 +2850,11 @@ var Shockout;
             return $div;
         };
         Templates.getUserProfileTemplate = function (profile, headerTxt) {
-            var template = Templates.userProfileTemplate.replace(/\{header\}/g, headerTxt).replace(/\{pictureurl\}/g, (profile.Picture.indexOf(',') > 0 ? profile.Picture.split(',')[0] : profile.Picture)).replace(/\{name\}/g, (profile.Name || '')).replace(/\{jobtitle\}/g, profile.Title || '').replace(/\{department\}/g, profile.Department || '').replace(/\{workemail\}/g, profile.WorkEMail || '').replace(/\{workphone\}/g, profile.WorkPhone || '').replace(/\{office\}/g, profile.Office || '');
+            var pictureUrl = '/_layouts/images/person.gif';
+            if (profile.Picture != null && profile.Picture.indexOf(',') > -1) {
+                pictureUrl = profile.Picture.split(',')[0];
+            }
+            var template = Templates.userProfileTemplate.replace(/\{header\}/g, headerTxt).replace(/\{pictureurl\}/g, pictureUrl).replace(/\{name\}/g, (profile.Name || '')).replace(/\{jobtitle\}/g, profile.Title || '').replace(/\{department\}/g, profile.Department || '').replace(/\{workemail\}/g, profile.WorkEMail || '').replace(/\{workphone\}/g, profile.WorkPhone || '').replace(/\{office\}/g, profile.Office || '');
             var $div = $('<div>', { 'class': 'user-profile-card', 'html': template });
             return $div;
         };
