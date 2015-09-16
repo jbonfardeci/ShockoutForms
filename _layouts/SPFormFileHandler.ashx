@@ -39,10 +39,8 @@ public class SPFormFileHandler : IHttpHandler
             else
                 errors.Append("Missing List ID. ");
 
-            if (!string.IsNullOrEmpty(r["itemId"]))
+            if (!string.IsNullOrEmpty(r["itemId"]) && r["itemId"] != "null")
                 itemId = Convert.ToInt32(r["itemId"].ToString());
-            else
-                errors.Append("Missing Item ID. ");
 
             //not IE
             if (!string.IsNullOrEmpty(r["qqfile"]))

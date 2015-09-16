@@ -172,8 +172,8 @@
                 var dateStr = '';
 
                 if (value && value != null) {
-                    var d = new Date(value);
-                    dateStr = Utils.dateToLocaleString(d);
+                    var d: Date = new Date(value);
+                    dateStr = d.toLocaleString(); // Utils.dateToLocaleString(d);
                 }
 
                 if ('value' in element) {
@@ -306,9 +306,9 @@
 
                 try {
                     if (value && value != null) {
-                        var d = new Date(value);
-                        var dateStr = Utils.dateToLocaleString(d);
-                        var timeStr = Utils.toTimeLocaleString(d);
+                        var d: Date = new Date(value);
+                        var dateStr = d.toLocaleDateString(); // Utils.dateToLocaleString(d);
+                        var timeStr = d.toLocaleTimeString(); // Utils.toTimeLocaleString(d);
 
                         if (element.tagName.toLowerCase() == 'input') {
                             element.value = dateStr;

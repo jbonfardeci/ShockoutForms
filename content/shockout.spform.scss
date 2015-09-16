@@ -1,4 +1,6 @@
-﻿@media screen {
+﻿$red: #a94442;
+
+@media screen {
 
     .company-branding{
         text-align:center;
@@ -7,8 +9,14 @@
 
     .sp-form{
         
-        .req {
-            color: #f00;
+        .has-error {
+            .required, *[required] {
+                border-color: $red;
+            }
+        }
+
+        .req{
+            color: $red;
             padding: 0 5px;
             font-size: 1.2em;
         }
@@ -44,6 +52,21 @@
         input.abbr{
 			width:2em;
 		}
+
+        .checkbox input[type=checkbox], 
+        .checkbox-inline input[type=checkbox], 
+        .radio input[type=radio], 
+        .radio-inline input[type=radio]
+        {
+            position:static;
+            margin-left:0;
+        }
+
+        input[type=radio]{
+            width: 1.5em;
+            height: 1.2em;
+            cursor: pointer;
+        }
 
         .form-action {
             position: fixed;
@@ -142,7 +165,7 @@
 			-webkit-border-radius: 5px;
 			border-radius: 5px;
             
-            h4 {
+            > h4 {
             	font-size:1em;
             	color:#069;
                 width: auto;

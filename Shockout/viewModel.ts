@@ -2,9 +2,11 @@
     
     export interface IViewModel {
         Id: KnockoutObservable<number>;
+        Created: KnockoutObservable<Date>;
         CreatedBy: KnockoutObservable<ISpPerson>;
         CreatedByName: KnockoutObservable<string>;
         CreatedByEmail: KnockoutObservable<string>;
+        Modified: KnockoutObservable<Date>;
         ModifiedBy: KnockoutObservable<ISpPerson>;
         ModifiedByName: KnockoutObservable<string>;
         ModifiedByEmail: KnockoutObservable<string>;
@@ -12,7 +14,7 @@
         parent: any;
         history: KnockoutObservable<Array<any>>;
         attachments: KnockoutObservable<Array<any>>;
-        isAuthor: KnockoutObservable<boolean>
+        isAuthor: KnockoutObservable<boolean>;
         currentUser: KnockoutObservable<any>;
         isValid: KnockoutComputed<boolean>;
 
@@ -39,9 +41,11 @@
         public static parent: SPForm;
 
         public Id: KnockoutObservable<number> = ko.observable(null);
+        public Created: KnockoutObservable<Date> = ko.observable(null);
         public CreatedBy: KnockoutObservable<ISpPerson> = ko.observable(null);
         public CreatedByName: KnockoutObservable<string> = ko.observable(null);
         public CreatedByEmail: KnockoutObservable<string> = ko.observable(null);
+        public Modified: KnockoutObservable<Date> = ko.observable(null);
         public ModifiedBy: KnockoutObservable<ISpPerson> = ko.observable(null);
         public ModifiedByName: KnockoutObservable<string> = ko.observable(null);
         public ModifiedByEmail: KnockoutObservable<string> = ko.observable(null);
@@ -49,8 +53,8 @@
         public parent: Shockout.SPForm;
         public history: KnockoutObservable<Array<any>> = ko.observableArray([]);
         public attachments: KnockoutObservableArray<ISpAttachment> = ko.observableArray([]);
-        public isAuthor: KnockoutObservable<boolean> = ko.observable(false);
-        public currentUser: KnockoutObservable<ICurrentUser> = ko.observable(null);
+        public isAuthor: KnockoutObservable<boolean>;
+        public currentUser: KnockoutObservable<ICurrentUser>;
         public isValid: KnockoutComputed<boolean>;
         public deleteAttachment;
         
@@ -64,6 +68,8 @@
             });
 
             this.deleteAttachment = instance.deleteAttachment;
+            this.currentUser = ko.observable(instance.getCurrentUser());
+            this.isAuthor = ko.observable(false);
         }
 
         public deleteItem(): void {
