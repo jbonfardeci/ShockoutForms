@@ -109,6 +109,7 @@ var Shockout;
             */
             this.sourceUrl = null;
             this.version = '0.0.1';
+            this.queryStringId = 'formid';
             /**
             * Update list item via SOAP services.
             * @param listName: string
@@ -175,12 +176,12 @@ var Shockout;
                     $jqXhr.fail(function (obj, status, jqXhr) {
                         var msg = 'executeSoapRequest() error. Status: ' + obj.statusText + ' ' + status + ' ' + JSON.stringify(jqXhr);
                         Shockout.Utils.logError(msg, SPForm.errorLogListName);
-                        throw msg;
+                        console.warn(msg);
                     });
                 }
                 catch (e) {
                     if (self.debug) {
-                        throw e;
+                        console.warn(e);
                     }
                 }
             };
@@ -208,21 +209,16 @@ var Shockout;
                 return;
             }
             // these are the only parameters required
-            this.formId = formId;
-            this.listName = listName;
+            this.formId = formId; // string ID of the parent form - could be any element you choose.
+            this.listName = listName; // the name of the SP List
             // get the form container element
             this.form = document.getElementById(this.formId);
-            this.$form = $(this.form).addClass('sp-form'); //.attr('novalidate', 'novalidate');
-            $("form[name='aspnetForm']").attr({ 'novalidate': 'novalidate' });
-            // get the SP list item ID of the form in the querystring
-            if (!!Shockout.Utils.getQueryParam("id")) {
-                this.itemId = parseInt(Shockout.Utils.getQueryParam("id"));
-            }
-            else if (!!Shockout.Utils.getQueryParam("formid")) {
-                this.itemId = parseInt(Shockout.Utils.getQueryParam("formid"));
-            }
+            this.$form = $(this.form).addClass('sp-form');
+            // Prevent browsers from doing their own validation to allow users to press the `Save` button even when all required fields aren't filled in.
+            // We're doing validation ourselves when users presses the `Submit` button.
+            $('form').attr({ 'novalidate': 'novalidate' });
             //if accessing the form from a SP list, take user back to the list on close
-            this.sourceUrl = Shockout.Utils.getQueryParam("source");
+            this.sourceUrl = Shockout.Utils.getQueryParam('source');
             if (!!this.sourceUrl) {
                 this.sourceUrl = decodeURIComponent(this.sourceUrl);
             }
@@ -232,11 +228,19 @@ var Shockout;
                     this[p] = options[p];
                 }
             }
+            // get the SP list item ID of the form in the querystring
+            if (!!Shockout.Utils.getQueryParam('id')) {
+                this.itemId = parseInt(Shockout.Utils.getQueryParam('id'));
+                this.queryStringId = 'id';
+            }
+            else if (!!Shockout.Utils.getQueryParam(this.queryStringId)) {
+                this.itemId = parseInt(Shockout.Utils.getQueryParam(this.queryStringId));
+            }
             // setup static error log list name
             SPForm.errorLogListName = this.errorLogListName;
             // initialize custom Knockout handlers
             Shockout.KoHandlers.bindKoHandlers();
-            // create instance of the KNockout View Model
+            // create instance of the Knockout View Model
             this.viewModel = new Shockout.ViewModel(this);
             // create element for displaying form load status
             self.$formStatus = $('<div>', { 'class': 'form-status' }).appendTo(self.$form);
@@ -373,11 +377,10 @@ var Shockout;
         * @return void
         */
         SPForm.prototype.nextAsync = function (success, msg, args) {
-            if (success === void 0) { success = undefined; }
+            if (success === void 0) { success = true; }
             if (msg === void 0) { msg = undefined; }
             if (args === void 0) { args = undefined; }
             var self = this;
-            success = success || true;
             if (msg) {
                 this.updateStatus(msg, success);
             }
@@ -416,50 +419,49 @@ var Shockout;
                 if (self.allowSave) {
                     self.$formAction.find('.btn.save').show();
                 }
-                // set the absolute URI for the file handler 
-                self.fileHandlerUrl = self.rootUrl + self.siteUrl + self.fileHandlerUrl;
-                // file uploader default settings
-                self.fileUploaderSettings = {
-                    element: null,
-                    action: self.fileHandlerUrl,
-                    debug: self.debug,
-                    multiple: false,
-                    maxConnections: 3,
-                    allowedExtensions: self.allowedExtensions,
-                    params: {
-                        listId: self.listId,
-                        itemId: self.itemId
-                    },
-                    onSubmit: function (id, fileName) {
-                    },
-                    onComplete: function (id, fileName, json) {
-                        if (json.error != null) {
-                            self.logError(json.error);
+                if (self.enableAttachments) {
+                    // set the absolute URI for the file handler 
+                    self.fileHandlerUrl = self.rootUrl + self.siteUrl + self.fileHandlerUrl;
+                    // file uploader default settings
+                    self.fileUploaderSettings = {
+                        element: null,
+                        action: self.fileHandlerUrl,
+                        debug: self.debug,
+                        multiple: false,
+                        maxConnections: 3,
+                        allowedExtensions: self.allowedExtensions,
+                        params: {
+                            listId: self.listId,
+                            itemId: self.itemId
+                        },
+                        onSubmit: function (id, fileName) {
+                        },
+                        onComplete: function (id, fileName, json) {
                             if (self.debug) {
-                                throw json.error;
+                                console.warn(json);
                             }
-                            return;
-                        }
-                        if (self.debug) {
-                            console.warn('Attach file returned list item ID: ' + json.itemId);
-                        }
-                        if (self.itemId == null) {
-                            var itemId = parseInt(json.itemId);
-                            self.itemId = itemId;
-                            self.viewModel.Id(itemId);
-                            self.saveListItem(self.viewModel, false);
-                        }
-                        self.getAttachments(self);
-                    },
-                    template: Shockout.Templates.getFileUploadTemplate()
-                };
-                //setup attachments module
-                self.$form.find(".attachments").each(function (i, att) {
-                    var id = 'fileuploader_' + i;
-                    $(att).append(Shockout.Templates.getAttachmentsTemplate(id));
-                    self.fileUploaderSettings.element = document.getElementById(id);
-                    self.fileUploader = new Shockout.qq.FileUploader(self.fileUploaderSettings);
-                });
+                            if (json.error != null && json.error != "") {
+                                self.logError(json.error);
+                                if (self.debug) {
+                                    console.warn(json.error);
+                                }
+                                return;
+                            }
+                            if (self.itemId == null && json.itemId != null) {
+                                self.itemId = json.itemId;
+                                self.viewModel.Id(json.itemId);
+                            }
+                        },
+                        template: Shockout.Templates.getFileUploadTemplate()
+                    };
+                    //setup attachments module
+                    self.$form.find(".attachments").each(function (i, att) {
+                        var id = 'fileuploader_' + i;
+                        $(att).append(Shockout.Templates.getAttachmentsTemplate(id));
+                        self.fileUploaderSettings.element = document.getElementById(id);
+                        self.fileUploader = new Shockout.qq.FileUploader(self.fileUploaderSettings);
+                    });
+                }
                 // set up HTML editors in the form
                 self.$form.find(".rte, [data-bind*='spHtml']").each(function (i, el) {
                     var $el = $(el);
@@ -648,9 +650,11 @@ var Shockout;
                 });
                 // Build array of SP field names for the input fields remaning on the form.
                 // These are the field names to be saved and current user is allows to edit these.
+                var rxExcludeInputTypes = /(button|submit|cancel|reset)/;
+                var rxIncludeInputTags = /(input|select|textarea)/i;
                 self.$form.find('[data-bind]').each(function (i, e) {
-                    var key = Shockout.Utils.observableNameFromControl(e);
-                    if (e.tagName == 'INPUT' || e.tagName == 'SELECT' || e.tagName == 'TEXTAREA' || $(e).attr('contenteditable') == 'true') {
+                    if (rxIncludeInputTags.test(e.tagName) && !rxExcludeInputTypes.test($(e).attr('type')) || $(e).attr('contenteditable') == 'true') {
+                        var key = Shockout.Utils.observableNameFromControl(e);
                         self.pushEditableFieldName(key);
                     }
                 });
@@ -688,7 +692,7 @@ var Shockout;
                 }, function fail(obj, status, jqXhr) {
                     var msg = null;
                     if (obj.status && obj.status == '404') {
-                        msg = obj.statusText + ". The form may have been deleted by another user.";
+                        msg = obj.statusText + ". A form with ID " + self.itemId + " doesn't exist or it may have been deleted by another user.";
                     }
                     else {
                         msg = status + ' ' + jqXhr;
@@ -745,7 +749,7 @@ var Shockout;
             if (self === void 0) { self = undefined; }
             self = self || this;
             try {
-                if (!!!self.listItem) {
+                if (!!!self.itemId) {
                     return;
                 }
                 var item = self.listItem;
@@ -907,7 +911,7 @@ var Shockout;
                 //Otherwise pressing Save would set it from true back to false - breaking any workflow logic in place!
                 var isSubmitted = vm[Shockout.ViewModel.isSubmittedKey];
                 if (typeof (isSubmitted) != "undefined" && (isSubmitted() == null || isSubmitted() == false)) {
-                    fields.push([Shockout.ViewModel.isSubmittedKey, isSubmit]);
+                    fields.push([Shockout.ViewModel.isSubmittedKey, (isSubmit ? 1 : 0)]);
                 }
                 // build the `fields` array 
                 $(self.editableFields).each(function (i, key) {
@@ -916,14 +920,17 @@ var Shockout;
                         return;
                     }
                     if (val != null && val.constructor === Array) {
-                        val = ';#' + val.join(';#') + ';#';
+                        if (val.length > 0) {
+                            val = ';#' + val.join(';#') + ';#';
+                        }
                     }
                     else if (val != null && val.constructor == Date) {
                         val = new Date(val).toISOString();
                     }
-                    else if (vm[key]._type == 'Note') {
+                    else if (val != null && vm[key]._type == 'Note') {
                         val = '<![CDATA[' + $('<div>').html(val).html() + ']]>';
                     }
+                    val = val == null ? '' : val;
                     fields.push([vm[key]._name, val]);
                 });
                 self.updateListItem(self.listName, fields, isNew, callback);
@@ -936,10 +943,46 @@ var Shockout;
             }
             function callback(xmlDoc, status, jqXhr) {
                 var itemId;
+                if (self.debug) {
+                    console.log('Callback from saveListItem()...');
+                    console.log(status);
+                    console.log(xmlDoc);
+                }
+                /*
+                // Error response example
+                <?xml version="1.0" encoding="utf-8"?>
+                <soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+                    <soap:Body>
+                        <UpdateListItemsResponse xmlns="http://schemas.microsoft.com/sharepoint/soap/">
+                            <UpdateListItemsResult>
+                                <Results>
+                                    <Result ID="1,New">
+                                        <ErrorCode>0x80020005</ErrorCode>
+                                        <ErrorText>The operation failed because an unexpected error occurred. (Result Code: 0x80020005)</ErrorText>
+                                    </Result>
+                                </Results>
+                            </UpdateListItemsResult>
+                        </UpdateListItemsResponse>
+                    </soap:Body>
+                </soap:Envelope>
+                */
+                var $errorText = $(xmlDoc).find('ErrorText');
+                // catch and handle returned error
+                if (!!$errorText && $errorText.text() != "") {
+                    self.logError($errorText.text());
+                    return;
+                }
                 $(xmlDoc).find('*').filter(function () {
                     return this.nodeName == 'z:row';
                 }).each(function (i, el) {
                     itemId = parseInt($(el).attr('ows_ID'));
+                    if (self.itemId == null) {
+                        self.itemId = itemId;
+                    }
+                    if (self.debug) {
+                        console.warn('Item ID returned...');
+                        console.warn(itemId);
+                    }
                 });
                 if (isSubmit && !self.debug) {
                     self.showDialog('<p>Your form has been submitted. You will be redirected in ' + timeout / 1000 + ' seconds.</p>', 'Form Submission Successful');
@@ -948,18 +991,18 @@ var Shockout;
                     }, timeout);
                 }
                 else {
-                    if (isNew || refresh) {
+                    // Append list item ID to querystring if this is a new form.
+                    if (Shockout.Utils.getQueryParam(self.queryStringId) == null && self.itemId != null) {
                         saveMsg += '<p>This page will refresh in ' + timeout / 1000 + ' seconds.</p>';
-                    }
-                    self.showDialog(saveMsg, 'The form has been saved.', timeout);
-                    if (isNew || refresh) {
+                        self.showDialog(saveMsg, 'The form has been saved.', timeout);
                         setTimeout(function () {
                             //append list item id to url
-                            window.location.search = '?formid=' + itemId;
+                            window.location.search = '?' + self.queryStringId + '=' + self.itemId;
                         }, timeout);
                     }
                     else {
-                        //self.getListItemAsync(self);
+                        // refresh data from the server
+                        self.getListItemAsync(self);
                         //give WF History list 5 seconds to update
                         setTimeout(function () {
                             self.getHistoryAsync(self);
@@ -1061,7 +1104,7 @@ var Shockout;
         */
         SPForm.prototype.getAttachmentsAsync = function (self, args) {
             if (args === void 0) { args = undefined; }
-            if (!!!self.itemId || self.itemId == null) {
+            if (!!!self.listItem || !self.enableAttachments) {
                 self.nextAsync(true);
                 return;
             }
@@ -1074,7 +1117,7 @@ var Shockout;
             if (self === void 0) { self = undefined; }
             if (callback === void 0) { callback = undefined; }
             self = self || this;
-            if (!!!self.itemId || !self.enableAttachments) {
+            if (!!!self.listItem || !self.enableAttachments) {
                 if (callback) {
                     callback();
                 }
@@ -1171,7 +1214,7 @@ var Shockout;
             var packet = '<?xml version="1.0" encoding="utf-8"?><soap:Envelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/"><soap:Body><GetList xmlns="http://schemas.microsoft.com/sharepoint/soap/"><listName>{0}</listName></GetList></soap:Body></soap:Envelope>';
             // Determine if the field is a `Choice` or `MultiChoice` field with choices.
             var rxIsChoice = /choice/i;
-            var rxExcludeNames = /^(FolderChildCount|ItemChildCount|MetaInfo|ContentType|Edit|Type|LinkTitleNoMenu|LinkTitle|LinkTitle2|Version)/;
+            var rxExcludeNames = /^(FolderChildCount|ItemChildCount|MetaInfo|ContentType|Edit|Type|LinkTitleNoMenu|LinkTitle|LinkTitle2|Version|Attachments)/;
             var $jqXhr = $.ajax({
                 url: self.rootUrl + self.siteUrl + '/_vti_bin/lists.asmx',
                 type: 'POST',
@@ -1270,9 +1313,6 @@ var Shockout;
                         vm[koName]._choices = choices;
                         vm[koName]._multiChoice = $el.attr('Type') == 'MultiChoice';
                     }
-                    if (self.debug) {
-                        console.info('Created KO ' + spType + ' object: ' + koName + (!!vm[koName]._choices ? ', numChoices: ' + vm[koName]._choices.length : ''));
-                    }
                 }
                 catch (e) {
                     if (self.debug) {
@@ -1299,9 +1339,12 @@ var Shockout;
         * @return void
         */
         SPForm.prototype.updateStatus = function (msg, success) {
-            if (success === void 0) { success = undefined; }
-            success = success || true;
-            this.$formStatus.html(msg).css('color', (success ? "#ff0" : "$f00")).slideUp();
+            if (success === void 0) { success = true; }
+            var self = this;
+            this.$formStatus.html(msg).css('color', (success ? "#ff0" : "$f00")).show();
+            setTimeout(function () {
+                self.$formStatus.hide();
+            }, 2000);
         };
         /**
         * Display a message to the user with jQuery UI Dialog.
@@ -1455,7 +1498,9 @@ var Shockout;
             $jqXhr.fail(function (obj, status, jqXhr) {
                 var msg = 'Get person by ID error. Status: ' + obj.statusText + ' ' + status + ' ' + JSON.stringify(jqXhr);
                 Shockout.Utils.logError(msg, SPForm.errorLogListName);
-                throw msg;
+                if (self.debug) {
+                    console.warn(msg);
+                }
             });
         };
         SPForm.prototype.pushEditableFieldName = function (key) {
@@ -2625,30 +2670,36 @@ var Shockout;
                     // This will be called when the binding is first applied to an element
                     // Set up any initial state, event handlers, etc. here
                     var viewModel = bindingContext.$data, modelValue = valueAccessor(), person = ko.unwrap(modelValue);
-                    $(element).attr('placeholder', 'Employee Account Name').addClass('people-picker-control');
+                    var $element = $(element);
+                    $element.addClass('people-picker-control');
+                    $element.attr('placeholder', 'Employee Account Name'); //.addClass('people-picker-control');
                     //create wrapper for control
                     var $parent = $(element).parent();
+                    var $spError = $('<div>', { 'class': 'sp-validation person' }).appendTo($parent);
+                    var $desc = $('<div>', {
+                        'class': 'no-print',
+                        'html': '<em>Enter the employee name. The auto-suggest menu will appear below the field. Select the account name.</em>'
+                    }).appendTo($parent);
                     //controls
-                    var $spValidate = $('<button>', { 'html': '<span>Validate</span>', 'class': 'sp-validate-person', 'title': 'Validate the employee account name.' }).on('click', function () {
-                        if ($.trim($(element).val()) == '') {
-                            $(element).removeClass('invalid').removeClass('valid');
+                    var $spValidate = $('<button>', {
+                        'html': '<span class="glyphicon glyphicon-user"></span>',
+                        'class': 'btn btn-sm btn-default no-print',
+                        'title': 'Validate the employee account name.'
+                    }).on('click', function () {
+                        if ($.trim($element.val()) == '') {
+                            $element.removeClass('invalid').removeClass('valid');
                             return false;
                         }
                         if (!Shockout.Utils.validateSpPerson(modelValue())) {
-                            $spError.text('Invalid').addClass('error');
-                            $(element).addClass('invalid').removeClass('valid');
+                            $spError.text('Invalid').addClass('error').show();
+                            $element.addClass('invalid').removeClass('valid');
                         }
                         else {
                             $spError.text('Valid').removeClass('error');
-                            $(element).removeClass('invalid').addClass('valid');
+                            $element.removeClass('invalid').addClass('valid').show();
                         }
                         return false;
-                    });
-                    $parent.append($spValidate);
-                    var $spError = $('<span>', { 'class': 'sp-validation person' });
-                    $parent.append($spError);
-                    var $desc = $('<div>', { 'class': 'no-print', 'html': '<em>Enter the employee name. The auto-suggest menu will appear below the field. Select the account name.</em>' });
-                    $parent.append($desc);
+                    }).insertAfter($element);
                     $(element).autocomplete({
                         source: function (request, response) {
                             Shockout.Utils.peopleSearch(request.term, function (data) {
@@ -3421,4 +3472,4 @@ var Shockout;
     })();
     Shockout.ViewModel = ViewModel;
 })(Shockout || (Shockout = {}));
-//# sourceMappingURL=ShockoutForms-0.0.1.js.map
+//# sourceMappingURL=ShockoutForms-0.0.2.js.map

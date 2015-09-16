@@ -45,35 +45,42 @@
                         , person = ko.unwrap(modelValue)
                         ;
 
-                    $(element).attr('placeholder', 'Employee Account Name').addClass('people-picker-control');
+                    var $element = $(element);
+                    $element.addClass('people-picker-control');
+                    $element.attr('placeholder', 'Employee Account Name'); //.addClass('people-picker-control');
 
                     //create wrapper for control
                     var $parent = $(element).parent();
 
+                    var $spError = $('<div>', { 'class': 'sp-validation person' }).appendTo($parent);
+
+                    var $desc = $('<div>', {
+                        'class': 'no-print'
+                        , 'html': '<em>Enter the employee name. The auto-suggest menu will appear below the field. Select the account name.</em>'
+                    }).appendTo($parent);
+
                     //controls
-                    var $spValidate = $('<button>', { 'html': '<span>Validate</span>', 'class': 'sp-validate-person', 'title': 'Validate the employee account name.' }).on('click', function () {
-                        if ($.trim($(element).val()) == '') {
-                            $(element).removeClass('invalid').removeClass('valid');
+                    var $spValidate = $('<button>', {
+                        'html': '<span class="glyphicon glyphicon-user"></span>',
+                        'class': 'btn btn-sm btn-default no-print',
+                        'title': 'Validate the employee account name.'
+                    }).on('click', function () {
+                        if ($.trim($element.val()) == '') {
+                            $element.removeClass('invalid').removeClass('valid');
                             return false;
                         }
 
                         if (!Utils.validateSpPerson(modelValue())) {
-                            $spError.text('Invalid').addClass('error');
-                            $(element).addClass('invalid').removeClass('valid');
+                            $spError.text('Invalid').addClass('error').show();
+                            $element.addClass('invalid').removeClass('valid');
                         }
                         else {
                             $spError.text('Valid').removeClass('error');
-                            $(element).removeClass('invalid').addClass('valid');
+                            $element.removeClass('invalid').addClass('valid').show();
                         }
                         return false;
-                    });
-                    $parent.append($spValidate);
-
-                    var $spError = $('<span>', { 'class': 'sp-validation person' });
-                    $parent.append($spError);
-
-                    var $desc = $('<div>', { 'class': 'no-print', 'html': '<em>Enter the employee name. The auto-suggest menu will appear below the field. Select the account name.</em>' });
-                    $parent.append($desc);
+                    }).insertAfter($element);
+                    
 
                     $(element).autocomplete({
                         source: function (request, response) {
@@ -173,7 +180,7 @@
 
                 if (value && value != null) {
                     var d: Date = new Date(value);
-                    dateStr = d.toLocaleString(); // Utils.dateToLocaleString(d);
+                    dateStr = Utils.dateToLocaleString(d);
                 }
 
                 if ('value' in element) {
@@ -307,8 +314,8 @@
                 try {
                     if (value && value != null) {
                         var d: Date = new Date(value);
-                        var dateStr = d.toLocaleDateString(); // Utils.dateToLocaleString(d);
-                        var timeStr = d.toLocaleTimeString(); // Utils.toTimeLocaleString(d);
+                        var dateStr = Utils.dateToLocaleString(d);
+                        var timeStr = Utils.toTimeLocaleString(d);
 
                         if (element.tagName.toLowerCase() == 'input') {
                             element.value = dateStr;

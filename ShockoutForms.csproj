@@ -36,16 +36,10 @@
     <TypeScriptCompile Include="typings\knockout.d.ts" />
   </ItemGroup>
   <ItemGroup>
-    <Content Include="ShockoutForms-0.0.1.js" />
-    <Content Include="ShockoutForms-0.0.1.min.js" />
-    <Content Include="test.html" />
     <Content Include="_layouts\SPFormFileHandler.ashx" />
   </ItemGroup>
   <ItemGroup>
     <None Include="content\shockout.spform.scss" />
-  </ItemGroup>
-  <ItemGroup>
-    <Content Include="ShockoutForms-0.0.1.js.map" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="README.md" />

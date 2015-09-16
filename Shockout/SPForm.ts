@@ -240,6 +240,8 @@ module Shockout {
         public getVersion(): string { return this.version; }
         private version: string = '0.0.1';
 
+        public queryStringId: string = 'formid';
+
         constructor(listName: string, formId: string, options: Object) {
             var self = this;
             var error;
@@ -264,25 +266,19 @@ module Shockout {
             }
 
             // these are the only parameters required
-            this.formId = formId;
-            this.listName = listName;
+            this.formId = formId; // string ID of the parent form - could be any element you choose.
+            this.listName = listName; // the name of the SP List
 
             // get the form container element
             this.form = document.getElementById(this.formId);
-            this.$form = $(this.form).addClass('sp-form'); //.attr('novalidate', 'novalidate');
+            this.$form = $(this.form).addClass('sp-form');
 
-            $("form[name='aspnetForm']").attr({'novalidate': 'novalidate'});
-
-            // get the SP list item ID of the form in the querystring
-            if (!!Utils.getQueryParam("id")) {
-                this.itemId = parseInt(Utils.getQueryParam("id"));
-            }
-            else if (!!Utils.getQueryParam("formid")) {
-                this.itemId = parseInt(Utils.getQueryParam("formid"));
-            }
+            // Prevent browsers from doing their own validation to allow users to press the `Save` button even when all required fields aren't filled in.
+            // We're doing validation ourselves when users presses the `Submit` button.
+            $('form').attr({'novalidate': 'novalidate'});
 
             //if accessing the form from a SP list, take user back to the list on close
-            this.sourceUrl = Utils.getQueryParam("source"); 
+            this.sourceUrl = Utils.getQueryParam('source'); 
 
             if (!!this.sourceUrl) {
                 this.sourceUrl = decodeURIComponent(this.sourceUrl);
@@ -295,13 +291,22 @@ module Shockout {
                 }
             }
 
+            // get the SP list item ID of the form in the querystring
+            if (!!Utils.getQueryParam('id')) {
+                this.itemId = parseInt(Utils.getQueryParam('id'));
+                this.queryStringId = 'id';
+            }
+            else if (!!Utils.getQueryParam(this.queryStringId)) {
+                this.itemId = parseInt(Utils.getQueryParam(this.queryStringId));
+            }
+
             // setup static error log list name
             SPForm.errorLogListName = this.errorLogListName;
 
             // initialize custom Knockout handlers
             KoHandlers.bindKoHandlers();
 
-            // create instance of the KNockout View Model
+            // create instance of the Knockout View Model
             this.viewModel = new ViewModel(this);
 
             // create element for displaying form load status
@@ -369,9 +374,8 @@ module Shockout {
         * @param args: any = undefined
         * @return void
         */
-        nextAsync(success: boolean = undefined, msg: string = undefined, args: any = undefined): void {
+        nextAsync(success: boolean = true, msg: string = undefined, args: any = undefined): void {
             var self = this;
-            success = success || true;
 
             if (msg) {
                 this.updateStatus(msg, success);
@@ -414,58 +418,54 @@ module Shockout {
                 if (self.allowSave) {
                     self.$formAction.find('.btn.save').show();
                 }
-                
-                // set the absolute URI for the file handler 
-                self.fileHandlerUrl = self.rootUrl + self.siteUrl + self.fileHandlerUrl;
 
-                // file uploader default settings
-                self.fileUploaderSettings = {
-                    element: null,
-                    action: self.fileHandlerUrl,
-                    debug: self.debug,
-                    multiple: false,
-                    maxConnections: 3,
-                    allowedExtensions: self.allowedExtensions,
-                    params: {
-                        listId: self.listId,
-                        itemId: self.itemId
-                    },
-                    onSubmit: function (id, fileName) { },
-                    onComplete: function (id, fileName, json) {
+                if (self.enableAttachments) {
+                    // set the absolute URI for the file handler 
+                    self.fileHandlerUrl = self.rootUrl + self.siteUrl + self.fileHandlerUrl;
 
-                        if (self.debug) {
-                            console.warn(json);
-                        }
+                    // file uploader default settings
+                    self.fileUploaderSettings = {
+                        element: null,
+                        action: self.fileHandlerUrl,
+                        debug: self.debug,
+                        multiple: false,
+                        maxConnections: 3,
+                        allowedExtensions: self.allowedExtensions,
+                        params: {
+                            listId: self.listId,
+                            itemId: self.itemId
+                        },
+                        onSubmit: function (id, fileName) { },
+                        onComplete: function (id, fileName, json) {
 
-                        if (json.error != null && json.error != "") {
-                            self.logError(json.error);
                             if (self.debug) {
-                                console.warn(json.error);
+                                console.warn(json);
                             }
-                            return;
-                        }
 
-                        if (self.itemId == null && json.itemId != null) {
-                            self.itemId = json.itemId;
-                            self.viewModel.Id(json.itemId);
-
-                            if (!self.debug) {
-                                self.saveListItem(self.viewModel, false);
+                            if (json.error != null && json.error != "") {
+                                self.logError(json.error);
+                                if (self.debug) {
+                                    console.warn(json.error);
+                                }
+                                return;
                             }
-                        }
 
-                        //self.getAttachments(self);
-                    },
-                    template: Templates.getFileUploadTemplate()
+                            if (self.itemId == null && json.itemId != null) {
+                                self.itemId = json.itemId;
+                                self.viewModel.Id(json.itemId);
+                            }
+                        },
+                        template: Templates.getFileUploadTemplate()
+                    }
+
+                    //setup attachments module
+                    self.$form.find(".attachments").each(function (i: number, att: HTMLElement) {
+                        var id = 'fileuploader_' + i;
+                        $(att).append(Templates.getAttachmentsTemplate(id));
+                        self.fileUploaderSettings.element = document.getElementById(id);
+                        self.fileUploader = new Shockout.qq.FileUploader(self.fileUploaderSettings);
+                    });
                 }
-
-                //setup attachments module
-                self.$form.find(".attachments").each(function (i: number, att: HTMLElement) {
-                    var id = 'fileuploader_' + i;
-                    $(att).append(Templates.getAttachmentsTemplate(id));
-                    self.fileUploaderSettings.element = document.getElementById(id);
-                    self.fileUploader = new Shockout.qq.FileUploader(self.fileUploaderSettings);
-                });
 
                 // set up HTML editors in the form
                 self.$form.find(".rte, [data-bind*='spHtml']").each(function (i: number, el: HTMLElement) {
@@ -685,10 +685,11 @@ module Shockout {
 
                 // Build array of SP field names for the input fields remaning on the form.
                 // These are the field names to be saved and current user is allows to edit these.
-                self.$form.find('[data-bind]').each(function (i: number, e: HTMLElement) {
-                    var key = Utils.observableNameFromControl(e);
-
-                    if (e.tagName == 'INPUT' || e.tagName == 'SELECT' || e.tagName == 'TEXTAREA' || $(e).attr('contenteditable') == 'true') {
+                var rxExcludeInputTypes: RegExp = /(button|submit|cancel|reset)/;
+                var rxIncludeInputTags: RegExp = /(input|select|textarea)/i;
+                self.$form.find('[data-bind]').each(function (i: number, e: HTMLElement) {                 
+                    if (rxIncludeInputTags.test(e.tagName) && !rxExcludeInputTypes.test($(e).attr('type')) || $(e).attr('contenteditable') == 'true') {
+                        var key = Utils.observableNameFromControl(e);
                         self.pushEditableFieldName(key);
                     }
                 });
@@ -1058,19 +1059,18 @@ module Shockout {
                     }, timeout);
                 }
                 else {//saving form
-                    if (isNew || refresh) {
+                    
+                    // Append list item ID to querystring if this is a new form.
+                    if (Utils.getQueryParam(self.queryStringId) == null && self.itemId != null) {
                         saveMsg += '<p>This page will refresh in ' + timeout / 1000 + ' seconds.</p>';
-                    }
-
-                    self.showDialog(saveMsg, 'The form has been saved.', timeout);
-
-                    if ((isNew || refresh) && self.itemId != null) {
+                        self.showDialog(saveMsg, 'The form has been saved.', timeout);
                         setTimeout(function () {
                             //append list item id to url
-                            window.location.search = '?formid=' + self.itemId;
+                            window.location.search = '?' + self.queryStringId + '=' + self.itemId;
                         }, timeout);
                     }
                     else {
+                        // refresh data from the server
                         self.getListItemAsync(self);
                         //give WF History list 5 seconds to update
                         setTimeout(function () { self.getHistoryAsync(self); }, 5000);
@@ -1190,7 +1190,7 @@ module Shockout {
         */
         getAttachmentsAsync(self: SPForm, args: any = undefined): void {
 
-            if (!!!self.listItem) {
+            if (!!!self.listItem || !self.enableAttachments) {
                 self.nextAsync(true);
                 return;
             }
@@ -1320,7 +1320,7 @@ module Shockout {
 
             // Determine if the field is a `Choice` or `MultiChoice` field with choices.
             var rxIsChoice = /choice/i;
-            var rxExcludeNames: RegExp = /^(FolderChildCount|ItemChildCount|MetaInfo|ContentType|Edit|Type|LinkTitleNoMenu|LinkTitle|LinkTitle2|Version)/;
+            var rxExcludeNames: RegExp = /^(FolderChildCount|ItemChildCount|MetaInfo|ContentType|Edit|Type|LinkTitleNoMenu|LinkTitle|LinkTitle2|Version|Attachments)/;
 
             var $jqXhr = $.ajax({
                 url: self.rootUrl + self.siteUrl + '/_vti_bin/lists.asmx',
@@ -1468,12 +1468,15 @@ module Shockout {
         * @param success?: boolean = undefined
         * @return void
         */
-        updateStatus(msg: string, success: boolean = undefined): void {
-            success = success || true;
+        updateStatus(msg: string, success: boolean = true): void {
+            var self: SPForm = this;
+
             this.$formStatus
                 .html(msg)
                 .css('color', (success ? "#ff0" : "$f00"))
-                .slideUp();
+                .show();
+
+            setTimeout(function () { self.$formStatus.hide(); }, 2000);
         }
 
         /**

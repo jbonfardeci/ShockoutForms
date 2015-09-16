@@ -71,7 +71,8 @@ public class SPFormFileHandler : IHttpHandler
         }
         finally
         {
-            res.error = errors.ToString();
+            string err = errors.ToString();
+            res.error = !string.IsNullOrEmpty(err) ? err : null;
             string json = new JavaScriptSerializer().Serialize(res);
             context.Response.Write(json);
         }   
