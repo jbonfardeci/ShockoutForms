@@ -1268,6 +1268,11 @@ var Shockout;
                     var $el = $(el);
                     var displayName = $el.attr('DisplayName');
                     var spType = $el.attr('Type');
+                    var spName = $el.attr('Name');
+                    var spFormat = $el.attr('Format');
+                    var spRequired = $el.attr('Required') == 'True';
+                    var spReadOnly = !!($el.attr('ReadOnly')) && $el.attr('ReadOnly').toLowerCase() == 'true';
+                    var spDesc = $el.attr('Description');
                     var vm = self.viewModel;
                     // convert Display Name to equal format REST returns field names with.
                     // For example, convert 'Computer Name (if applicable)' to 'ComputerNameIfApplicable'.
@@ -1276,12 +1281,13 @@ var Shockout;
                     var koName = displayName.replace(/[^A-Za-z0-9\s]/g, '').replace(/\s[A-Za-z]/g, function (x) {
                         return x[1].toUpperCase();
                     });
+                    // stop and return if it's already a Knockout object
                     if (koName in self.viewModel) {
                         return;
                     }
                     self.fieldNames.push(koName);
                     var defaultValue;
-                    // find default value
+                    // find the SP field's default value if exists
                     $el.find('> Default').each(function (j, def) {
                         var val = $.trim($(def).text());
                         if (val == '[today]' && spType == 'DateTime') {
@@ -1292,27 +1298,26 @@ var Shockout;
                         }
                         defaultValue = val;
                     });
-                    // create the KO object based on the SP type.
-                    vm[koName] = spType == 'MultiChoice' ? ko.observableArray([]) : ko.observable(!!defaultValue ? defaultValue : spType == 'Boolean' ? false : null);
+                    var koObj = spType == 'MultiChoice' ? ko.observableArray([]) : ko.observable(!!defaultValue ? defaultValue : spType == 'Boolean' ? false : null);
                     // add metadata to the KO object
-                    vm[koName]._koName = koName;
-                    vm[koName]._displayName = displayName;
-                    vm[koName]._name = $el.attr('Name');
-                    vm[koName]._format = $el.attr('Format');
-                    vm[koName]._required = $el.attr('Required') == 'True';
-                    vm[koName]._readOnly = !!($el.attr('ReadOnly'));
-                    vm[koName]._description = $el.attr('Description');
-                    vm[koName]._type = spType;
-                    // Create and attach arrays for the choices in SP field's choice fields.
+                    koObj._koName = koName;
+                    koObj._displayName = displayName;
+                    koObj._name = spName;
+                    koObj._format = spFormat;
+                    koObj._required = spRequired;
+                    koObj._readOnly = spReadOnly;
+                    koObj._description = spDesc;
+                    koObj._type = spType;
                     if (rxIsChoice.test(spType)) {
-                        vm[koName]._isFillInChoice = $el.attr('FillInChoice') == 'True'; // allow fill-in choices
+                        koObj._isFillInChoice = $el.attr('FillInChoice') == 'True'; // allow fill-in choices
                         var choices = [];
                         $el.find('CHOICE').each(function (j, choice) {
                             choices.push({ 'value': $(choice).text(), 'selected': false });
                         });
-                        vm[koName]._choices = choices;
-                        vm[koName]._multiChoice = $el.attr('Type') == 'MultiChoice';
+                        koObj._choices = choices;
+                        koObj._multiChoice = $el.attr('Type') == 'MultiChoice';
                     }
+                    vm[koName] = koObj;
                 }
                 catch (e) {
                     if (self.debug) {
@@ -1503,9 +1508,18 @@ var Shockout;
                 }
             });
         };
+        /**
+        * Keeps track of field names to send back to the server for create and update operations.
+        * Skips field names that:
+        *   - have already been added to `ediableFields` array;
+        *   - begin with an underscore '_' or dollar sign '$';
+        *   - that don't exist in `fieldNames` array which includes both writable and read-only SP list field names;
+        *
+        * @param key: string
+        * @return number: length of array or -1 if not added
+        */
         SPForm.prototype.pushEditableFieldName = function (key) {
-            //skip observable keys that have already been added or begins with an underscore '_' or dollar sign '$'
-            if (!!!key || this.editableFields.indexOf(key) > -1 || key.match(/^(_|\$)/) != null) {
+            if (!!!key || this.editableFields.indexOf(key) > -1 || key.match(/^(_|\$)/) != null || this.fieldNames.indexOf(key) < 0 || this.viewModel[key]._readOnly) {
                 return -1;
             }
             return this.editableFields.push(key);
@@ -3060,15 +3074,15 @@ var Shockout;
             if (allowPrint === void 0) { allowPrint = true; }
             var template = [];
             //template.push('<div class="form-breadcrumbs"><a href="/">Home</a> &gt; eForms</div>');
-            template.push('<button class="btn btn-default cancel" data-bind="event: { click: cancel }"><span>Close</span></button>');
+            template.push('<button class="btn btn-default cancel" data-bind="event: { click: cancel }" title="Close"><span class="glyphicon glyphicon-remove"></span><span class="hidden-xs">Close</span></button>');
             if (allowPrint) {
-                template.push('<button class="btn btn-primary print" data-bind="visible: Id() != null, event: {click: print}"><span class="glyphicon glyphicon-print"></span><span>Print</span></button>');
+                template.push('<button class="btn btn-primary print" data-bind="visible: Id() != null, event: {click: print}" title="Print"><span class="glyphicon glyphicon-print"></span><span class="hidden-xs">Print</span></button>');
             }
             if (allowDelete) {
-                template.push('<button class="btn btn-warning delete" data-bind="visible: Id() != null, event: {click: deleteItem}"><span class="glyphicon glyphicon-remove"></span><span>Delete</span></button>');
+                template.push('<button class="btn btn-warning delete" data-bind="visible: Id() != null, event: {click: deleteItem}" title="Delete"><span class="glyphicon glyphicon-remove"></span><span class="hidden-xs">Delete</span></button>');
             }
-            template.push('<button class="btn btn-success save" data-bind="event: { click: save }" style="display:none;"><span class="glyphicon glyphicon-floppy-disk"></span><span>Save</span></button>');
-            template.push('<button class="btn btn-danger submit" data-bind="event: { click: submit }, disable: !isValid()"><span class="glyphicon glyphicon-floppy-open"></span><span>Submit</span></button>');
+            template.push('<button class="btn btn-success save" data-bind="event: { click: save }" style="display:none;" title="Save your work."><span class="glyphicon glyphicon-floppy-disk"></span><span class="hidden-xs">Save</span></button>');
+            template.push('<button class="btn btn-danger submit" data-bind="event: { click: submit }, disable: !isValid()" title="Submit for routing."><span class="glyphicon glyphicon-floppy-open"></span><span class="hidden-xs">Submit</span></button>');
             var $div = $('<div>', { 'class': 'form-action no-print', 'html': template.join('') });
             return $div;
         };

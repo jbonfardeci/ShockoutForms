@@ -1,5 +1,19 @@
 ﻿module Shockout {
 
+    export interface IShockoutObservable<T> extends KnockoutObservable<T> {
+        _koName: string;
+        _displayName: string;
+        _name: string;
+        _format: string;
+        _required: boolean;
+        _readOnly: boolean;
+        _description: string;
+        _type: string;
+        _choices: Array<any>;
+        _isFillInChoice: boolean;
+        _multiChoice: boolean;
+    }
+
     export interface IHistoryItem {
         description: string;
         date: Date;

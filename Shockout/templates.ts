@@ -78,17 +78,17 @@
         public static getFormAction(allowSave: boolean = true, allowDelete: boolean = true, allowPrint: boolean = true): JQuery {
             var template: Array<string> = [];
             //template.push('<div class="form-breadcrumbs"><a href="/">Home</a> &gt; eForms</div>');
-            template.push('<button class="btn btn-default cancel" data-bind="event: { click: cancel }"><span>Close</span></button>');
+            template.push('<button class="btn btn-default cancel" data-bind="event: { click: cancel }" title="Close"><span class="glyphicon glyphicon-remove"></span><span class="hidden-xs">Close</span></button>');
 
             if (allowPrint) {
-                template.push('<button class="btn btn-primary print" data-bind="visible: Id() != null, event: {click: print}"><span class="glyphicon glyphicon-print"></span><span>Print</span></button>');
+                template.push('<button class="btn btn-primary print" data-bind="visible: Id() != null, event: {click: print}" title="Print"><span class="glyphicon glyphicon-print"></span><span class="hidden-xs">Print</span></button>');
             }
             if (allowDelete) {
-                template.push('<button class="btn btn-warning delete" data-bind="visible: Id() != null, event: {click: deleteItem}"><span class="glyphicon glyphicon-remove"></span><span>Delete</span></button>');
+                template.push('<button class="btn btn-warning delete" data-bind="visible: Id() != null, event: {click: deleteItem}" title="Delete"><span class="glyphicon glyphicon-remove"></span><span class="hidden-xs">Delete</span></button>');
             }
-            template.push('<button class="btn btn-success save" data-bind="event: { click: save }" style="display:none;"><span class="glyphicon glyphicon-floppy-disk"></span><span>Save</span></button>');
+            template.push('<button class="btn btn-success save" data-bind="event: { click: save }" style="display:none;" title="Save your work."><span class="glyphicon glyphicon-floppy-disk"></span><span class="hidden-xs">Save</span></button>');
 
-            template.push('<button class="btn btn-danger submit" data-bind="event: { click: submit }, disable: !isValid()"><span class="glyphicon glyphicon-floppy-open"></span><span>Submit</span></button>');
+            template.push('<button class="btn btn-danger submit" data-bind="event: { click: submit }, disable: !isValid()" title="Submit for routing."><span class="glyphicon glyphicon-floppy-open"></span><span class="hidden-xs">Submit</span></button>');
 
             var $div = $('<div>', { 'class': 'form-action no-print', 'html': template.join('') });
             return $div;

@@ -1382,8 +1382,13 @@ module Shockout {
 
                 try {
                     var $el = $(el);
-                    var displayName = $el.attr('DisplayName');
-                    var spType = $el.attr('Type');
+                    var displayName: string = $el.attr('DisplayName');
+                    var spType: string = $el.attr('Type');
+                    var spName: string = $el.attr('Name');
+                    var spFormat: string = $el.attr('Format');
+                    var spRequired: boolean = $el.attr('Required') == 'True';
+                    var spReadOnly: boolean = !!($el.attr('ReadOnly')) && $el.attr('ReadOnly').toLowerCase() == 'true';
+                    var spDesc: string = $el.attr('Description');
                     var vm: IViewModel = self.viewModel;
 
                     // convert Display Name to equal format REST returns field names with.
@@ -1396,12 +1401,13 @@ module Shockout {
                             return x[1].toUpperCase();
                         });
 
+                    // stop and return if it's already a Knockout object
                     if (koName in self.viewModel) { return; }
 
                     self.fieldNames.push(koName);
 
                     var defaultValue: any;
-                    // find default value
+                    // find the SP field's default value if exists
                     $el.find('> Default').each(function (j: number, def: any): void {
                         var val: any = $.trim($(def).text());
                         if (val == '[today]' && spType == 'DateTime') {
@@ -1413,35 +1419,31 @@ module Shockout {
                         defaultValue = val;
                     });
 
-                    // create the KO object based on the SP type.
-                    vm[koName] = spType == 'MultiChoice' ? ko.observableArray([]) : ko.observable(!!defaultValue ? defaultValue : spType == 'Boolean' ? false : null);
-
+                    var koObj: any = spType == 'MultiChoice' ? ko.observableArray([]) : ko.observable(!!defaultValue ? defaultValue : spType == 'Boolean' ? false : null);
+                    
                     // add metadata to the KO object
-                    vm[koName]._koName = koName;
-                    vm[koName]._displayName = displayName;
-                    vm[koName]._name = $el.attr('Name');
-                    vm[koName]._format = $el.attr('Format');
-                    vm[koName]._required = $el.attr('Required') == 'True';
-                    vm[koName]._readOnly = !!($el.attr('ReadOnly'));
-                    vm[koName]._description = $el.attr('Description');
-                    vm[koName]._type = spType;
+                    koObj._koName = koName;
+                    koObj._displayName = displayName;
+                    koObj._name = spName;
+                    koObj._format = spFormat;
+                    koObj._required = spRequired;
+                    koObj._readOnly = spReadOnly;
+                    koObj._description = spDesc;
+                    koObj._type = spType;
 
-                    // Create and attach arrays for the choices in SP field's choice fields.
                     if (rxIsChoice.test(spType)) {
-                        vm[koName]._isFillInChoice = $el.attr('FillInChoice') == 'True'; // allow fill-in choices
+                        koObj._isFillInChoice = $el.attr('FillInChoice') == 'True'; // allow fill-in choices
                         var choices = [];
 
                         $el.find('CHOICE').each(function (j: number, choice: any) {
                             choices.push({ 'value': $(choice).text(), 'selected': false });
                         });
 
-                        vm[koName]._choices = choices;
-                        vm[koName]._multiChoice = $el.attr('Type') == 'MultiChoice';
+                        koObj._choices = choices;
+                        koObj._multiChoice = $el.attr('Type') == 'MultiChoice';
                     }
 
-                    //if (self.debug) {
-                    //    console.info('Created KO ' + spType + ' object: ' + koName + (!!vm[koName]._choices ? ', numChoices: ' + vm[koName]._choices.length : ''));
-                    //}
+                    vm[koName] = koObj;
                 }
                 catch (e) {
                     if (self.debug) {
@@ -1744,9 +1746,18 @@ module Shockout {
             });
         }
 
+        /**
+        * Keeps track of field names to send back to the server for create and update operations.
+        * Skips field names that:
+        *   - have already been added to `ediableFields` array;
+        *   - begin with an underscore '_' or dollar sign '$';
+        *   - that don't exist in `fieldNames` array which includes both writable and read-only SP list field names;
+        *
+        * @param key: string
+        * @return number: length of array or -1 if not added 
+        */
         pushEditableFieldName(key: string): number {
-            //skip observable keys that have already been added or begins with an underscore '_' or dollar sign '$'
-            if (!!!key || this.editableFields.indexOf(key) > -1 || key.match(/^(_|\$)/) != null) { return -1; }
+            if (!!!key || this.editableFields.indexOf(key) > -1 || key.match(/^(_|\$)/) != null || this.fieldNames.indexOf(key) < 0 || this.viewModel[key]._readOnly) { return -1; }
             return this.editableFields.push(key);
         }
 
