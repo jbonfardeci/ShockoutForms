@@ -69,30 +69,33 @@ Forget the frustrations of legacy InfoPath and XSL SharePoint forms. Leverage th
 ####Element Attributes
 
 ```
-// Remove element if it's restricted to the author only for example, input elements for editing the form. 
-<div data-author-only></div>
+// Restricts element to authors only. Removes from DOM otherwise.
+// Useful for restricting edit fields to the person that created the form.
+<section data-author-only></section>
 ```
 
 ```
-// Remove element if for non-authors only such as read-only elements for viewers of a form. 
-<div data-non-authors></div>
+// Restricts element to non-authors of a form. Removes from DOM otherwise. 
+// Useful for displaying read-only/non-edit sections to non-authors only.
+<section data-non-authors></section>
 ```
 
 ```
-// Remove elements with attribute `data-edit-only` from the DOM if not editing an existing form - a new form where itemId == null || undefined.
-<div data-edit-only></div>
+// Restricts elements to forms with an ID in the querystring. Removes from DOM otherwise. 
+// Useful for sections that require another person's input (approval sections) on an existing form.
+<section data-edit-only></section>
 ```
 
 ```
-// Remove elements with attribute `data-new-only` from the DOM if not a new form - an edit form where itemId != null.
-<div data-new-only></div>
+// Restricts elements to forms with NO ID in the querystring. Removes from DOM otherwise. 
+<section data-new-only></section>
 ```
 
 ```
-// Control permissions to elements by SP group membership.
+// Control permissions to elements by SP group membership, such as manager approval sections/fields.
 // Value is a comma delimitted list of user groups `<groupId>;#<groupName>`.
 // Example:
-<div data-sp-groups="1;#Administrators,2;#Managers"></div>
+<section data-sp-groups="1;#Administrators,2;#Managers"></section>
 ```
 
 Copyright (C) 2015  John T. Bonfardeci
