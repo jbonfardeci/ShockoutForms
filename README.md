@@ -6,6 +6,7 @@ Forget the frustrations of legacy InfoPath and XSL SharePoint forms. Leverage th
 
 ####Dependencies: 
 jQuery 1.72+, jQuery UI<any>, KnockoutJS 3.2+
+
 Looks best with Bootstrap CSS - http://getbootstrap.com or use the CDN (Content Delivery Network) links below.
 
 You must be familiar with the Knockout JS MVVM framework syntax. Visit http://knockoutjs.com if you need an introduction or refresher.
