@@ -66,6 +66,32 @@ Forget the frustrations of legacy InfoPath and XSL SharePoint forms. Leverage th
 	OR
 `<div data-bind="spNumber: myVar"></div>`
 
+####Element Attributes
+
+```
+// Remove element if it's restricted to the author only for example, input elements for editing the form. 
+<div data-author-only></div>
+```
+
+```
+// Remove element if for non-authors only such as read-only elements for viewers of a form. 
+<div data-non-authors></div>
+```
+
+```
+// Remove elements with attribute `data-edit-only` from the DOM if not editing an existing form - a new form where itemId == null || undefined.
+<div data-edit-only></div>
+```
+
+```
+// Remove elements with attribute `data-new-only` from the DOM if not a new form - an edit form where itemId != null.
+<div data-new-only></div>
+```
+
+```
+// Control permissions to elements by SP group membership.
+<div data-sp-groups="1;#Administrators,;#Managers"></div>
+```
 
 Copyright (C) 2015  John T. Bonfardeci
 
