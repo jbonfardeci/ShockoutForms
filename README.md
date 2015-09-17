@@ -67,15 +67,12 @@ You must be familiar with the Knockout JS MVVM framework syntax. Visit http://kn
 To enable your form to allow attaching files, ensure the `enableAttachments` option is `true` (the default) and include an element with the class name "attachments". Shockout will place everything inside the element(s). 
 Also ensure your SharePoint list has attachments enabled. Shockout will detect this setting and render attachments based on your SP list settings.
 ```
-<section>
-	<h4>Attachments</h4>
-	<div class="attachments"></div>
-</section>
+<section class="attachments"></section>
 ```
 
 ###Show the User Profiles for Created By and Modified By
 To enable this feature, ensure that `includeUserProfiles` is `true` (the default) include an element with the class name "created-info". 
-Shockout will query the User Information List and display user profiles with: picture, full name, job title, email, phone, department, and office.
+Shockout will query the User Information List or User Profile Service, if you have it, and display user profiles with: picture, full name, job title, email, phone, department, and office.
 If this feature is disabled, Shockout will only show the Created By/Created and Modified By/Modified fields. 
 ```
 <section class="created-info" data-edit-only></section>
