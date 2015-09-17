@@ -9,6 +9,8 @@
 * -----------------
 * By John Bonfardeci <john.bonfardeci@gmail.com>
 *
+* GitHub: https://github.com/jbonfardeci/ShockoutForms
+*
 * A Replacement for InfoPath and XSLT Forms
 * Leverage the power Knockout JS databinding with SharePoint services for modern and dynamic web form development.
 *
@@ -16,6 +18,7 @@
 * `var spForm = new Shockout.SPForm('My SharePoint List Name', 'my-form-ID', {});`
 *
 * Dependencies: jQuery 1.72+, jQuery UI<any>, KnockoutJS 3.2+
+* Compatible with Bootstrap CSS - http://getbootstrap.com
 *
 *   Copyright (C) 2015  John T. Bonfardeci
 *
@@ -1299,14 +1302,12 @@ var Shockout;
                     var spType = $el.attr('Type');
                     var spName = $el.attr('Name');
                     var spFormat = $el.attr('Format');
-                    var spRequired = $el.attr('Required') == 'True';
+                    var spRequired = $el.attr('Required').toLowerCase() == 'true';
                     var spReadOnly = !!($el.attr('ReadOnly')) && $el.attr('ReadOnly').toLowerCase() == 'true';
                     var spDesc = $el.attr('Description');
                     var vm = self.viewModel;
-                    // convert Display Name to equal format REST returns field names with.
+                    // Convert the Display Name to equal REST field name conventions.
                     // For example, convert 'Computer Name (if applicable)' to 'ComputerNameIfApplicable'.
-                    // The we can reference our fields choices with predictable variable names.
-                    // So for a field named 'ComputerNameIfApplicable' will have a corresponding observable array names '_options_ComputerNameIfApplicable'.
                     var koName = displayName.replace(/[^A-Za-z0-9\s]/g, '').replace(/\s[A-Za-z]/g, function (x) {
                         return x[1].toUpperCase();
                     });
@@ -1327,7 +1328,7 @@ var Shockout;
                         }
                         defaultValue = val;
                     });
-                    var koObj = spType == 'MultiChoice' ? ko.observableArray([]) : ko.observable(!!defaultValue ? defaultValue : spType == 'Boolean' ? false : null);
+                    var koObj = spType.toLowerCase() == 'multichoice' ? ko.observableArray([]) : ko.observable(!!defaultValue ? defaultValue : spType == 'Boolean' ? false : null);
                     // add metadata to the KO object
                     koObj._koName = koName;
                     koObj._displayName = displayName;
@@ -1338,13 +1339,13 @@ var Shockout;
                     koObj._description = spDesc;
                     koObj._type = spType;
                     if (rxIsChoice.test(spType)) {
-                        koObj._isFillInChoice = $el.attr('FillInChoice') == 'True'; // allow fill-in choices
+                        koObj._isFillInChoice = $el.attr('FillInChoice').toLowerCase() == 'true'; // allow fill-in choices
                         var choices = [];
                         $el.find('CHOICE').each(function (j, choice) {
                             choices.push({ 'value': $(choice).text(), 'selected': false });
                         });
                         koObj._choices = choices;
-                        koObj._multiChoice = $el.attr('Type') == 'MultiChoice';
+                        koObj._multiChoice = spType.toLowerCase() == 'multichoice';
                     }
                     vm[koName] = koObj;
                 }

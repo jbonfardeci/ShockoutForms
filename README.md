@@ -4,8 +4,14 @@ SharePoint + Knockout MVVM forms - an InfoPath killer
 
 Forget the frustrations of legacy InfoPath and XSL SharePoint forms. Leverage the power of Knockout's databinding with this framework.
 
+Dependencies: jQuery 1.72+, jQuery UI<any>, KnockoutJS 3.2+
+Looks best with Bootstrap CSS - http://getbootstrap.com
+
+You must be familiar with the Knockout JS MVVM framework syntax. Visit http://knockoutjs.com if you need an introduction or refresher.
+
 #### Usage
-<pre>var spForm = new Shockout.SPForm(
+<pre>
+	var spForm = new Shockout.SPForm(
 	/*listName:*/ 'My SharePoint List Name', 
 	/*formId:*/ 'my-form-ID', 
 	/*options:*/ {
@@ -30,6 +36,51 @@ Forget the frustrations of legacy InfoPath and XSL SharePoint forms. Leverage th
         workflowHistoryListName: 'Workflow History' // the default
 	});
 </pre>
+
+###Displaying SharePoint Choice Fields - Select Menu
+How to display the choices from a SharePoint Choice Field in a select menu.
+```
+<div class="form-group">
+	<label data-bind="text: MySpChoiceFieldName._displayName" class="control-label"></label>
+	<select data-bind="value: MySpChoiceFieldName, options: MySpChoiceFieldName._choices, optionsChoice: 'value', optionsCaption: '--SELECT--'" class="form-control"></select>
+</div>
+```
+
+###Displaying SharePoint MultiChoice Fields - Checkboxes
+How to display the choices from a SharePoint MultiChoice Field with checkboxes.
+```
+<div class="form-group">
+    <label data-bind="text: MySpChoiceFieldName._displayName" class="control-label"></label>
+
+	<!-- optional Field Description -->
+	<p data-bind="text: MySpChoiceFieldName._description"></p>
+
+    <!-- ko foreach: MySpChoiceFieldName._choices -->
+    <label class="checkbox">
+        <input type="checkbox" data-bind="checked: $root.MySpChoiceFieldName, attr: { value: $data.value, name: 'MySpChoiceFieldName_' + $index() }" />
+        <span data-bind="text: $data.value"></span>
+    </label>
+    <!-- /ko --> 	            
+</div>
+```
+
+###Displaying SharePoint MultiChoice Fields - Radio Buttons
+How to display the choices from a SharePoint MultiChoice Field with radio buttons.
+```
+<div class="form-group">
+    <label data-bind="text: MySpChoiceFieldName._displayName" class="control-label"></label>
+
+	<!-- optional Field Description -->
+	<p data-bind="text: MySpChoiceFieldName._description"></p>
+
+    <!-- ko foreach: MySpChoiceFieldName._choices -->
+    <label class="radio">
+        <input type="radio" data-bind="checked: $root.MySpChoiceFieldName, attr: { value: $data.value }" name="MySpChoiceFieldName" />
+        <span data-bind="text: $data.value"></span>
+    </label>
+    <!-- /ko -->             
+</div>
+```
 
 ### Custom Knockout binding handlers for SP list field types included:
 	
