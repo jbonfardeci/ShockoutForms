@@ -172,6 +172,7 @@ How to display the choices from a SharePoint MultiChoice Field with radio button
 Simply add the `required="required"` attribute to required fields. Shockout will do the rest!
 
 ##Knockout SharePoint Field Binding Handlers
+You may use these binding handlers with any HTML element. Shockout will render the apporpriate content whether it's a static element such as a DIV, SPAN, etc. or an input field.
 	
 ####spHtml
 ```
@@ -183,9 +184,6 @@ Displays an auto-complete field with user name and email address as you type a u
 SharePoint group names aren't supported at this time, but coming soon.
 ```
 <input type="text" data-bind="spPerson: myVar" />
-```
-	OR
-```
 <div data-bind="spPerson: myVar"></div>
 ```
 
@@ -193,9 +191,6 @@ SharePoint group names aren't supported at this time, but coming soon.
 Displays a date in MM/DD/YYYY format.
 ```
 <input type="text" data-bind="spDate: myVar" />
-```	
-	OR
-```
 <div data-bind="spDate: myVar"></div>
 ```
 
@@ -203,9 +198,6 @@ Displays a date in MM/DD/YYYY format.
 Displays a date/time in MM/DD/YYYY HH:MMM TT format.
 ```
 <input type="text" data-bind="spDateTime: myVar" />
-```
-	OR
-```
 <div data-bind="spDateTime: myVar"></div>
 ```
 
@@ -213,9 +205,6 @@ Displays a date/time in MM/DD/YYYY HH:MMM TT format.
 Displays currency in USD. Negative values are displayed in red and enclosed in parenthesis `()`. Other currency symbols coming soon.
 ```
 <input type="text" data-bind="spMoney: myVar" />
-```
-	OR
-```
 <div data-bind="spMoney: myVar"></div>
 ```
 
@@ -223,9 +212,6 @@ Displays currency in USD. Negative values are displayed in red and enclosed in p
 Displays number with 2 decimal places. Negative values are displayed in red. You can change the decmial places with the precision attribute.
 ```
 <input type="text" data-bind="spDecimal: myVar, precision: 2" />
-```
-	OR
-```
 <div data-bind="spDecimal: myVar, precision: 2"></div>
 ```
 
@@ -233,9 +219,6 @@ Displays number with 2 decimal places. Negative values are displayed in red. You
 Displays integer/whole number. Negative values are displayed in red.
 ```
 <input type="text" data-bind="spNumber: myVar" />
-```
-	OR
-```
 <div data-bind="spNumber: myVar"></div>
 ```
 
