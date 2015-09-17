@@ -63,6 +63,40 @@ You must be familiar with the Knockout JS MVVM framework syntax. Visit http://kn
 </script>
 ```
 
+###Attachments
+To enable your form to allow attaching files, ensure the `enableAttachments` option is `true` (the default) and include an element with the class name "attachments". Shockout will place everything inside the element(s). 
+Also ensure your SharePoint list has attachments enables. Shockout will detect this setting and render attachments based on your SP list settings.
+```
+<section>
+	<h4>Attachments</h4>
+	<div class="attachments"></div>
+</section>
+```
+
+###Show the User Profiles for Created By and Modified By
+To enable this feature, ensure that `includeUserProfiles` is `true` (the default) include an element with the class name "created-info". 
+Shockout will query the User Information List and display user profiles with: picture, full name, job title, email, phone, department, and office.
+If this feature is disabled, Shockout will only show the Created By/Created and Modified By/Modified fields. 
+```
+<section class="created-info" data-edit-only></section>
+```
+
+###SharePoint Field Variable Names
+Shockout relies on SharePoint REST Services and SP REST Services returns your list's field names in a specific format; basically the current display name, minus spaces and special characters, in "CamelCase."
+
+The Shockout framework will map these camel case variable names to an instance of a Knockout view model. You'll use these variable names to create your form's fields.
+
+To preview the formatting of your SharePoint list's field names, it's very helpful to use a REST client such as the Advanced REST Client for Google's Chrome browser - https://chrome.google.com/webstore/detail/advanced-rest-client/hgmloofddffdnphfgcellkdfbfbjeloo
+
+Once this application is installed, you can preview the JSON returned by entering the following in the address bar. Your list name must NOT contain spaces and must be in CamelCase
+```
+http://<SiteUrl>/<Subsite>/_vti_bin/listdata.svc/<MyListName>(<ID>)
+
+// example: https://mysite.com/forms/_vti_bin/listdata.svc/PurchaseRequisitions(1)
+```
+Choose the GET radio option and enter `Accept: application/json;odata=verbose` in the RAW field. This tells SP to return JSON, not XML!
+Now that you know the variable names, you're ready to create your Shockout form.
+
 ###Displaying a SharePoint Text Field
 ```
 <div class="form-group">
@@ -211,6 +245,39 @@ Simply add the `required="required"` attribute to required fields. Shockout will
 // For approval sections, you can combine these attributes:
 <section data-edit-only data-sp-groups="1;#Administrators,2;#Managers"></section>
 // This element will be shown to users who beleong to the SP user groups specified and only when there is an ID in the querystring of the form URL. 
+```
+
+###Form Events
+You may further customize your form by adding extra functionality within the appropriate event methods. 
+You specify the code for these methods in the third parameter of the constructor - the options object.
+
+####preRender()
+```
+preRender: function(spForm){
+	// Run custom code here BEFORE the form is rendered and BEFORE the Knockout view model is bound.
+	// Useful for adding custom markup and/or custom local Knockout variables to your form.
+	// Shockout will know the difference between your variables and the ones that exist in your SharePoint list.
+}
+```
+
+####postRender()
+```
+postRender: function(spForm){
+	// Run custom code here AFTER the form is rendered and AFTER the Knockout view model is bound.
+	// Useful for:
+	//	- setting default values for your Knockout objects
+	//	- using JSON.parse() to convert string data stored in a text field to JSON - think tables in InfoPath but with JSON instead of XML!
+}
+```
+
+####preSave()
+```
+preSave: function(spForm){
+	// Run code before the form is saved.
+	// Useful for: 
+	//	- implementing custom validation
+	//	- converting JSON data to a string with JSON.stringify(), which is saved in a plain text field.
+}	
 ```
 
 Copyright (C) 2015  John T. Bonfardeci
