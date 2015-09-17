@@ -171,78 +171,90 @@ How to display the choices from a SharePoint MultiChoice Field with radio button
 ##Required Field Validation
 Simply add the `required="required"` attribute to required fields. Shockout will do the rest!
 
-### Custom Knockout binding handlers for SP list field types included:
+###Knockout SharePoint Field Binding Handlers
 	
 ####spHtml
 `<textarea data-bind="value: Comments, spHtml: true"></textarea>` 
 
 ####spPerson
+Displays an auto-complete field with user name and email address as you type a user's first or last name in the field. The minimum number of characters is 3 before it will query the User Information List.
+SharePoint group names aren't supported at this time, but coming soon.
 `<input type="text" data-bind="spPerson: myVar" />`
 	OR
 `<div data-bind="spPerson: myVar"></div>`
 
 ####spDate
+Displays a date in MM/DD/YYYY format.
 `<input type="text" data-bind="spDate: myVar" />`	
 	OR
 `<div data-bind="spDate: myVar"></div>`
 
 ####spDateTime
+Displays a date/time in MM/DD/YYYY HH:MMM TT format.
 `<input type="text" data-bind="spDateTime: myVar" />`
 	OR
 `<div data-bind="spDateTime: myVar"></div>`
 
 ####spMoney
+Displays currency in USD. Negative values are displayed in red and enclosed in parenthesis `()`. Other currency symbols coming soon.
 `<input type="text" data-bind="spMoney: myVar" />`
 	OR
 `<div data-bind="spMoney: myVar"></div>`
 
 ####spDecimal
-`<input type="text" data-bind="spDecimal: myVar" />`
+Displays number with 2 decimal places. Negative values are displayed in red. You can change the decmial places with the precision attribute.
+`<input type="text" data-bind="spDecimal: myVar, precision: 2" />`
 	OR
-`<div data-bind="spDecimal: myVar"></div>`
+`<div data-bind="spDecimal: myVar, precision: 2"></div>`
 
 ####spNumber
+Displays integer/whole number. Negative values are displayed in red.
 `<input type="text" data-bind="spNumber: myVar" />`
 	OR
 `<div data-bind="spNumber: myVar"></div>`
 
-####Element Attributes
+###Element Attributes
 
+####data-author-only
+Restricts element to authors only. Removes from DOM otherwise.
+Useful for restricting edit fields to the person that created the form.
 ```
-// Restricts element to authors only. Removes from DOM otherwise.
-// Useful for restricting edit fields to the person that created the form.
 <section data-author-only></section>
 ```
 
+####data-non-authors
+Restricts element to non-authors of a form. Removes from DOM otherwise. 
+Useful for displaying read-only/non-edit sections to non-authors only.
 ```
-// Restricts element to non-authors of a form. Removes from DOM otherwise. 
-// Useful for displaying read-only/non-edit sections to non-authors only.
 <section data-non-authors></section>
 ```
 
+####data-edit-only
+Restricts elements to forms with an ID in the querystring. Removes from DOM otherwise. 
+Useful for sections that require another person's input (approval sections) on an existing form.
 ```
-// Restricts elements to forms with an ID in the querystring. Removes from DOM otherwise. 
-// Useful for sections that require another person's input (approval sections) on an existing form.
 <section data-edit-only></section>
 ```
 
+####data-new-only
+Restricts elements to forms with NO ID in the querystring. Removes from DOM otherwise. 
 ```
-// Restricts elements to forms with NO ID in the querystring. Removes from DOM otherwise. 
 <section data-new-only></section>
 ```
 
-```
-// Control permissions to elements by SP group membership, such as manager approval sections/fields.
+####data-sp-groups
+Control permissions to elements by SP group membership, such as manager approval sections/fields.
 // Value is a comma delimitted list of user groups `<groupId>;#<groupName>`.
+```
 // Example:
 <section data-sp-groups="1;#Administrators,2;#Managers"></section>
 ```
 
+For approval sections, you can combine these attributes:
 ```
-// For approval sections, you can combine these attributes:
 <section data-edit-only data-sp-groups="1;#Administrators,2;#Managers"></section>
-// This element will be shown to users who beleong to the SP user groups specified and only when there is an ID in the querystring of the form URL. 
 ```
+This element will be shown to users who beleong to the SP user groups specified and only when there is an ID in the querystring of the form URL. 
 
 ###Form Events
 You may further customize your form by adding extra functionality within the appropriate event methods. 
