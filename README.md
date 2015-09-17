@@ -110,7 +110,7 @@ How to display the choices from a SharePoint MultiChoice Field with radio button
 
 ### Custom Knockout binding handlers for SP list field types included:
 	
-####spHtmlEditor
+####spHtml
 `<textarea data-bind="value: Comments, spHtml: true"></textarea>` 
 
 ####spPerson
