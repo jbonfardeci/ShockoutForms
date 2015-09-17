@@ -47,12 +47,12 @@ You must be familiar with the Knockout JS MVVM framework syntax. Visit http://kn
 			allowDelete: false, // default false
 			allowPrint: true, // default true
 			allowSave: true, // default true
-			allowedExtensions: []  // default is ['txt', 'rtf', 'zip', 'pdf', 'doc', 'docx', 'jpg', 'gif', 'png', 'ppt', 'tif', 'pptx', 'csv', 'pub', 'msg']
+			allowedExtensions: ['txt', 'rtf', 'zip', 'pdf', 'doc', 'docx', 'jpg', 'gif', 'png', 'ppt', 'tif', 'pptx', 'csv', 'pub', 'msg']  // the default 
 			attachmentMessage: 'An attachment is required.', // the default
 			confirmationUrl: '/SitePages/Confirmation.aspx', // the default
 			enableErrorLog: true, // default true
-			errorLogListName: 'Error Log', // Designated SharePoint list for logging user and form errrors. default 'Error Log'
-			fileHandlerUrl: string = '/_layouts/SPFormFileHandler.ashx',  // default    
+			errorLogListName: 'Error Log', // Designated SharePoint list for logging user and form errrors; default 'Error Log' on root site
+			fileHandlerUrl: string = '/_layouts/SPFormFileHandler.ashx',  // the default    
 			enableAttachments: true, // default true
 			includeUserProfiles: true, // default true
 			includeWorkflowHistory: true, // default true        
@@ -63,12 +63,41 @@ You must be familiar with the Knockout JS MVVM framework syntax. Visit http://kn
 </script>
 ```
 
+###Displaying a SharePoint Text Field
+```
+<div class="form-group">
+	<label data-bind="text: MySpFieldName._displayName" for="MySpFieldName" class="control-label"></label>
+	
+	<input type="text" data-bind="value: MySpFieldName, attr:{'placeholder': MySpFieldName._displayName}" maxlength="255" id="MySpFieldName" class="form-control" />
+	
+	<!-- optional Field Description -->
+	<p data-bind="text: MySpFieldName._description"></p>
+</div>
+```
+
+###Displaying a SharePoint Checkbox Field (Boolean)
+```
+<div class="form-group">
+	<label class="checkbox">
+        <input type="checkbox" data-bind="checked: MySpFieldName" />
+        <span data-bind="text: MySpFieldName._displayName"></span>
+    </label>
+
+	<!-- optional Field Description -->
+	<p data-bind="text: MySpFieldName._description"></p>
+</div>
+```
+
 ###Displaying SharePoint Choice Fields - Select Menu
 How to display the choices from a SharePoint Choice Field in a select menu.
 ```
 <div class="form-group">
-	<label data-bind="text: MySpChoiceFieldName._displayName" class="control-label"></label>
-	<select data-bind="value: MySpChoiceFieldName, options: MySpChoiceFieldName._choices, optionsValue: 'value', optionsCaption: '--SELECT--'" class="form-control"></select>
+	<label data-bind="text: MySpChoiceFieldName._displayName" class="control-label" for="MySpChoiceFieldName"></label>
+	
+	<select data-bind="value: MySpChoiceFieldName, options: MySpChoiceFieldName._choices, optionsValue: 'value', optionsCaption: '--SELECT--'" id="MySpChoiceFieldName" class="form-control"></select>
+
+	<!-- optional Field Description -->
+	<p data-bind="text: MySpChoiceFieldName._description"></p>
 </div>
 ```
 
@@ -78,15 +107,15 @@ How to display the choices from a SharePoint MultiChoice Field with checkboxes.
 <div class="form-group">
     <label data-bind="text: MySpChoiceFieldName._displayName" class="control-label"></label>
 
-	<!-- optional Field Description -->
-	<p data-bind="text: MySpChoiceFieldName._description"></p>
-
     <!-- ko foreach: MySpChoiceFieldName._choices -->
     <label class="checkbox">
         <input type="checkbox" data-bind="checked: $root.MySpChoiceFieldName, attr: { value: $data.value, name: 'MySpChoiceFieldName_' + $index() }" />
         <span data-bind="text: $data.value"></span>
     </label>
-    <!-- /ko --> 	            
+    <!-- /ko --> 
+	
+	<!-- optional Field Description -->
+	<p data-bind="text: MySpChoiceFieldName._description"></p>	            
 </div>
 ```
 
@@ -96,17 +125,20 @@ How to display the choices from a SharePoint MultiChoice Field with radio button
 <div class="form-group">
     <label data-bind="text: MySpChoiceFieldName._displayName" class="control-label"></label>
 
-	<!-- optional Field Description -->
-	<p data-bind="text: MySpChoiceFieldName._description"></p>
-
     <!-- ko foreach: MySpChoiceFieldName._choices -->
     <label class="radio">
         <input type="radio" data-bind="checked: $root.MySpChoiceFieldName, attr: { value: $data.value }" name="MySpChoiceFieldName" />
         <span data-bind="text: $data.value"></span>
     </label>
-    <!-- /ko -->             
+    <!-- /ko -->   
+	
+	<!-- optional Field Description -->
+	<p data-bind="text: MySpChoiceFieldName._description"></p>          
 </div>
 ```
+
+##Required Field Validation
+Simply add the `required="required"` attribute to required fields. Shockout will do the rest!
 
 ### Custom Knockout binding handlers for SP list field types included:
 	

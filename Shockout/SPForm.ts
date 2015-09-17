@@ -40,32 +40,32 @@ module Shockout {
 
     export class SPForm {
 
-        ///////////////////////////
-        // Minimum Required Fields
-        ///////////////////////////
+        ///////////////////////////////////////////
+        // Minimum Required Constructor Parameters
+        ///////////////////////////////////////////
         // the ID of the form
         public formId: string;
 
         // The name of the SP List you're submitting a form to.
         public listName: string;
 
-        /////////////////////
-        // Static properties
-        /////////////////////
+        ////////////////////////////
+        // Public Static Properties
+        ////////////////////////////
         public static errorLogListName: string;
 
-        //////////////////
-        // jQuery objects
-        //////////////////
+        /////////////////////////
+        // Public jQuery Objects
+        /////////////////////////
         public $createdInfo;
         public $dialog;
         public $form;
         public $formAction;
         public $formStatus;
 
-        //////////////////
-        // Public Options
-        //////////////////
+        /////////////////////
+        // Public Properties
+        /////////////////////
 
         // Allow users to delete a form
         public allowDelete: boolean = false;

@@ -39,9 +39,9 @@ var Shockout;
 (function (Shockout) {
     var SPForm = (function () {
         function SPForm(listName, formId, options) {
-            //////////////////
-            // Public Options
-            //////////////////
+            /////////////////////
+            // Public Properties
+            /////////////////////
             // Allow users to delete a form
             this.allowDelete = false;
             // Allow users to print
