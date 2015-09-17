@@ -12,28 +12,29 @@ You must be familiar with the Knockout JS MVVM framework syntax. Visit http://kn
 
 #### Usage
 ```
+// These are included in the sample Master page provided - Shockout.SpForms.master
 <!-- Bootstrap CSS (in head)-->
-<link href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.min.css" rel="stylesheet" type="text/css" />
+<link href="//maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.min.css" rel="stylesheet" type="text/css" />
 
 <!-- jQuery UI CSS (in head)-->
-<link href="http://code.jquery.com/ui/1.11.4/themes/smoothness/jquery-ui.css" rel="stylesheet" type="text/css" />
+<link href="//code.jquery.com/ui/1.11.4/themes/smoothness/jquery-ui.css" rel="stylesheet" type="text/css" />
 
 <!-- It's recommended to place your scripts at the bottom of the page, before the ending </body> tag, for faster page loads. -->
 
 <!-- jQuery -->
-<script src="http://code.jquery.com/jquery-1.11.3.min.js" type="text/javascript"></script>
-<script src="http://code.jquery.com/ui/1.11.4/jquery-ui.min.js" type="text/javascript"></script>
+<script src="//code.jquery.com/jquery-1.11.3.min.js" type="text/javascript"></script>
+<script src="//code.jquery.com/ui/1.11.4/jquery-ui.min.js" type="text/javascript"></script>
 
 <!-- Bootstrap -->
-<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/js/bootstrap.min.js" type="text/javascript"></script>
+<script src="//maxcdn.bootstrapcdn.com/bootstrap/3.3.5/js/bootstrap.min.js" type="text/javascript"></script>
 
 <!-- Knockout JS -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/knockout/3.3.0/knockout-min.js" type="text/javascript"></script>
+<script src="//cdnjs.cloudflare.com/ajax/libs/knockout/3.3.0/knockout-min.js" type="text/javascript"></script>
 
 <!-- Shockout SPForms -->
 <script src="ShockoutForms-0.0.1.min.js" type="text/javascript"></script>
 
-<!-- Setup your form -->
+<!-- Setup your form - this goes at the bottom of your form's page -->
 <script type="text/javascript">
 	var spForm = new Shockout.SPForm(
 		/*listName:*/ 'My SharePoint List Name', 
