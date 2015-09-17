@@ -171,49 +171,49 @@ How to display the choices from a SharePoint MultiChoice Field with radio button
 ##Required Field Validation
 Simply add the `required="required"` attribute to required fields. Shockout will do the rest!
 
-###Knockout SharePoint Field Binding Handlers
+##Knockout SharePoint Field Binding Handlers
 	
 ####spHtml
-`<textarea data-bind="value: Comments, spHtml: true"></textarea>` 
+```<textarea data-bind="value: Comments, spHtml: true"></textarea>``` 
 
 ####spPerson
 Displays an auto-complete field with user name and email address as you type a user's first or last name in the field. The minimum number of characters is 3 before it will query the User Information List.
 SharePoint group names aren't supported at this time, but coming soon.
-`<input type="text" data-bind="spPerson: myVar" />`
+```<input type="text" data-bind="spPerson: myVar" />```
 	OR
-`<div data-bind="spPerson: myVar"></div>`
+```<div data-bind="spPerson: myVar"></div>```
 
 ####spDate
 Displays a date in MM/DD/YYYY format.
-`<input type="text" data-bind="spDate: myVar" />`	
+```<input type="text" data-bind="spDate: myVar" />```	
 	OR
-`<div data-bind="spDate: myVar"></div>`
+```<div data-bind="spDate: myVar"></div>```
 
 ####spDateTime
 Displays a date/time in MM/DD/YYYY HH:MMM TT format.
-`<input type="text" data-bind="spDateTime: myVar" />`
+```<input type="text" data-bind="spDateTime: myVar" />```
 	OR
-`<div data-bind="spDateTime: myVar"></div>`
+```<div data-bind="spDateTime: myVar"></div>```
 
 ####spMoney
 Displays currency in USD. Negative values are displayed in red and enclosed in parenthesis `()`. Other currency symbols coming soon.
-`<input type="text" data-bind="spMoney: myVar" />`
+```<input type="text" data-bind="spMoney: myVar" />```
 	OR
-`<div data-bind="spMoney: myVar"></div>`
+```<div data-bind="spMoney: myVar"></div>```
 
 ####spDecimal
 Displays number with 2 decimal places. Negative values are displayed in red. You can change the decmial places with the precision attribute.
-`<input type="text" data-bind="spDecimal: myVar, precision: 2" />`
+```<input type="text" data-bind="spDecimal: myVar, precision: 2" />```
 	OR
-`<div data-bind="spDecimal: myVar, precision: 2"></div>`
+```<div data-bind="spDecimal: myVar, precision: 2"></div>```
 
 ####spNumber
 Displays integer/whole number. Negative values are displayed in red.
-`<input type="text" data-bind="spNumber: myVar" />`
+```<input type="text" data-bind="spNumber: myVar" />```
 	OR
-`<div data-bind="spNumber: myVar"></div>`
+```<div data-bind="spNumber: myVar"></div>```
 
-###Element Attributes
+##Element Attributes
 
 ####data-author-only
 Restricts element to authors only. Removes from DOM otherwise.
@@ -256,7 +256,7 @@ For approval sections, you can combine these attributes:
 ```
 This element will be shown to users who beleong to the SP user groups specified and only when there is an ID in the querystring of the form URL. 
 
-###Form Events
+##Form Events
 You may further customize your form by adding extra functionality within the appropriate event methods. 
 You specify the code for these methods in the third parameter of the constructor - the options object.
 
