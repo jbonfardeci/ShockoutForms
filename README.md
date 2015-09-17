@@ -68,7 +68,7 @@ How to display the choices from a SharePoint Choice Field in a select menu.
 ```
 <div class="form-group">
 	<label data-bind="text: MySpChoiceFieldName._displayName" class="control-label"></label>
-	<select data-bind="value: MySpChoiceFieldName, options: MySpChoiceFieldName._choices, optionsChoice: 'value', optionsCaption: '--SELECT--'" class="form-control"></select>
+	<select data-bind="value: MySpChoiceFieldName, options: MySpChoiceFieldName._choices, optionsValue: 'value', optionsCaption: '--SELECT--'" class="form-control"></select>
 </div>
 ```
 
