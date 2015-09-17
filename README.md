@@ -11,8 +11,7 @@ Looks best with Bootstrap CSS - http://getbootstrap.com or use the CDN (Content 
 You must be familiar with the Knockout JS MVVM framework syntax. Visit http://knockoutjs.com if you need an introduction or refresher.
 
 #### Usage
-<pre>
-
+```
 <!-- Bootstrap CSS (in head)-->
 <link href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.min.css" rel="stylesheet" type="text/css" />
 
@@ -61,7 +60,7 @@ You must be familiar with the Knockout JS MVVM framework syntax. Visit http://kn
 			workflowHistoryListName: 'Workflow History' // the default
 		});
 </script>
-</pre>
+```
 
 ###Displaying SharePoint Choice Fields - Select Menu
 How to display the choices from a SharePoint Choice Field in a select menu.
