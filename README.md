@@ -98,6 +98,12 @@ Forget the frustrations of legacy InfoPath and XSL SharePoint forms. Leverage th
 <section data-sp-groups="1;#Administrators,2;#Managers"></section>
 ```
 
+```
+// For approval sections, you can combine these attributes:
+<section data-edit-only data-sp-groups="1;#Administrators,2;#Managers"></section>
+// This element will be shown to users who beleong to the SP user groups specified and only when there is an ID in the querystring of the form URL. 
+```
+
 Copyright (C) 2015  John T. Bonfardeci
 
 This program is free software: you can redistribute it and/or modify
