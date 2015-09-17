@@ -203,11 +203,11 @@
 
         public static dateToLocaleString(d: Date): string {
             try {
-                var dd: any = d.getDate();
+                var dd: any = d.getUTCDate();
                 dd = dd < 10 ? "0" + dd : dd;
-                var mo: any = d.getMonth() + 1;
+                var mo: any = d.getUTCMonth() + 1;
                 mo = mo < 10 ? "0" + mo : mo;
-                return mo + '/' + dd + '/' + d.getFullYear();
+                return mo + '/' + dd + '/' + d.getUTCFullYear();
             }
             catch (e) {
                 return 'Invalid Date';
@@ -219,8 +219,8 @@
             var minutes: any;
             var tt: string;
 
-            hours = d.getHours();
-            minutes = d.getMinutes();
+            hours = d.getUTCHours();
+            minutes = d.getUTCMinutes();
             tt = hours > 11 ? 'PM' : 'AM';
 
             if (minutes < 10) {
@@ -240,8 +240,8 @@
 
         public static toTimeLocaleString(d): string {
             var str = '12:00 AM';
-            var hours = d.getHours();
-            var minutes = d.getMinutes();
+            var hours = d.getUTCHours();
+            var minutes = d.getUTCMinutes();
             var tt = hours > 11 ? 'PM' : 'AM';
 
             if (minutes < 10) {

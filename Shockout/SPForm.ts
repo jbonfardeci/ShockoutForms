@@ -454,6 +454,10 @@ module Shockout {
                                 self.itemId = json.itemId;
                                 self.viewModel.Id(json.itemId);
                             }
+
+                            // push a new SP attachment instance to the view model's `attachments` collection
+                            self.viewModel.attachments().push(new SpAttachment(self.rootUrl, self.siteUrl, self.listName, self.itemId, fileName));
+                            self.viewModel.attachments.valueHasMutated(); // tell KO the array has been updated
                         },
                         template: Templates.getFileUploadTemplate()
                     }

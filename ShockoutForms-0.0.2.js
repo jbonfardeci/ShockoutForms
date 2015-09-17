@@ -451,6 +451,9 @@ var Shockout;
                                 self.itemId = json.itemId;
                                 self.viewModel.Id(json.itemId);
                             }
+                            // push a new SP attachment instance to the view model's `attachments` collection
+                            self.viewModel.attachments().push(new Shockout.SpAttachment(self.rootUrl, self.siteUrl, self.listName, self.itemId, fileName));
+                            self.viewModel.attachments.valueHasMutated(); // tell KO the array has been updated
                         },
                         template: Shockout.Templates.getFileUploadTemplate()
                     };
@@ -1552,6 +1555,27 @@ var Shockout;
         return HistoryItem;
     })();
     Shockout.HistoryItem = HistoryItem;
+    // recreate the SP REST object for an attachment
+    var SpAttachment = (function () {
+        function SpAttachment(rootUrl, siteUrl, listName, itemId, fileName) {
+            var entitySet = listName.replace(/\s/g, '');
+            var uri = rootUrl + siteUrl + "/_vti_bin/listdata.svc/Attachments(EntitySet='{0}',ItemId={1},Name='{2}')";
+            uri = uri.replace(/\{0\}/, entitySet).replace(/\{1\}/, itemId + '').replace(/\{2\}/, fileName);
+            this.__metadata = {
+                uri: uri,
+                content_type: "application/octetstream",
+                edit_media: uri + "/$value",
+                media_etag: null,
+                media_src: rootUrl + siteUrl + "/Lists/" + listName + "/Attachments/" + itemId + "/" + fileName,
+                type: "Microsoft.SharePoint.DataService.AttachmentsItem"
+            };
+            this.EntitySet = entitySet;
+            this.ItemId = itemId;
+            this.Name = fileName;
+        }
+        return SpAttachment;
+    })();
+    Shockout.SpAttachment = SpAttachment;
     var SpItem = (function () {
         function SpItem() {
         }
@@ -3100,8 +3124,8 @@ var Shockout;
             var $div = $('<div>', { 'class': 'user-profile-card', 'html': template });
             return $div;
         };
-        Templates.attachmentsTemplate = '<h4>Attachments (<span data-bind="text: attachments().length"></span>)</h4>' + '<div id="{0}"></div>' + '<div data-bind="foreach: attachments">' + '<div>' + '<a href="" data-bind="attr: {href: __metadata.media_src}"><span class="glyphicon glyphicon-paperclip"></span> <span data-bind="text: Name"></span></a>&nbsp;' + '<button data-bind="event: {click: $root.deleteAttachment}" class="btn btn-sm btn-danger" title="Delete Attachment"><span class="glyphicon glyphicon-remove"></span></button>' + '</div>' + '</div>';
-        Templates.fileuploadTemplate = '<div class="qq-uploader">' + '<div class="qq-upload-drop-area"><span>Drop files here to upload</span></div>' + '<div class="btn btn-primary qq-upload-button"><span class="glyphicon glyphicon-paperclip"></span> Attach File</div>' + '<ul class="qq-upload-list"></ul></div>';
+        Templates.attachmentsTemplate = '<h4>Attachments (<span data-bind="text: attachments().length"></span>)</h4>' + '<div id="{0}"></div>' + '<div data-bind="foreach: attachments">' + '<div>' + '<a href="" data-bind="attr: {href: __metadata.media_src}"><span class="glyphicon glyphicon-paperclip"></span> <span data-bind="text: Name"></span></a>&nbsp;' + '<button data-bind="event: {click: $root.deleteAttachment}" class="btn btn-sm btn-danger" title="Delete Attachment" data-author-only><span class="glyphicon glyphicon-remove"></span></button>' + '</div>' + '</div>';
+        Templates.fileuploadTemplate = '<div class="qq-uploader" data-author-only>' + '<div class="qq-upload-drop-area"><span>Drop files here to upload</span></div>' + '<div class="btn btn-primary qq-upload-button"><span class="glyphicon glyphicon-paperclip"></span> Attach File</div>' + '<ul class="qq-upload-list"></ul></div>';
         Templates.createdModifiedTemplate = '<div class="create-mod-info no-print hidden-xs"></div>' + '<div class="row">' + '<div class="col-md-3"><label>Created By</label> <a data-bind="text: {0}, attr:{href: \'mailto:\'+{1}()}" class="email" > </a></div>' + '<div class="col-md-3"><label>Created</label> <span data-bind="spDateTime: {2}"></span></div>' + '<div class="col-md-3"><label>Modified By</label> <a data-bind="text: {3}, attr:{href: \'mailto:\'+{4}()}" class="email"></a></div>' + '<div class="col-md-3"><label>Modified</label> <span data-bind="spDateTime: {5}"></span></div>' + '</div>';
         Templates.historyTemplate = '<h4>Workflow History</h4>' + '<div class="row">' + '<div class="col-md-8 col-xs-8"><strong>Description</strong></div>' + '<div class="col-md-4 col-xs-4"><strong>Date</strong></div>' + '</div>' + '<div class="row" data-bind="foreach: {0}">' + '<div data-bind="text: {1}" class="col-md-8 col-xs-8"></div>' + '<div data-bind="spDateTime: {2}" class="col-md-4 col-xs-4"></div>' + '</div>';
         Templates.userProfileTemplate = '<h4>{header}</h4>' + '<img src="{pictureurl}" alt="{name}" />' + '<ul>' + '<li><label>Name</label>{name}<li>' + '<li><label>Title</label>{jobtitle}</li>' + '<li><label>Department</label>{department}</li>' + '<li><label>Email</label><a href="mailto:{workemail}">{workemail}</a></li>' + '<li><label>Phone</label>{workphone}</li>' + '<li><label>Office</label>{office}</li>' + '</ul>';
@@ -3295,11 +3319,11 @@ var Shockout;
         };
         Utils.dateToLocaleString = function (d) {
             try {
-                var dd = d.getDate();
+                var dd = d.getUTCDate();
                 dd = dd < 10 ? "0" + dd : dd;
-                var mo = d.getMonth() + 1;
+                var mo = d.getUTCMonth() + 1;
                 mo = mo < 10 ? "0" + mo : mo;
-                return mo + '/' + dd + '/' + d.getFullYear();
+                return mo + '/' + dd + '/' + d.getUTCFullYear();
             }
             catch (e) {
                 return 'Invalid Date';
@@ -3309,8 +3333,8 @@ var Shockout;
             var hours = 0;
             var minutes;
             var tt;
-            hours = d.getHours();
-            minutes = d.getMinutes();
+            hours = d.getUTCHours();
+            minutes = d.getUTCMinutes();
             tt = hours > 11 ? 'PM' : 'AM';
             if (minutes < 10) {
                 minutes = '0' + minutes;
@@ -3326,8 +3350,8 @@ var Shockout;
         };
         Utils.toTimeLocaleString = function (d) {
             var str = '12:00 AM';
-            var hours = d.getHours();
-            var minutes = d.getMinutes();
+            var hours = d.getUTCHours();
+            var minutes = d.getUTCMinutes();
             var tt = hours > 11 ? 'PM' : 'AM';
             if (minutes < 10) {
                 minutes = '0' + minutes;

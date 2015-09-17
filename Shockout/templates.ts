@@ -7,11 +7,11 @@
             '<div data-bind="foreach: attachments">' +
             '<div>' +
             '<a href="" data-bind="attr: {href: __metadata.media_src}"><span class="glyphicon glyphicon-paperclip"></span> <span data-bind="text: Name"></span></a>&nbsp;' +
-            '<button data-bind="event: {click: $root.deleteAttachment}" class="btn btn-sm btn-danger" title="Delete Attachment"><span class="glyphicon glyphicon-remove"></span></button>' +
+            '<button data-bind="event: {click: $root.deleteAttachment}" class="btn btn-sm btn-danger" title="Delete Attachment" data-author-only><span class="glyphicon glyphicon-remove"></span></button>' +
             '</div>' +
             '</div>';
 
-        public static fileuploadTemplate: string = '<div class="qq-uploader">' +
+        public static fileuploadTemplate: string = '<div class="qq-uploader" data-author-only>' +
             '<div class="qq-upload-drop-area"><span>Drop files here to upload</span></div>' +
             '<div class="btn btn-primary qq-upload-button"><span class="glyphicon glyphicon-paperclip"></span> Attach File</div>' +
             '<ul class="qq-upload-list"></ul></div>';
