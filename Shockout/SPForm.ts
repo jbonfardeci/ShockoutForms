@@ -482,10 +482,10 @@ module Shockout {
                         'contenteditable': 'true'
                     });
 
-                    if (!!$el.attr('required') || !!!$el.hasClass('required')) {
-                        $rte.attr('required', '');
-                        $rte.addClass('required');
-                    }
+                    //if (!!$el.attr('required') || !!!$el.hasClass('required')) {
+                    //    $rte.attr('required', '');
+                    //    $rte.addClass('required');
+                    //}
 
                     $rte.insertBefore($el);
                     if (!self.debug) {
@@ -501,6 +501,20 @@ module Shockout {
                     if (self.includeWorkflowHistory) {
                         self.$form.append(Templates.getHistoryTemplate());
                     }
+                }
+
+                // remove elements with attribute `data-edit-only` from the DOM if not editing an existing form - a new form where `itemId == null || undefined`
+                if (!!!self.itemId) {
+                    self.$form.find('[data-edit-only]').each(function () {
+                        $(this).remove();
+                    });
+                }
+
+                // remove elements with attribute `data-new-only` from the DOM if not a new form - an edit form where `itemId != null`
+                if (!!self.itemId) {
+                    self.$form.find('[data-new-only]').each(function () {
+                        $(this).remove();
+                    });
                 }
                
                 // add control validation to Bootstrap form elements
@@ -598,21 +612,29 @@ module Shockout {
                 var packet = '<soap:Envelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">' +
                     '<soap:Body>' +
                     '<GetGroupCollectionFromUser xmlns="http://schemas.microsoft.com/sharepoint/soap/directory/">' +
-                    '<userLoginName>' + self.currentUser.login + '</userLoginName>' +
+                    '<userLoginName>' + self.currentUser.title + '</userLoginName>' +
                     '</GetGroupCollectionFromUser>' +
                     '</soap:Body>' +
                     '</soap:Envelope>';
 
                 var $jqXhr: JQueryXHR = $.ajax({
-                    url: self.rootUrl + self.siteUrl + '/_vti_bin/usergroup.asmx',
+                    url: self.rootUrl + '/_vti_bin/usergroup.asmx',
                     type: 'POST',
                     dataType: 'xml',
                     data: packet,
                     contentType: 'text/xml; charset="utf-8"'
                 });
 
-                $jqXhr.done(function (doc, statusText, response) {
-                    $(response.responseXML).find("Group").each(function (i: number, el: HTMLElement) {
+                $jqXhr.done(function (xmlDoc, status, jqXhr) {
+
+                    var $errorText = $(xmlDoc).find('errorstring');
+                    // catch and handle returned error
+                    if (!!$errorText && $errorText.text() != "") {
+                        self.logError($errorText.text());
+                        return;
+                    }
+
+                    $(xmlDoc).find("Group").each(function (i: number, el: HTMLElement) {
                         self.currentUser.groups.push({
                             id: parseInt($(el).attr("ID")),
                             name: $(el).attr("Name")
@@ -622,8 +644,15 @@ module Shockout {
                     return;
                 });
 
-                $jqXhr.fail(function (xData, status) {
+                $jqXhr.fail(function (xmlDoc, status) {
                     var msg = "Failed to retrieve your groups: " + status;
+
+                    var $errorText = $(xmlDoc).find('errorstring');
+                    // catch and handle returned error
+                    if (!!$errorText && $errorText.text() != "") {
+                        msg += $errorText.text();
+                    }
+                   
                     self.logError(msg);
                     self.nextAsync(false, msg);
                     return;
@@ -672,20 +701,24 @@ module Shockout {
                         });
                     });
 
-                    if (ct > 0) {
-                        $(el).show();
-                    }
-                    else {
+                    if (ct == 0) {
                         $(el).remove();
                     }
                 });
 
-                // Remove element if it's restricted to the author only. 
-                self.$form.find('[data-author-only]').each(function (i: number, el: HTMLElement): void {
-                    if (!!self.listItem && self.currentUser.id != self.listItem.CreatedById) {
-                        $(el).remove();
-                    }
-                });
+                // Remove element if it's restricted to the author only for example, input elements for editing the form. 
+                if (!!self.listItem && self.currentUser.id != self.listItem.CreatedById) {
+                    self.$form.find('[data-author-only]').each(function (i: number, el: HTMLElement): void {
+                        $(this).remove();
+                    });
+                }
+                
+                // Remove element if for non-authors only such as read-only elements for viewers of a form. 
+                if (!!self.listItem && self.currentUser.id == self.listItem.CreatedById) {
+                    self.$form.find('[data-non-authors]').each(function (i: number, el: HTMLElement): void {
+                        $(this).remove();
+                    });
+                }             
 
                 // Build array of SP field names for the input fields remaning on the form.
                 // These are the field names to be saved and current user is allows to edit these.
