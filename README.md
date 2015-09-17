@@ -65,7 +65,7 @@ You must be familiar with the Knockout JS MVVM framework syntax. Visit http://kn
 
 ###Attachments
 To enable your form to allow attaching files, ensure the `enableAttachments` option is `true` (the default) and include an element with the class name "attachments". Shockout will place everything inside the element(s). 
-Also ensure your SharePoint list has attachments enables. Shockout will detect this setting and render attachments based on your SP list settings.
+Also ensure your SharePoint list has attachments enabled. Shockout will detect this setting and render attachments based on your SP list settings.
 ```
 <section>
 	<h4>Attachments</h4>
