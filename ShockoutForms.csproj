@@ -40,6 +40,7 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="content\shockout.spform.scss" />
+    <Content Include="Shockout.SpForms.master" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="README.md" />
@@ -73,7 +74,7 @@
   <PropertyGroup Condition="'$(Configuration)' == 'Debug'">
     <TypeScriptRemoveComments>false</TypeScriptRemoveComments>
     <TypeScriptSourceMap>true</TypeScriptSourceMap>
-    <TypeScriptOutFile>ShockoutForms-0.0.2.js</TypeScriptOutFile>
+    <TypeScriptOutFile>ShockoutForms-0.0.1.js</TypeScriptOutFile>
     <TypeScriptTarget>ES5</TypeScriptTarget>
     <TypeScriptCompileOnSaveEnabled>True</TypeScriptCompileOnSaveEnabled>
     <TypeScriptNoImplicitAny>False</TypeScriptNoImplicitAny>

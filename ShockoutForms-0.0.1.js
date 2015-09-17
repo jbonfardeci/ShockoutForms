@@ -3537,4 +3537,4 @@ var Shockout;
     })();
     Shockout.ViewModel = ViewModel;
 })(Shockout || (Shockout = {}));
-//# sourceMappingURL=ShockoutForms-0.0.2.js.map
+//# sourceMappingURL=ShockoutForms-0.0.1.js.map

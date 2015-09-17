@@ -4,37 +4,63 @@ SharePoint + Knockout MVVM forms - an InfoPath killer
 
 Forget the frustrations of legacy InfoPath and XSL SharePoint forms. Leverage the power of Knockout's databinding with this framework.
 
-Dependencies: jQuery 1.72+, jQuery UI<any>, KnockoutJS 3.2+
-Looks best with Bootstrap CSS - http://getbootstrap.com
+####Dependencies: 
+jQuery 1.72+, jQuery UI<any>, KnockoutJS 3.2+
+Looks best with Bootstrap CSS - http://getbootstrap.com or use the CDN (Content Delivery Network) links below.
 
 You must be familiar with the Knockout JS MVVM framework syntax. Visit http://knockoutjs.com if you need an introduction or refresher.
 
 #### Usage
 <pre>
+
+<!-- Bootstrap CSS (in head)-->
+<link href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.min.css" rel="stylesheet" type="text/css" />
+
+<!-- jQuery UI CSS (in head)-->
+<link href="http://code.jquery.com/ui/1.11.4/themes/smoothness/jquery-ui.css" rel="stylesheet" type="text/css" />
+
+<!-- It's recommended to place your scripts at the bottom of the page, before the ending </body> tag, for faster page loads. -->
+
+<!-- jQuery -->
+<script src="http://code.jquery.com/jquery-1.11.3.min.js" type="text/javascript"></script>
+<script src="http://code.jquery.com/ui/1.11.4/jquery-ui.min.js" type="text/javascript"></script>
+
+<!-- Bootstrap -->
+<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/js/bootstrap.min.js" type="text/javascript"></script>
+
+<!-- Knockout JS -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/knockout/3.3.0/knockout-min.js" type="text/javascript"></script>
+
+<!-- Shockout SPForms -->
+<script src="ShockoutForms-0.0.1.min.js" type="text/javascript"></script>
+
+<!-- Setup your form -->
+<script type="text/javascript">
 	var spForm = new Shockout.SPForm(
-	/*listName:*/ 'My SharePoint List Name', 
-	/*formId:*/ 'my-form-ID', 
-	/*options:*/ {
-		debug: false, // default false
-		preRender: function(spForm){}, // default undefined
-        postRender: function(spForm){}, // default undefined
-        preSave: function(spForm){}, // default undefined	
-		allowDelete: false, // default false
-        allowPrint: true, // default true
-        allowSave: true, // default true
-        allowedExtensions: []  // default is ['txt', 'rtf', 'zip', 'pdf', 'doc', 'docx', 'jpg', 'gif', 'png', 'ppt', 'tif', 'pptx', 'csv', 'pub', 'msg']
-        attachmentMessage: 'An attachment is required.', // the default
-        confirmationUrl: '/SitePages/Confirmation.aspx', // the default
-        enableErrorLog: true, // default true
-        errorLogListName: 'Error Log', // Designated SharePoint list for logging user and form errrors. default 'Error Log'
-        fileHandlerUrl: string = '/_layouts/SPFormFileHandler.ashx',  // default    
-        enableAttachments: true, // default true
-        includeUserProfiles: true, // default true
-        includeWorkflowHistory: true, // default true        
-        requireAttachments: false, // default false
-        siteUrl: '/companyForms', // default is ''        
-        workflowHistoryListName: 'Workflow History' // the default
-	});
+		/*listName:*/ 'My SharePoint List Name', 
+		/*formId:*/ 'my-form-ID', 
+		/*options:*/ {
+			debug: false, // default false
+			preRender: function(spForm){}, // default undefined
+			postRender: function(spForm){}, // default undefined
+			preSave: function(spForm){}, // default undefined	
+			allowDelete: false, // default false
+			allowPrint: true, // default true
+			allowSave: true, // default true
+			allowedExtensions: []  // default is ['txt', 'rtf', 'zip', 'pdf', 'doc', 'docx', 'jpg', 'gif', 'png', 'ppt', 'tif', 'pptx', 'csv', 'pub', 'msg']
+			attachmentMessage: 'An attachment is required.', // the default
+			confirmationUrl: '/SitePages/Confirmation.aspx', // the default
+			enableErrorLog: true, // default true
+			errorLogListName: 'Error Log', // Designated SharePoint list for logging user and form errrors. default 'Error Log'
+			fileHandlerUrl: string = '/_layouts/SPFormFileHandler.ashx',  // default    
+			enableAttachments: true, // default true
+			includeUserProfiles: true, // default true
+			includeWorkflowHistory: true, // default true        
+			requireAttachments: false, // default false
+			siteUrl: '/companyForms', // default is ''        
+			workflowHistoryListName: 'Workflow History' // the default
+		});
+</script>
 </pre>
 
 ###Displaying SharePoint Choice Fields - Select Menu
