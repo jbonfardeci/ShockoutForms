@@ -90,7 +90,7 @@ Forget the frustrations of legacy InfoPath and XSL SharePoint forms. Leverage th
 
 ```
 // Control permissions to elements by SP group membership.
-// Value is a comma delimitted list of user groups `<userId>;#<groupName>`.
+// Value is a comma delimitted list of user groups `<groupId>;#<groupName>`.
 // Example:
 <div data-sp-groups="1;#Administrators,2;#Managers"></div>
 ```
