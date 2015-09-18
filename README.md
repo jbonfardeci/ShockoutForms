@@ -1,6 +1,5 @@
 # ShockoutForms
-### a Work in Progress
-SharePoint + Knockout MVVM forms - an InfoPath killer
+###SharePoint + Knockout MVVM forms - an InfoPath and XSL Form Replacement (and Vast Improvement)
 
 Forget the frustrations of legacy InfoPath and XSL SharePoint forms. Leverage the power of Knockout's databinding with this framework.
 
