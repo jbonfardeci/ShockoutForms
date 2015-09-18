@@ -303,14 +303,14 @@ Shockout includes a feature that allows your users to save their forms before su
 and leave their forms open so long their sessions used to time out. 
 
 To enable this feature, you must: 
-	- Have a field of type `boolean` named "IsSubmitted" in your form's list. 
-		- Shockout will detect this field and render a 'Save' button next to the 'Submit' button.
-	- Set all required fields in your SP list to `No`. If not the server will return an error if required fields aren't filled in yet. No need to control validation in your SP list; Shockout will handle the validation for you.
-	- To prevent your approval workflows from triggering until the user presses the Submit button, include in the beginning of your workflows: 
-		```
-		Wait on `IsSubmitted` to equal `Yes`
+--*Have a field of type `boolean` named "IsSubmitted" in your form's list. 
+----*Shockout will detect this field and render a 'Save' button next to the 'Submit' button.
+--*Set all required fields in your SP list to `No`. If not the server will return an error if required fields aren't filled in yet. No need to control validation in your SP list; Shockout will handle the validation for you.
+--*To prevent your approval workflows from triggering until the user presses the Submit button, include in the beginning of your workflows: 
+```
+Wait on `IsSubmitted` to equal `Yes`
 
-		```   
+```   
 
 ##Workflow History
 If your form has one or more workflows, Shockout will display all logs from your site's Workflow History list at the bottom of your form. This is a very helpful feature for your users to track the status of their forms.
