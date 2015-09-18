@@ -52,7 +52,7 @@ You must be familiar with the Knockout JS MVVM framework syntax. Visit http://kn
 			attachmentMessage: 'An attachment is required.', // the default
 			confirmationUrl: '/SitePages/Confirmation.aspx', // the default
 			enableErrorLog: true, // default true
-			errorLogListName: 'Error Log', // Designated SharePoint list for logging user and form errrors; default 'Error Log' on root site
+			errorLogListName: 'Error Log', // Designated SharePoint list for logging user and form errors; Requires a custom SP list named 'Error Log' on root site with fields: 'Title' and 'Error'
 			fileHandlerUrl: string = '/_layouts/SPFormFileHandler.ashx',  // the default    
 			enableAttachments: true, // default true
 			includeUserProfiles: true, // default true
@@ -298,6 +298,37 @@ preSave: function(spForm){
 	//	- converting JSON data to a string with JSON.stringify(), which is saved in a plain text field.
 }	
 ```
+
+##Saving vs. Submitting Forms
+Shockout includes a feature that allows your users to save their forms before submitting and triggering approval workflows. This is very useful for long forms - I know our users, especially managers, are interupted constantly 
+and leave their forms open so long their sessions used to time out. 
+
+To enable this feature, you must: 
+	- Have a field of type `boolean` named "IsSubmitted" in your form's list. 
+		- Shockout will detect this field and render a 'Save' button next to the 'Submit' button.
+	- Set all required fields in your SP list to `No`. If not the server will return an error if required fields aren't filled in yet. No need to control validation in your SP list; Shockout will handle the validation for you.
+	- To prevent your approval workflows from triggering until the user presses the Submit button, include in the beginning of your workflows: 
+		```
+		Wait on `IsSubmitted` to equal `Yes`
+
+		```   
+
+##Workflow History
+If your form has one or more workflows, Shockout will display all logs from your site's Workflow History list at the bottom of your form. This is a very helpful feature for your users to track the status of their forms.
+The Workflow History list is hidden by default and can be made visible a coupe of ways. You can view your site's Workflow History list at `http://<mysite.com>/Lists/Workflow%20History`.
+
+Warning: Workflow HIstory lists can qickly become full, exceeding your list threshold for non-admin users. Be sure to run regular maintenance to delete old list items. I use a PowerShell script which runs in the front-end server's Task Scheduler, nightly, to delete list items older than 6 months.
+
+The option `includeWorkflowHistory` is `true` by default but you may override and set it to `false`. 
+
+The option `workflowHistoryListName` is "Workflow History" by default since all SharePoint sites feature this list. You may override this list name if you've created another custom workflow history list but it must be of the same list template.
+
+##Error Logging
+This feature allows you to track and fix any errors your users experience. The default options are `enableErrorLog: true` and `errorLogListName: 'Error Log'`. 
+
+Your Error Log list must be hosted on the root site and have 2 fields: "Title" (text) and "Error" (multiple lines of text - rich HTML). 
+
+It's recommended to set a workflow or an alert on this list to notify you as soon as an error is logged.   
 
 Copyright (C) 2015  John T. Bonfardeci
 
