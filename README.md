@@ -308,8 +308,7 @@ To enable this feature, you must:
   * Set all required fields in your SP list to `No`. If not the server will return an error if required fields aren't filled in yet. No need to control validation in your SP list; Shockout will handle the validation for you.
   * To prevent your approval workflows from triggering until the user presses the Submit button, include in the beginning of your workflows: 
 		```
-		Wait on `IsSubmitted` to equal `Yes`
-
+		Wait on 'IsSubmitted' to equal 'Yes'
 		```   
 
 ##Workflow History
