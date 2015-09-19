@@ -1,14 +1,31 @@
 # ShockoutForms
 ###SharePoint + Knockout MVVM forms - an InfoPath and XSL Form Replacement (and Vast Improvement)
 
-Forget the frustrations of legacy InfoPath and XSL SharePoint forms. Leverage the power of Knockout's databinding with this framework.
+Forget the frustrations of legacy InfoPath and XSL SharePoint form development. Leverage the power of Knockout's databinding plus SharePoint's REST services to create modern and truly dynamic web forms.
 
 ####Dependencies: 
 jQuery 1.72+, jQuery UI<any>, KnockoutJS 3.2+
 
-Looks best with Bootstrap CSS - http://getbootstrap.com or use the CDN (Content Delivery Network) links below.
+##Mobile First
+Shockout SP Forms is built on the philosophy of Responsive Design and Mobile First. Therefore, the framework's built-in templates utilize Bootstrap CSS. You're encouraged to become familiar with Boostrap CSS and implement the classes in your own form controls. Download Boostrap at http://getbootstrap.com, or use the CDN (Content Delivery Network) links below. See the Knockout HTML form control samples below which include the Boostrap CSS classes.
 
-You must be familiar with the Knockout JS MVVM framework syntax. Visit http://knockoutjs.com if you need an introduction or refresher.
+##About Knockout JS MVVM (Model View View Model)
+You must be familiar with the Knockout JS MVVM framework syntax, but there are form control samples below that you can copy and paste in order to get you started building Shockout forms with a minimal learning curve. Visit http://knockoutjs.com if you need an introduction or refresher.
+
+Knockout utilizes the Observer/Observable design pattern which means that many objects can "observe" another object - called an "observable." This means when the value of an observable changes, all observers will react to the change. A practical example of this behavior is with Excel formula cells - the calculation updates immediately after another variable in the formula changes. 
+
+###Rules
+If you've spent any time implementing rules in InfoPath, you have probably become frustrated with the interface to manage those rules. Rules with XSL forms? Forget it unless you're prepared to hack your form to death with jQuery selectors and event handlers. With Knockout's directives, you can embed the functionality of rules in an HTML element with the data-bind attribute. For example, do you need to show an element based on the selected option of a select element?
+```
+<label>What is your favorite color?</label>
+<select data-bind="value: color, optionsCaption: 'Select your favorite color...'">
+	<option>Red</option>
+	<option>Blue</option>
+	<option>Green</option>
+</select>
+<!-- The div element below is hidden until `color == 'Red'` -->
+<div data-bind="visible: color() == 'Red'">What a coincidence. Red is my favorite color too!</div>
+```
 
 #### Usage
 ```
@@ -175,7 +192,7 @@ How to display the choices from a SharePoint MultiChoice Field with radio button
 Simply add the `required="required"` attribute to required fields. Shockout will do the rest!
 
 ##Knockout SharePoint Field Binding Handlers
-You may use these binding handlers with any HTML element. Shockout will render the apporpriate content whether it's a static element such as a DIV, SPAN, etc. or an input field.
+You may use these binding handlers with any HTML element. Shockout will render the apporpriate content whether it's a static element such as a DIV, SPAN, etc. or an input field: INPUT, SELECT, and TEXTAREA.
 	
 ####spHtml
 ```
