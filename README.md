@@ -64,11 +64,14 @@ You must be familiar with the Knockout JS MVVM framework syntax. Visit http://kn
 ```
 
 ###Attachments
-To enable your form to allow attaching files, ensure the `enableAttachments` option is `true` (the default) and include an element with the class name "attachments". Shockout will place everything inside the element(s). 
-Also ensure your SharePoint list has attachments enabled. Shockout will detect this setting and render attachments based on your SP list settings.
+To enable attachments for your forms, ensure the `enableAttachments` option is `true` (the default) and include at least one element within your form with the class name "attachments". Shockout will place everything inside the element(s).
 ```
 <section class="attachments"></section>
 ```
+
+I've written a generic handler (.ashx) for attaching documents to your list items. Be sure to copy `SPFormFileHandler.ashx` from the `_layouts` directory of this project to the LAYOUTS directory of your SharePoint front-end server. The URI will be `http://<mysite.com>/_layouts/SPFormFileHandler.ashx`. My goal for the near future is to eliminate dependency on this generic handler for those using Office 365. It's doubtful that users of Office 365 have permissions to copy files to their LAYOUTS directory. Since modern browsers now convert file uplaods to base64 strings, it's possible to send attachments to list items via SharePoint's SOAP API.
+
+Also ensure your SharePoint list has attachments enabled. Shockout will detect this setting and render attachments based on your SP list settings.
 
 ###Show the User Profiles for Created By and Modified By
 To enable this feature, ensure that `includeUserProfiles` is `true` (the default) include an element with the class name "created-info". 
@@ -225,7 +228,7 @@ Displays integer/whole number. Negative values are displayed in red.
 ##Element Attributes
 
 ####data-author-only
-Restricts element to authors only. Removes from DOM otherwise.
+Restricts element to authors only where `currentUser.id == listItem.CreatedById`. Removes from DOM otherwise.
 Useful for restricting edit fields to the person that created the form.
 ```
 <section data-author-only></section>
@@ -239,21 +242,22 @@ Useful for displaying read-only/non-edit sections to non-authors only.
 ```
 
 ####data-edit-only
-Restricts elements to forms with an ID in the querystring. Removes from DOM otherwise. 
-Useful for sections that require another person's input (approval sections) on an existing form.
+Only renders an element when there's an ID in the querystring - an existing form. Removes from DOM otherwise. 
+Useful for sections that require another person's input (such as comment and approval sections) on an existing form.
 ```
 <section data-edit-only></section>
 ```
 
 ####data-new-only
-Restricts elements to forms with NO ID in the querystring. Removes from DOM otherwise. 
+Only renders an element when there is NO ID in the querystring - a new form. Removes from DOM otherwise.
 ```
 <section data-new-only></section>
 ```
 
 ####data-sp-groups
-Control permissions to elements by SP group membership, such as manager approval sections/fields.
-// Value is a comma delimitted list of user groups `<groupId>;#<groupName>`.
+Only renders an element for users belonging to the specified SharePoint user groups. Removes from DOM otherwise.
+Useful for restricting access to manager approval sections and fields.
+// Value is a comma delimitted list of user group IDs and names: `<groupId>;#<groupName>`. Shockout SPForms will first try to match on group ID and then the group name.
 ```
 // Example:
 <section data-sp-groups="1;#Administrators,2;#Managers"></section>
@@ -263,7 +267,7 @@ For approval sections, you can combine these attributes:
 ```
 <section data-edit-only data-sp-groups="1;#Administrators,2;#Managers"></section>
 ```
-This element will be shown to users who beleong to the SP user groups specified and only when there is an ID in the querystring of the form URL. 
+This element will be rendered for users who belong to the SP user groups specified and only when there is an ID in the querystring of the form URL. 
 
 ##Form Events
 You may further customize your form by adding extra functionality within the appropriate event methods. 
@@ -327,6 +331,11 @@ This feature allows you to track and fix any errors your users experience. The d
 Your Error Log list must be hosted on the root site and have 2 fields: "Title" (text) and "Error" (multiple lines of text - rich HTML). 
 
 It's recommended to set a workflow or an alert on this list to notify you as soon as an error is logged.   
+
+##Browser Compatibility
+Shockout SPForms has been successfully tested with IE 9-11 and the latest versions of Chrome and FireFox.
+
+###Copyright
 
 Copyright (C) 2015  John T. Bonfardeci
 
