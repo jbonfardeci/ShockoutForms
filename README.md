@@ -69,12 +69,12 @@ If you've spent any time implementing rules in InfoPath, you have probably becom
 			confirmationUrl: '/SitePages/Confirmation.aspx', // the default
 			enableErrorLog: true, // default true
 			errorLogListName: 'Error Log', // Designated SharePoint list for logging user and form errors; Requires a custom SP list named 'Error Log' on root site with fields: 'Title' and 'Error'
-			fileHandlerUrl: string = '/_layouts/SPFormFileHandler.ashx',  // the default    
+			fileHandlerUrl: '/_layouts/SPFormFileHandler.ashx',  // the default    
 			enableAttachments: true, // default true
 			includeUserProfiles: true, // default true
 			includeWorkflowHistory: true, // default true        
 			requireAttachments: false, // default false
-			siteUrl: '/companyForms', // default is ''        
+			siteUrl: '', // default       
 			workflowHistoryListName: 'Workflow History' // the default
 		});
 </script>
