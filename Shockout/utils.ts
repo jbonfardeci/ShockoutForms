@@ -8,6 +8,22 @@
     
     export class Utils {
     
+        /**
+        * Parse a form ID from window.location.hash
+        * @return number
+        */
+        public static getIdFromHash(): number {
+            // example: parse ID from a URI `http://<mysite>/Forms/form.aspx/#/id/1`
+            var rxHash: RegExp = /\/id\/\d/i;
+            var exec: Array<any> = rxHash.exec(window.location.hash);
+            var id: any = !!exec ? exec[0].replace(/\D/g, '') : null;
+            return /\d/.test(id) ? parseInt(id) : null;
+        }
+
+        public static setIdHash(id: number): void {
+            window.location.hash = '#/id/' + id;
+        }
+
         /** 
         * Escape column values
         * http://dracoblue.net/dev/encodedecode-special-xml-characters-in-javascript/155/ 
@@ -31,7 +47,7 @@
 
             var page: string = !!take ? take.toString() : '10';
             // Allowed system query options are $filter, $select, $orderby, $skip, $top, $count, $search, $expand, and $levels.
-            var uri = "/_vti_bin/listdata.svc/UserInformationList?$filter=startswith(Name,'{0}') or startswith(LastName,'{0}')&$select=Id,Account,Name,WorkEMail&$orderby=Name&$top={1}"
+            var uri = "/_vti_bin/listdata.svc/UserInformationList?$filter=startswith(Name,'{0}')&$select=Id,Account,Name,EMail&$orderby=Name&$top={1}"
                 .replace(/\{0\}/g, term).replace(/\{1\}/, page);
 
             var $jqXhr: JQueryXHR = $.ajax({
@@ -90,14 +106,20 @@
         * @param control: HTMLElement
         * @return string
         */
-        public static observableNameFromControl(control: HTMLElement): string {
+        public static observableNameFromControl(control: any): string {
             var attr: string = $(control).attr('data-bind');
             if (!!!attr) { return null; }
+            attr = attr.replace(/\$/g, '');
             var rx: RegExp = /(\b:(\s+|)|\$root.)\w*\b/;
             var exec: Array<string> = rx.exec(attr);
-            var result: string = !!exec ? exec[0].replace(/:(\s+|)/gi, '').replace(/\$root\./, '') : null;
+            var result: string = !!exec ? exec[0].replace(/:(\s+|)/gi, '').replace(/\$root\./, '').replace(/\._metadata/, '').replace(/\s/g, '') : null;
+            if (result == 'parent') {
+                return Utils.observableNameFromControl( $(control).parent() );
+            }
             return result;
         }
+
+        public static koNameFromControl = Utils.observableNameFromControl;
 
         public static parseJsonDate(d: any): Date {
             if (!Utils.isJsonDate(d)) { return null; }

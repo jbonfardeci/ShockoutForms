@@ -64,7 +64,7 @@ If you've spent any time implementing rules in InfoPath, you have probably becom
 			allowDelete: false, // default false
 			allowPrint: true, // default true
 			allowSave: true, // default true
-			allowedExtensions: ['txt', 'rtf', 'zip', 'pdf', 'doc', 'docx', 'jpg', 'gif', 'png', 'ppt', 'tif', 'pptx', 'csv', 'pub', 'msg']  // the default 
+			allowedExtensions: ['txt', 'rtf', 'zip', 'pdf', 'doc', 'docx', 'jpg', 'gif', 'png', 'ppt', 'tif', 'pptx', 'csv', 'pub', 'msg'],  // the default 
 			attachmentMessage: 'An attachment is required.', // the default
 			confirmationUrl: '/SitePages/Confirmation.aspx', // the default
 			enableErrorLog: true, // default true
@@ -114,79 +114,95 @@ http://<SiteUrl>/<Subsite>/_vti_bin/listdata.svc/<MyListName>(<ID>)
 Choose the GET radio option and enter `Accept: application/json;odata=verbose` in the RAW field. This tells SP to return JSON, not XML!
 Now that you know the variable names, you're ready to create your Shockout form.
 
+###SP Field Metadata
+* Shockout assigns metadata properties to all of your list fields within the object property `_metadata`.
+    * _metadata
+      * `koName` - (String) - the Knockout variable name
+      * `name` - (String) the internal name of the SP field
+      * `choices` - (Array) if the field is a choice or multichoice field, the field's choices 
+      * `description` (String) the decription of the SP field
+      * `required` (Boolean) if the field is required or not
+      * `readOnly` (Boolean) if the field is read-only or not
+      * `format` (String) the standard name of the type of SP field: Text, Choice, Note, Computed, etc.
+
+The Knockout framework features a `with` directive which makes it very convenient to reference a field's metadata properties by wrapping child elements with a parent element having the attribute `data-bind="with: MySpFieldName._metadata"`. See the code samples below.
+
 ###Displaying a SharePoint Text Field
 ```
-<div class="form-group">
-	<label data-bind="text: MySpFieldName._displayName" for="MySpFieldName" class="control-label"></label>
+<div class="form-group" data-bind="with: MySpFieldName._metadata">
+	<label data-bind="text: displayName, attr:{'for': name}" class="control-label"></label>
 	
-	<input type="text" data-bind="value: MySpFieldName, attr:{'placeholder': MySpFieldName._displayName}" maxlength="255" id="MySpFieldName" class="form-control" />
+	<input type="text" data-bind="value: $parent, attr:{'placeholder': displayName, 'id': name}" maxlength="255" class="form-control" />
 	
 	<!-- optional Field Description -->
-	<p data-bind="text: MySpFieldName._description"></p>
+	<p data-bind="text: description"></p>
 </div>
 ```
 
 ###Displaying a SharePoint Checkbox Field (Boolean)
 ```
-<div class="form-group">
+<div class="form-group" data-bind="with: MySpFieldName._metadata">
 	<label class="checkbox">
-        <input type="checkbox" data-bind="checked: MySpFieldName" />
-        <span data-bind="text: MySpFieldName._displayName"></span>
+        <input type="checkbox" data-bind="checked: $parent" />
+        <span data-bind="text: displayName"></span>
     </label>
 
 	<!-- optional Field Description -->
-	<p data-bind="text: MySpFieldName._description"></p>
+	<p data-bind="text: description"></p>
 </div>
 ```
 
 ###Displaying SharePoint Choice Fields - Select Menu
 How to display the choices from a SharePoint Choice Field in a select menu.
 ```
-<div class="form-group">
-	<label data-bind="text: MySpChoiceFieldName._displayName" class="control-label" for="MySpChoiceFieldName"></label>
+<div class="form-group" data-bind="with: MySpFieldName._metadata">
+	<label data-bind="text: displayName, attr:{'for': name}" class="control-label"></label>
 	
-	<select data-bind="value: MySpChoiceFieldName, options: MySpChoiceFieldName._choices, optionsValue: 'value', optionsCaption: '--SELECT--'" id="MySpChoiceFieldName" class="form-control"></select>
+	<select data-bind="value: $parent, attr:{'placeholder': displayName, 'id': name}, options: choices, optionsValue: 'value', optionsCaption: '--SELECT--'" class="form-control"></select>
 
 	<!-- optional Field Description -->
-	<p data-bind="text: MySpChoiceFieldName._description"></p>
+	<p data-bind="text: description"></p>
 </div>
 ```
 
 ###Displaying SharePoint MultiChoice Fields - Checkboxes
 How to display the choices from a SharePoint MultiChoice Field with checkboxes.
 ```
-<div class="form-group">
-    <label data-bind="text: MySpChoiceFieldName._displayName" class="control-label"></label>
-
-    <!-- ko foreach: MySpChoiceFieldName._choices -->
-    <label class="checkbox">
-        <input type="checkbox" data-bind="checked: $root.MySpChoiceFieldName, attr: { value: $data.value, name: 'MySpChoiceFieldName_' + $index() }" />
-        <span data-bind="text: $data.value"></span>
-    </label>
-    <!-- /ko --> 
-	
+<div class="form-group" data-bind="with: MySpFieldName._metadata">
+	<label data-bind="text: displayName" class="control-label"></label>
+				
+	<!-- ko foreach: choices -->
+	<label class="radio">
+		<input type="checkbox" data-bind="checked: $parent.$parent, attr: { value: $data.value }" />
+		<span data-bind="text: $data.value"></span>
+	</label>
+	<!-- /ko -->   
+					
 	<!-- optional Field Description -->
-	<p data-bind="text: MySpChoiceFieldName._description"></p>	            
+	<p data-bind="text: description"></p>          
 </div>
+
 ```
 
 ###Displaying SharePoint MultiChoice Fields - Radio Buttons
 How to display the choices from a SharePoint MultiChoice Field with radio buttons.
 ```
-<div class="form-group">
-    <label data-bind="text: MySpChoiceFieldName._displayName" class="control-label"></label>
-
-    <!-- ko foreach: MySpChoiceFieldName._choices -->
-    <label class="radio">
-        <input type="radio" data-bind="checked: $root.MySpChoiceFieldName, attr: { value: $data.value }" name="MySpChoiceFieldName" />
-        <span data-bind="text: $data.value"></span>
-    </label>
-    <!-- /ko -->   
-	
+<div class="form-group" data-bind="with: MySpFieldName._metadata">
+	<label data-bind="text: displayName" class="control-label"></label>
+				
+	<!-- ko foreach: choices -->
+	<label class="radio">
+		<input type="radio" data-bind="checked: $parent.$parent, attr: { value: $data.value, 'name': $parent.name }" />
+		<span data-bind="text: $data.value"></span>
+	</label>
+	<!-- /ko -->   
+					
 	<!-- optional Field Description -->
-	<p data-bind="text: MySpChoiceFieldName._description"></p>          
+	<p data-bind="text: description"></p>          
 </div>
+
 ```
+     
 
 ##Required Field Validation
 Simply add the `required="required"` attribute to required fields. Shockout will do the rest!
@@ -196,7 +212,7 @@ You may use these binding handlers with any HTML element. Shockout will render t
 	
 ####spHtml
 ```
-<textarea data-bind="value: Comments, spHtml: true"></textarea>
+<textarea data-bind="value: Comments, spHtml: ''"></textarea>
 ``` 
 
 ####spPerson

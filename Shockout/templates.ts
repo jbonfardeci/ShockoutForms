@@ -67,12 +67,13 @@
                         .replace(/\{1\}/g, ViewModel.historyDescriptionKey)
                         .replace(/\{2\}/g, ViewModel.historyDateKey);
 
-            var $div = $('<section>', {
+            var $el = $('<section>', {
+                'id': 'workflowHistory',
                 'html': template,
                 'data-bind': 'visible: {0}().length > 0'.replace(/\{0\}/, ViewModel.historyKey)
             });
 
-            return $div;
+            return $el;
         }
 
         public static getFormAction(allowSave: boolean = true, allowDelete: boolean = true, allowPrint: boolean = true): JQuery {

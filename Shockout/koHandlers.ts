@@ -81,8 +81,7 @@
                         return false;
                     }).insertAfter($element);
                     
-
-                    $(element).autocomplete({
+                    var autoCompleteOpts: any = {
                         source: function (request, response) {
                             Utils.peopleSearch(request.term, function (data: Array<ISpPersonSearchResult>) {
                                 response($.map(data, function (item) {
@@ -97,9 +96,12 @@
                         select: function (event, ui) {
                             modelValue(ui.item.value);
                         }
-                    }).on('focus', function () { $(this).removeClass('valid'); })
-                    .on('blur', function () { onChangeSpPersonEvent(this, modelValue); })
-                    .on('mouseout', function () { onChangeSpPersonEvent(this, modelValue); });
+                    };
+
+                    $(element).autocomplete(autoCompleteOpts);
+                    $(element).on('focus', function () { $(this).removeClass('valid'); })
+                        .on('blur', function () { onChangeSpPersonEvent(this, modelValue); })
+                        .on('mouseout', function () { onChangeSpPersonEvent(this, modelValue); });
                 }
                 catch (e) {
                     var msg = 'Error in Knockout handler spPerson init(): ' + JSON.stringify(e);

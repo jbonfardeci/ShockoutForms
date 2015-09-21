@@ -56,6 +56,20 @@ var Shockout;
             this.confirmationUrl = '/SitePages/Confirmation.aspx';
             // Run in debug mode with extra logging; disables error logging to SP list.
             this.debug = false;
+            // jQuery UI dialog options
+            this.dialogOpts = {
+                width: 400,
+                height: 250,
+                autoOpen: false,
+                show: {
+                    effect: "blind",
+                    duration: 1000
+                },
+                hide: {
+                    effect: "explode",
+                    duration: 1000
+                }
+            };
             // Override the SP List fields a user is allowed to submit. 
             this.editableFields = [];
             // Enable users to attach files.
@@ -113,6 +127,7 @@ var Shockout;
             this.sourceUrl = null;
             this.version = '0.0.1';
             this.queryStringId = 'formid';
+            this.sp2013 = false;
             /**
             * Update list item via SOAP services.
             * @param listName: string
@@ -128,7 +143,15 @@ var Shockout;
                 if (self === void 0) { self = undefined; }
                 self = self || this;
                 var action = 'http://schemas.microsoft.com/sharepoint/soap/UpdateListItems';
-                var packet = '<?xml version="1.0" encoding="utf-8"?>' + '<soap:Envelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">' + '<soap:Body>' + '<UpdateListItems xmlns="http://schemas.microsoft.com/sharepoint/soap/">' + '<listName>{0}</listName>' + '<updates>{1}</updates>' + '</UpdateListItems>' + '</soap:Body>' + '</soap:Envelope>';
+                var packet = '<?xml version="1.0" encoding="utf-8"?>' +
+                    '<soap:Envelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">' +
+                    '<soap:Body>' +
+                    '<UpdateListItems xmlns="http://schemas.microsoft.com/sharepoint/soap/">' +
+                    '<listName>{0}</listName>' +
+                    '<updates>{1}</updates>' +
+                    '</UpdateListItems>' +
+                    '</soap:Body>' +
+                    '</soap:Envelope>';
                 var command = isNew ? "New" : "Update";
                 var params = [listName];
                 var soapEnvelope = "<Batch OnError='Continue'><Method ID='1' Cmd='" + command + "'>";
@@ -215,7 +238,11 @@ var Shockout;
             this.formId = formId; // string ID of the parent form - could be any element you choose.
             this.listName = listName; // the name of the SP List
             // get the form container element
-            this.form = document.getElementById(this.formId);
+            this.form = (typeof formId == 'string' ? document.getElementById(formId) : formId);
+            if (!!!this.form) {
+                alert('An element with the ID "' + this.formId + '" was not found. Ensure the `formId` parameter in the constructor matches the ID attribute of the form element.');
+                return;
+            }
             this.$form = $(this.form).addClass('sp-form');
             // Prevent browsers from doing their own validation to allow users to press the `Save` button even when all required fields aren't filled in.
             // We're doing validation ourselves when users presses the `Submit` button.
@@ -231,13 +258,13 @@ var Shockout;
                     this[p] = options[p];
                 }
             }
-            // get the SP list item ID of the form in the querystring
-            if (!!Shockout.Utils.getQueryParam('id')) {
-                this.itemId = parseInt(Shockout.Utils.getQueryParam('id'));
-                this.queryStringId = 'id';
-            }
-            else if (!!Shockout.Utils.getQueryParam(this.queryStringId)) {
-                this.itemId = parseInt(Shockout.Utils.getQueryParam(this.queryStringId));
+            // try to parse the form ID from the hash or querystring
+            this.itemId = Shockout.Utils.getIdFromHash();
+            var idFromQs = Shockout.Utils.getQueryParam(this.queryStringId);
+            if (!!!this.itemId && /\d/.test(idFromQs)) {
+                // get the SP list item ID of the form in the querystring
+                this.itemId = parseInt(idFromQs);
+                Shockout.Utils.setIdHash(this.itemId);
             }
             // setup static error log list name
             SPForm.errorLogListName = this.errorLogListName;
@@ -250,19 +277,9 @@ var Shockout;
             // set the element to display created/modified by info
             self.$createdInfo = self.$form.find(".created-info");
             // create jQuery Dialog for displaying feedback to user
-            self.$dialog = $('<div>', { 'id': 'formdialog' }).appendTo(self.$form).dialog({
-                width: 400,
-                height: 250,
-                autoOpen: false,
-                show: {
-                    effect: "blind",
-                    duration: 1000
-                },
-                hide: {
-                    effect: "explode",
-                    duration: 1000
-                }
-            });
+            self.$dialog = $('<div>', { 'id': 'formdialog' })
+                .appendTo(self.$form)
+                .dialog(self.dialogOpts);
             // Cascading Asynchronous Function Execution (CAFE) Array
             // Don't change the order of these unless you know what you're doing.
             this.asyncFns = [
@@ -304,74 +321,50 @@ var Shockout;
         * Get the current logged in user profile.
         * @return ICurrentUser
         */
-        SPForm.prototype.getCurrentUser = function () {
-            return this.currentUser;
-        };
+        SPForm.prototype.getCurrentUser = function () { return this.currentUser; };
         /**
         * Get the default view for the list.
         * @return string
         */
-        SPForm.prototype.getDefaultViewUrl = function () {
-            return this.defaultViewUrl;
-        };
+        SPForm.prototype.getDefaultViewUrl = function () { return this.defaultViewUrl; };
         /**
         * Get the default mobile view for the list.
         * @return string
         */
-        SPForm.prototype.getDefailtMobileViewUrl = function () {
-            return this.defailtMobileViewUrl;
-        };
+        SPForm.prototype.getDefailtMobileViewUrl = function () { return this.defailtMobileViewUrl; };
         /**
         * Get a reference to the form element.
         * @return HTMLElement
         */
-        SPForm.prototype.getForm = function () {
-            return this.form;
-        };
+        SPForm.prototype.getForm = function () { return this.form; };
         /**
         * Get the SP list item ID number.
         * @return number
         */
-        SPForm.prototype.getItemId = function () {
-            return this.itemId;
-        };
+        SPForm.prototype.getItemId = function () { return this.itemId; };
         /**
         * Get the GUID of the SP list.
         * @return HTMLElement
         */
-        SPForm.prototype.getListId = function () {
-            return this.listId;
-        };
+        SPForm.prototype.getListId = function () { return this.listId; };
         /**
         * Get a reference to the original SP list item.
         * @return ISpItem
         */
-        SPForm.prototype.getListItem = function () {
-            return this.listItem;
-        };
-        SPForm.prototype.requiresCheckout = function () {
-            return this.requireCheckout;
-        };
-        SPForm.prototype.getRootUrl = function () {
-            return this.rootUrl;
-        };
-        SPForm.prototype.getSourceUrl = function () {
-            return this.sourceUrl;
-        };
+        SPForm.prototype.getListItem = function () { return this.listItem; };
+        SPForm.prototype.requiresCheckout = function () { return this.requireCheckout; };
+        SPForm.prototype.getRootUrl = function () { return this.rootUrl; };
+        SPForm.prototype.getSourceUrl = function () { return this.sourceUrl; };
         /**
         * Get a reference to the form's Knockout view model.
         * @return string
         */
-        SPForm.prototype.getViewModel = function () {
-            return this.viewModel;
-        };
+        SPForm.prototype.getViewModel = function () { return this.viewModel; };
         /**
         * Get the version number for this framework.
         * @return string
         */
-        SPForm.prototype.getVersion = function () {
-            return this.version;
-        };
+        SPForm.prototype.getVersion = function () { return this.version; };
         /**
         * Execute the next asynchronous function from `asyncFns`.
         * @param success?: boolean = undefined
@@ -437,8 +430,7 @@ var Shockout;
                             listId: self.listId,
                             itemId: self.itemId
                         },
-                        onSubmit: function (id, fileName) {
-                        },
+                        onSubmit: function (id, fileName) { },
                         onComplete: function (id, fileName, json) {
                             if (self.debug) {
                                 console.warn(json);
@@ -474,13 +466,13 @@ var Shockout;
                     var koName = Shockout.Utils.observableNameFromControl(el);
                     var $rte = $('<div>', {
                         'data-bind': 'spHtmlEditor: ' + koName,
-                        'class': 'content-editable',
+                        'class': 'form-control content-editable',
                         'contenteditable': 'true'
                     });
-                    //if (!!$el.attr('required') || !!!$el.hasClass('required')) {
-                    //    $rte.attr('required', '');
-                    //    $rte.addClass('required');
-                    //}
+                    if (!!$el.attr('required') || !!$el.hasClass('required')) {
+                        $rte.attr('required', 'required');
+                        $rte.addClass('required');
+                    }
                     $rte.insertBefore($el);
                     if (!self.debug) {
                         $el.hide();
@@ -510,7 +502,9 @@ var Shockout;
                 // http://getbootstrap.com/css/#forms-control-validation 
                 self.$form.find('[required], .required').each(function (i, el) {
                     var koName = Shockout.Utils.observableNameFromControl(el);
-                    var $parent = $(el).closest('.form-group').attr("data-bind", "css: { 'has-error': !!!" + koName + "(), 'has-success has-feedback': !!" + koName + "()}").append('<span class="glyphicon glyphicon-ok form-control-feedback" aria-hidden="true"></span>');
+                    var $parent = $(el).closest('.form-group')
+                        .attr("data-bind", "css: { 'has-error': !!!" + koName + "(), 'has-success has-feedback': !!" + koName + "()}")
+                        .append('<span class="glyphicon glyphicon-ok form-control-feedback" aria-hidden="true"></span>');
                 });
                 self.nextAsync(true, "Form initialized.");
                 return;
@@ -589,7 +583,13 @@ var Shockout;
                     self.nextAsync(true, msg);
                     return;
                 }
-                var packet = '<soap:Envelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">' + '<soap:Body>' + '<GetGroupCollectionFromUser xmlns="http://schemas.microsoft.com/sharepoint/soap/directory/">' + '<userLoginName>' + self.currentUser.title + '</userLoginName>' + '</GetGroupCollectionFromUser>' + '</soap:Body>' + '</soap:Envelope>';
+                var packet = '<soap:Envelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">' +
+                    '<soap:Body>' +
+                    '<GetGroupCollectionFromUser xmlns="http://schemas.microsoft.com/sharepoint/soap/directory/">' +
+                    '<userLoginName>' + self.currentUser.title + '</userLoginName>' +
+                    '</GetGroupCollectionFromUser>' +
+                    '</soap:Body>' +
+                    '</soap:Envelope>';
                 var $jqXhr = $.ajax({
                     url: self.rootUrl + '/_vti_bin/usergroup.asmx',
                     type: 'POST',
@@ -756,7 +756,8 @@ var Shockout;
             }
             try {
                 var historyItems = [];
-                var uri = self.rootUrl + self.siteUrl + "/_vti_bin/listdata.svc/" + self.workflowHistoryListName.replace(/\s/g, '') + "?$filter=ListID eq '" + self.listId + "' and PrimaryItemID eq " + self.itemId + "&$select=Description,DateOccurred&$orderby=DateOccurred asc";
+                var uri = self.rootUrl + self.siteUrl + "/_vti_bin/listdata.svc/" + self.workflowHistoryListName.replace(/\s/g, '') +
+                    "?$filter=ListID eq '" + self.listId + "' and PrimaryItemID eq " + self.itemId + "&$select=Description,DateOccurred&$orderby=DateOccurred asc";
                 self.getListItemsRest(uri, function (data, status, jqXhr) {
                     $(data.d.results).each(function (i, item) {
                         historyItems.push(new Shockout.HistoryItem(item.Description, Shockout.Utils.parseJsonDate(item.DateOccurred)));
@@ -767,7 +768,8 @@ var Shockout;
             }
             catch (ex) {
                 var wfUrl = self.rootUrl + self.siteUrl + '/Lists/' + self.workflowHistoryListName.replace(/\s/g, '%20');
-                self.logError('The Workflow History list may be full at <a href="{url}">{url}</a>. Failed to retrieve workflow history in method, getHistoryAsync(). Error: '.replace(/\{url\}/g, wfUrl) + JSON.stringify(ex));
+                self.logError('The Workflow History list may be full at <a href="{url}">{url}</a>. Failed to retrieve workflow history in method, getHistoryAsync(). Error: '
+                    .replace(/\{url\}/g, wfUrl) + JSON.stringify(ex));
                 self.nextAsync(true, 'Failed to retrieve workflow history.');
             }
         };
@@ -1025,20 +1027,17 @@ var Shockout;
                 else {
                     // Append list item ID to querystring if this is a new form.
                     if (Shockout.Utils.getQueryParam(self.queryStringId) == null && self.itemId != null) {
-                        saveMsg += '<p>This page will refresh in ' + timeout / 1000 + ' seconds.</p>';
                         self.showDialog(saveMsg, 'The form has been saved.', timeout);
                         setTimeout(function () {
-                            //append list item id to url
-                            window.location.search = '?' + self.queryStringId + '=' + self.itemId;
-                        }, timeout);
+                            //append list item id to hash
+                            Shockout.Utils.setIdHash(this.itemId);
+                        }, 10);
                     }
                     else {
                         // refresh data from the server
                         self.getListItemAsync(self);
                         //give WF History list 5 seconds to update
-                        setTimeout(function () {
-                            self.getHistoryAsync(self);
-                        }, 5000);
+                        setTimeout(function () { self.getHistoryAsync(self); }, 5000);
                     }
                 }
             }
@@ -1119,9 +1118,7 @@ var Shockout;
                         // update model values
                         self.bindListItemValues(self);
                         //give WF History list 5 seconds to update
-                        setTimeout(function () {
-                            self.getHistoryAsync(self);
-                        }, 5000);
+                        setTimeout(function () { self.getHistoryAsync(self); }, 5000);
                     }
                 }
             });
@@ -1214,7 +1211,19 @@ var Shockout;
             if (queryOptions === void 0) { queryOptions = '<QueryOptions/>'; }
             var self = this;
             try {
-                var packet = '<?xml version="1.0" encoding="utf-8"?>' + '<soap:Envelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">' + '<soap:Body>' + '<GetListItems xmlns="http://schemas.microsoft.com/sharepoint/soap/">' + '<listName>' + listName + '</listName>' + '<query>' + query + '</query>' + '<viewFields>' + viewFields + '</viewFields>' + '<rowLimit>' + rowLimit + '</rowLimit>' + '</GetListItems>' + '</soap:Body>' + '</soap:Envelope>';
+                var packet = '<?xml version="1.0" encoding="utf-8"?>' +
+                    '<soap:Envelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">' +
+                    '<soap:Body>' +
+                    '<GetListItems xmlns="http://schemas.microsoft.com/sharepoint/soap/">' +
+                    '<listName>' + listName + '</listName>' +
+                    //'<viewName>' + viewName + '</viewName>' +
+                    '<query>' + query + '</query>' +
+                    '<viewFields>' + viewFields + '</viewFields>' +
+                    '<rowLimit>' + rowLimit + '</rowLimit>' +
+                    //'<queryOptions>' + queryOptions + '</queryOptions>' +
+                    '</GetListItems>' +
+                    '</soap:Body>' +
+                    '</soap:Envelope>';
                 var $jqXhr = $.ajax({
                     url: siteUrl + '/_vti_bin/lists.asmx',
                     type: 'POST',
@@ -1268,11 +1277,8 @@ var Shockout;
                     var $list = $(xmlDoc).find('List').first();
                     var listId = $list.attr('ID');
                     self.listId = listId;
-                    if (self.debug) {
-                        console.warn('List ID: ' + listId);
-                    }
-                    self.requireCheckout = $list.attr('RequireCheckout').toLowerCase() == 'true';
-                    self.enableAttachments = $list.attr('EnableAttachments').toLowerCase() == 'true';
+                    self.requireCheckout = $list.attr('RequireCheckout') == 'True';
+                    self.enableAttachments = $list.attr('EnableAttachments') == 'True';
                     self.defaultViewUrl = $list.attr('DefaultViewUrl');
                     self.defailtMobileViewUrl = $list.attr('MobileDefaultViewUrl');
                     // Build the Knockout view model
@@ -1302,13 +1308,15 @@ var Shockout;
                     var spType = $el.attr('Type');
                     var spName = $el.attr('Name');
                     var spFormat = $el.attr('Format');
-                    var spRequired = $el.attr('Required').toLowerCase() == 'true';
-                    var spReadOnly = !!($el.attr('ReadOnly')) && $el.attr('ReadOnly').toLowerCase() == 'true';
+                    var spRequired = $el.attr('Required') == 'True';
+                    var spReadOnly = !!($el.attr('ReadOnly')) && $el.attr('ReadOnly') == 'True';
                     var spDesc = $el.attr('Description');
                     var vm = self.viewModel;
                     // Convert the Display Name to equal REST field name conventions.
                     // For example, convert 'Computer Name (if applicable)' to 'ComputerNameIfApplicable'.
-                    var koName = displayName.replace(/[^A-Za-z0-9\s]/g, '').replace(/\s[A-Za-z]/g, function (x) {
+                    var koName = displayName
+                        .replace(/[^A-Za-z0-9\s]/g, '')
+                        .replace(/\s[A-Za-z]/g, function (x) {
                         return x[1].toUpperCase();
                     });
                     // stop and return if it's already a Knockout object
@@ -1330,6 +1338,16 @@ var Shockout;
                     });
                     var koObj = spType.toLowerCase() == 'multichoice' ? ko.observableArray([]) : ko.observable(!!defaultValue ? defaultValue : spType == 'Boolean' ? false : null);
                     // add metadata to the KO object
+                    koObj._metadata = {
+                        koName: koName,
+                        displayName: displayName,
+                        name: spName,
+                        format: spFormat,
+                        required: spRequired,
+                        readOnly: spReadOnly,
+                        description: spDesc,
+                        type: spType,
+                    };
                     koObj._koName = koName;
                     koObj._displayName = displayName;
                     koObj._name = spName;
@@ -1346,7 +1364,10 @@ var Shockout;
                         });
                         koObj._choices = choices;
                         koObj._multiChoice = spType.toLowerCase() == 'multichoice';
+                        koObj._metadata.choices = choices;
+                        koObj._metadata.multichoice = koObj._multiChoice;
                     }
+                    koObj._metadata.$parent = koObj;
                     vm[koName] = koObj;
                 }
                 catch (e) {
@@ -1376,10 +1397,11 @@ var Shockout;
         SPForm.prototype.updateStatus = function (msg, success) {
             if (success === void 0) { success = true; }
             var self = this;
-            this.$formStatus.html(msg).css('color', (success ? "#ff0" : "$f00")).show();
-            setTimeout(function () {
-                self.$formStatus.hide();
-            }, 2000);
+            this.$formStatus
+                .html(msg)
+                .css('color', (success ? "#ff0" : "$f00"))
+                .show();
+            setTimeout(function () { self.$formStatus.hide(); }, 2000);
         };
         /**
         * Display a message to the user with jQuery UI Dialog.
@@ -1396,9 +1418,7 @@ var Shockout;
             msg = (msg).toString().match(/<\w>\w*/) == null ? '<p>' + msg + '</p>' : msg; //wrap non-html in <p>
             self.$dialog.html(msg).dialog('open');
             if (timeout) {
-                setTimeout(function () {
-                    self.$dialog.dialog('close');
-                }, timeout);
+                setTimeout(function () { self.$dialog.dialog('close'); }, timeout);
             }
         };
         /**
@@ -1652,9 +1672,7 @@ var Shockout;
     };
     Shockout.qq.getUniqueId = (function () {
         var id = 0;
-        return function () {
-            return id++;
-        };
+        return function () { return id++; };
     })();
     //
     // Events
@@ -1792,9 +1810,17 @@ var Shockout;
      */
     Shockout.qq.obj2url = function (obj, temp, prefixDone) {
         var uristrings = [], prefix = '&', add = function (nextObj, i) {
-            var nextTemp = temp ? (/\[\]$/.test(temp)) ? temp : temp + '[' + i + ']' : i;
+            var nextTemp = temp
+                ? (/\[\]$/.test(temp)) // prevent double-encoding
+                    ? temp
+                    : temp + '[' + i + ']'
+                : i;
             if ((nextTemp != 'undefined') && (i != 'undefined')) {
-                uristrings.push((typeof nextObj === 'object') ? Shockout.qq.obj2url(nextObj, nextTemp, true) : (Object.prototype.toString.call(nextObj) === '[object Function]') ? encodeURIComponent(nextTemp) + '=' + encodeURIComponent(nextObj()) : encodeURIComponent(nextTemp) + '=' + encodeURIComponent(nextObj));
+                uristrings.push((typeof nextObj === 'object')
+                    ? Shockout.qq.obj2url(nextObj, nextTemp, true)
+                    : (Object.prototype.toString.call(nextObj) === '[object Function]')
+                        ? encodeURIComponent(nextTemp) + '=' + encodeURIComponent(nextObj())
+                        : encodeURIComponent(nextTemp) + '=' + encodeURIComponent(nextObj));
             }
         };
         if (!prefixDone && temp) {
@@ -1803,11 +1829,13 @@ var Shockout;
             uristrings.push(Shockout.qq.obj2url(obj));
         }
         else if ((Object.prototype.toString.call(obj) === '[object Array]') && (typeof obj != 'undefined')) {
+            // we wont use a for-in-loop on an array (performance)
             for (var i = 0, len = obj.length; i < len; ++i) {
                 add(obj[i], i);
             }
         }
         else if ((typeof obj != 'undefined') && (obj !== null) && (typeof obj === "object")) {
+            // for anything else but a scalar, we will use for-in-loop
             for (var p in obj) {
                 add(obj[p], p);
             }
@@ -1815,7 +1843,9 @@ var Shockout;
         else {
             uristrings.push(encodeURIComponent(temp) + '=' + encodeURIComponent(obj));
         }
-        return uristrings.join(prefix).replace(/^&/, '').replace(/%20/g, '+');
+        return uristrings.join(prefix)
+            .replace(/^&/, '')
+            .replace(/%20/g, '+');
     };
     //
     //
@@ -1840,14 +1870,10 @@ var Shockout;
             minSizeLimit: 0,
             // events
             // return false to cancel submit
-            onSubmit: function (id, fileName) {
-            },
-            onProgress: function (id, fileName, loaded, total) {
-            },
-            onComplete: function (id, fileName, responseJSON) {
-            },
-            onCancel: function (id, fileName) {
-            },
+            onSubmit: function (id, fileName) { },
+            onProgress: function (id, fileName, loaded, total) { },
+            onComplete: function (id, fileName, responseJSON) { },
+            onCancel: function (id, fileName) { },
             // messages                
             messages: {
                 typeError: "{file} has invalid extension. Only {extensions} are allowed.",
@@ -2001,9 +2027,7 @@ var Shockout;
         },
         _error: function (code, fileName) {
             var message = this._options.messages[code];
-            function r(name, replacement) {
-                message = message.replace(name, replacement);
-            }
+            function r(name, replacement) { message = message.replace(name, replacement); }
             r('{file}', this._formatFileName(fileName));
             r('{extensions}', this._options.allowedExtensions.join(', '));
             r('{sizeLimit}', this._formatSize(this._options.sizeLimit));
@@ -2050,9 +2074,19 @@ var Shockout;
             element: null,
             // if set, will be used instead of qq-upload-list in template
             listElement: null,
-            template: '<div class="qq-uploader">' + '<div class="qq-upload-drop-area"><span>Drop files here to upload</span></div>' + '<div class="qq-upload-button">Attach File</div>' + '<ul class="qq-upload-list"></ul>' + '</div>',
+            template: '<div class="qq-uploader">' +
+                '<div class="qq-upload-drop-area"><span>Drop files here to upload</span></div>' +
+                '<div class="qq-upload-button">Attach File</div>' +
+                '<ul class="qq-upload-list"></ul>' +
+                '</div>',
             // template for one item in file list
-            fileTemplate: '<li>' + '<span class="qq-upload-file"></span>' + '<span class="qq-upload-spinner"></span>' + '<span class="qq-upload-size"></span>' + '<a class="qq-upload-cancel" href="#">Cancel</a>' + '<span class="qq-upload-failed-text">Failed</span>' + '</li>',
+            fileTemplate: '<li>' +
+                '<span class="qq-upload-file"></span>' +
+                '<span class="qq-upload-spinner"></span>' +
+                '<span class="qq-upload-size"></span>' +
+                '<a class="qq-upload-cancel" href="#">Cancel</a>' +
+                '<span class="qq-upload-failed-text">Failed</span>' +
+                '</li>',
             classes: {
                 // used to get elements from templates
                 button: 'qq-upload-button',
@@ -2169,6 +2203,8 @@ var Shockout;
         },
         _getItemByFileId: function (id) {
             var item = this._listElement.firstChild;
+            // there can't be txt nodes in dynamically created list
+            // and we can  use nextSibling
             while (item) {
                 if (item.qqFileId == id)
                     return item;
@@ -2195,15 +2231,11 @@ var Shockout;
     Shockout.qq.UploadDropZone = function (o) {
         this._options = {
             element: null,
-            onEnter: function (e) {
-            },
-            onLeave: function (e) {
-            },
+            onEnter: function (e) { },
+            onLeave: function (e) { },
             // is not fired when leaving element by hovering descendants   
-            onLeaveNotDescendants: function (e) {
-            },
-            onDrop: function (e) {
-            }
+            onLeaveNotDescendants: function (e) { },
+            onDrop: function (e) { }
         };
         Shockout.qq.extend(this._options, o);
         this._element = this._options.element;
@@ -2266,7 +2298,8 @@ var Shockout;
             isWebkit = navigator.userAgent.indexOf("AppleWebKit") > -1;
             // dt.effectAllowed is none in Safari 5
             // dt.types.contains check is for firefox            
-            return dt && dt.effectAllowed != 'none' && (dt.files || (!isWebkit && dt.types.contains && dt.types.contains('Files')));
+            return dt && dt.effectAllowed != 'none' &&
+                (dt.files || (!isWebkit && dt.types.contains && dt.types.contains('Files')));
         }
     };
     Shockout.qq.UploadButton = function (o) {
@@ -2276,8 +2309,7 @@ var Shockout;
             multiple: false,
             // name attribute of file input
             name: 'file',
-            onChange: function (input) {
-            },
+            onChange: function (input) { },
             hoverClass: 'qq-upload-button-hover',
             focusClass: 'qq-upload-button-focus'
         };
@@ -2363,12 +2395,9 @@ var Shockout;
             action: '/upload.php',
             // maximum number of concurrent uploads        
             maxConnections: 999,
-            onProgress: function (id, fileName, loaded, total) {
-            },
-            onComplete: function (id, fileName, response) {
-            },
-            onCancel: function (id, fileName) {
-            }
+            onProgress: function (id, fileName, loaded, total) { },
+            onComplete: function (id, fileName, response) { },
+            onCancel: function (id, fileName) { }
         };
         Shockout.qq.extend(this._options, o);
         this._queue = [];
@@ -2384,8 +2413,7 @@ var Shockout;
          * Adds file or file input to the queue
          * @returns id
          **/
-        add: function (file) {
-        },
+        add: function (file) { },
         /**
          * Sends the file identified by id and additional query params to the server
          */
@@ -2418,13 +2446,11 @@ var Shockout;
         /**
          * Returns name of the file identified by id
          */
-        getName: function (id) {
-        },
+        getName: function (id) { },
         /**
          * Returns size of the file identified by id
          */
-        getSize: function (id) {
-        },
+        getSize: function (id) { },
         /**
          * Returns id of files being uploaded or
          * waiting for their turn
@@ -2435,13 +2461,11 @@ var Shockout;
         /**
          * Actual upload method
          */
-        _upload: function (id) {
-        },
+        _upload: function (id) { },
         /**
          * Actual cancel method
          */
-        _cancel: function (id) {
-        },
+        _cancel: function (id) { },
         /**
          * Removes element from queue, starts upload of next
          */
@@ -2526,7 +2550,9 @@ var Shockout;
                     return;
                 }
                 // fixing Opera 10.53
-                if (iframe.contentDocument && iframe.contentDocument.body && iframe.contentDocument.body.innerHTML == "false") {
+                if (iframe.contentDocument &&
+                    iframe.contentDocument.body &&
+                    iframe.contentDocument.body.innerHTML == "false") {
                     // In Opera event is fired second time
                     // when body.innerHTML changed from false
                     // to server response approx. after 1 sec
@@ -2601,7 +2627,9 @@ var Shockout;
     Shockout.qq.UploadHandlerXhr.isSupported = function () {
         var input = document.createElement('input');
         input.type = 'file';
-        return ('multiple' in input && typeof File != "undefined" && typeof (new XMLHttpRequest()).upload != "undefined");
+        return ('multiple' in input &&
+            typeof File != "undefined" &&
+            typeof (new XMLHttpRequest()).upload != "undefined");
     };
     // @inherits qq.UploadHandlerAbstract
     Shockout.qq.extend(Shockout.qq.UploadHandlerXhr.prototype, Shockout.qq.UploadHandlerAbstract.prototype);
@@ -2713,7 +2741,10 @@ var Shockout;
         ko.bindingHandlers['spHtmlEditor'] = {
             init: function (element, valueAccessor, allBindings, vm) {
                 var koName = Shockout.Utils.observableNameFromControl(element);
-                $(element).blur(update).change(update).keydown(update);
+                $(element)
+                    .blur(update)
+                    .change(update)
+                    .keydown(update);
                 function update() {
                     vm[koName]($(this).html());
                 }
@@ -2765,7 +2796,7 @@ var Shockout;
                         }
                         return false;
                     }).insertAfter($element);
-                    $(element).autocomplete({
+                    var autoCompleteOpts = {
                         source: function (request, response) {
                             Shockout.Utils.peopleSearch(request.term, function (data) {
                                 response($.map(data, function (item) {
@@ -2780,13 +2811,11 @@ var Shockout;
                         select: function (event, ui) {
                             modelValue(ui.item.value);
                         }
-                    }).on('focus', function () {
-                        $(this).removeClass('valid');
-                    }).on('blur', function () {
-                        onChangeSpPersonEvent(this, modelValue);
-                    }).on('mouseout', function () {
-                        onChangeSpPersonEvent(this, modelValue);
-                    });
+                    };
+                    $(element).autocomplete(autoCompleteOpts);
+                    $(element).on('focus', function () { $(this).removeClass('valid'); })
+                        .on('blur', function () { onChangeSpPersonEvent(this, modelValue); })
+                        .on('mouseout', function () { onChangeSpPersonEvent(this, modelValue); });
                 }
                 catch (e) {
                     var msg = 'Error in Knockout handler spPerson init(): ' + JSON.stringify(e);
@@ -2811,6 +2840,9 @@ var Shockout;
                 ;
             },
             update: function (element, valueAccessor, allBindings, bindingContext) {
+                // This will be called once when the binding is first applied to an element,
+                // and again whenever any observables/computeds that are accessed change
+                // Update the DOM element based on the supplied values here.
                 try {
                     var viewModel = bindingContext.$data;
                     // First get the latest data that we're bound to
@@ -2922,7 +2954,8 @@ var Shockout;
                         'style': 'width:6em;',
                         'class': (required ? 'required' : ''),
                         'placeholder': 'HH:MM PM'
-                    }).insertAfter($element).on('change', function () {
+                    }).insertAfter($element)
+                        .on('change', function () {
                         try {
                             $error.hide();
                             var time = this.value.toString().toUpperCase().replace(/[^\d\:AMP\s]/g, '');
@@ -3107,17 +3140,25 @@ var Shockout;
             return $div.html();
         };
         Templates.getCreatedModifiedHtml = function () {
-            var template = Templates.createdModifiedTemplate.replace(/\{0\}/g, Shockout.ViewModel.createdByKey).replace(/\{1\}/g, Shockout.ViewModel.createdByEmailKey).replace(/\{2\}/g, Shockout.ViewModel.createdKey).replace(/\{3\}/g, Shockout.ViewModel.modifiedByKey).replace(/\{4\}/g, Shockout.ViewModel.modifiedByEmailKey).replace(/\{5\}/g, Shockout.ViewModel.modifiedKey);
+            var template = Templates.createdModifiedTemplate.replace(/\{0\}/g, Shockout.ViewModel.createdByKey)
+                .replace(/\{1\}/g, Shockout.ViewModel.createdByEmailKey)
+                .replace(/\{2\}/g, Shockout.ViewModel.createdKey)
+                .replace(/\{3\}/g, Shockout.ViewModel.modifiedByKey)
+                .replace(/\{4\}/g, Shockout.ViewModel.modifiedByEmailKey)
+                .replace(/\{5\}/g, Shockout.ViewModel.modifiedKey);
             var $div = $('<div>').html(template);
             return $div.html();
         };
         Templates.getHistoryTemplate = function () {
-            var template = Templates.historyTemplate.replace(/\{0\}/g, Shockout.ViewModel.historyKey).replace(/\{1\}/g, Shockout.ViewModel.historyDescriptionKey).replace(/\{2\}/g, Shockout.ViewModel.historyDateKey);
-            var $div = $('<section>', {
+            var template = Templates.historyTemplate.replace(/\{0\}/g, Shockout.ViewModel.historyKey)
+                .replace(/\{1\}/g, Shockout.ViewModel.historyDescriptionKey)
+                .replace(/\{2\}/g, Shockout.ViewModel.historyDateKey);
+            var $el = $('<section>', {
+                'id': 'workflowHistory',
                 'html': template,
                 'data-bind': 'visible: {0}().length > 0'.replace(/\{0\}/, Shockout.ViewModel.historyKey)
             });
-            return $div;
+            return $el;
         };
         Templates.getFormAction = function (allowSave, allowDelete, allowPrint) {
             if (allowSave === void 0) { allowSave = true; }
@@ -3147,15 +3188,55 @@ var Shockout;
             if (profile.Picture != null && profile.Picture.indexOf(',') > -1) {
                 pictureUrl = profile.Picture.split(',')[0];
             }
-            var template = Templates.userProfileTemplate.replace(/\{header\}/g, headerTxt).replace(/\{pictureurl\}/g, pictureUrl).replace(/\{name\}/g, (profile.Name || '')).replace(/\{jobtitle\}/g, profile.Title || '').replace(/\{department\}/g, profile.Department || '').replace(/\{workemail\}/g, profile.WorkEMail || '').replace(/\{workphone\}/g, profile.WorkPhone || '').replace(/\{office\}/g, profile.Office || '');
+            var template = Templates.userProfileTemplate.replace(/\{header\}/g, headerTxt)
+                .replace(/\{pictureurl\}/g, pictureUrl)
+                .replace(/\{name\}/g, (profile.Name || ''))
+                .replace(/\{jobtitle\}/g, profile.Title || '')
+                .replace(/\{department\}/g, profile.Department || '')
+                .replace(/\{workemail\}/g, profile.WorkEMail || '')
+                .replace(/\{workphone\}/g, profile.WorkPhone || '')
+                .replace(/\{office\}/g, profile.Office || '');
             var $div = $('<div>', { 'class': 'user-profile-card', 'html': template });
             return $div;
         };
-        Templates.attachmentsTemplate = '<h4>Attachments (<span data-bind="text: attachments().length"></span>)</h4>' + '<div id="{0}"></div>' + '<div data-bind="foreach: attachments">' + '<div>' + '<a href="" data-bind="attr: {href: __metadata.media_src}"><span class="glyphicon glyphicon-paperclip"></span> <span data-bind="text: Name"></span></a>&nbsp;' + '<button data-bind="event: {click: $root.deleteAttachment}" class="btn btn-sm btn-danger" title="Delete Attachment" data-author-only><span class="glyphicon glyphicon-remove"></span></button>' + '</div>' + '</div>';
-        Templates.fileuploadTemplate = '<div class="qq-uploader" data-author-only>' + '<div class="qq-upload-drop-area"><span>Drop files here to upload</span></div>' + '<div class="btn btn-primary qq-upload-button"><span class="glyphicon glyphicon-paperclip"></span> Attach File</div>' + '<ul class="qq-upload-list"></ul></div>';
-        Templates.createdModifiedTemplate = '<div class="create-mod-info no-print hidden-xs"></div>' + '<div class="row">' + '<div class="col-md-3"><label>Created By</label> <a data-bind="text: {0}, attr:{href: \'mailto:\'+{1}()}" class="email" > </a></div>' + '<div class="col-md-3"><label>Created</label> <span data-bind="spDateTime: {2}"></span></div>' + '<div class="col-md-3"><label>Modified By</label> <a data-bind="text: {3}, attr:{href: \'mailto:\'+{4}()}" class="email"></a></div>' + '<div class="col-md-3"><label>Modified</label> <span data-bind="spDateTime: {5}"></span></div>' + '</div>';
-        Templates.historyTemplate = '<h4>Workflow History</h4>' + '<div class="row">' + '<div class="col-md-8 col-xs-8"><strong>Description</strong></div>' + '<div class="col-md-4 col-xs-4"><strong>Date</strong></div>' + '</div>' + '<div class="row" data-bind="foreach: {0}">' + '<div data-bind="text: {1}" class="col-md-8 col-xs-8"></div>' + '<div data-bind="spDateTime: {2}" class="col-md-4 col-xs-4"></div>' + '</div>';
-        Templates.userProfileTemplate = '<h4>{header}</h4>' + '<img src="{pictureurl}" alt="{name}" />' + '<ul>' + '<li><label>Name</label>{name}<li>' + '<li><label>Title</label>{jobtitle}</li>' + '<li><label>Department</label>{department}</li>' + '<li><label>Email</label><a href="mailto:{workemail}">{workemail}</a></li>' + '<li><label>Phone</label>{workphone}</li>' + '<li><label>Office</label>{office}</li>' + '</ul>';
+        Templates.attachmentsTemplate = '<h4>Attachments (<span data-bind="text: attachments().length"></span>)</h4>' +
+            '<div id="{0}"></div>' +
+            '<div data-bind="foreach: attachments">' +
+            '<div>' +
+            '<a href="" data-bind="attr: {href: __metadata.media_src}"><span class="glyphicon glyphicon-paperclip"></span> <span data-bind="text: Name"></span></a>&nbsp;' +
+            '<button data-bind="event: {click: $root.deleteAttachment}" class="btn btn-sm btn-danger" title="Delete Attachment" data-author-only><span class="glyphicon glyphicon-remove"></span></button>' +
+            '</div>' +
+            '</div>';
+        Templates.fileuploadTemplate = '<div class="qq-uploader" data-author-only>' +
+            '<div class="qq-upload-drop-area"><span>Drop files here to upload</span></div>' +
+            '<div class="btn btn-primary qq-upload-button"><span class="glyphicon glyphicon-paperclip"></span> Attach File</div>' +
+            '<ul class="qq-upload-list"></ul></div>';
+        Templates.createdModifiedTemplate = '<div class="create-mod-info no-print hidden-xs"></div>' +
+            '<div class="row">' +
+            '<div class="col-md-3"><label>Created By</label> <a data-bind="text: {0}, attr:{href: \'mailto:\'+{1}()}" class="email" > </a></div>' +
+            '<div class="col-md-3"><label>Created</label> <span data-bind="spDateTime: {2}"></span></div>' +
+            '<div class="col-md-3"><label>Modified By</label> <a data-bind="text: {3}, attr:{href: \'mailto:\'+{4}()}" class="email"></a></div>' +
+            '<div class="col-md-3"><label>Modified</label> <span data-bind="spDateTime: {5}"></span></div>' +
+            '</div>';
+        Templates.historyTemplate = '<h4>Workflow History</h4>' +
+            '<div class="row">' +
+            '<div class="col-md-8 col-xs-8"><strong>Description</strong></div>' +
+            '<div class="col-md-4 col-xs-4"><strong>Date</strong></div>' +
+            '</div>' +
+            '<div class="row" data-bind="foreach: {0}">' +
+            '<div data-bind="text: {1}" class="col-md-8 col-xs-8"></div>' +
+            '<div data-bind="spDateTime: {2}" class="col-md-4 col-xs-4"></div>' +
+            '</div>';
+        Templates.userProfileTemplate = '<h4>{header}</h4>' +
+            '<img src="{pictureurl}" alt="{name}" />' +
+            '<ul>' +
+            '<li><label>Name</label>{name}<li>' +
+            '<li><label>Title</label>{jobtitle}</li>' +
+            '<li><label>Department</label>{department}</li>' +
+            '<li><label>Email</label><a href="mailto:{workemail}">{workemail}</a></li>' +
+            '<li><label>Phone</label>{workphone}</li>' +
+            '<li><label>Office</label>{office}</li>' +
+            '</ul>';
         return Templates;
     })();
     Shockout.Templates = Templates;
@@ -3165,6 +3246,20 @@ var Shockout;
     var Utils = (function () {
         function Utils() {
         }
+        /**
+        * Parse a form ID from window.location.hash
+        * @return number
+        */
+        Utils.getIdFromHash = function () {
+            // example: parse ID from a URI `http://<mysite>/Forms/form.aspx/#/id/1`
+            var rxHash = /\/id\/\d/i;
+            var exec = rxHash.exec(window.location.hash);
+            var id = !!exec ? exec[0].replace(/\D/g, '') : null;
+            return /\d/.test(id) ? parseInt(id) : null;
+        };
+        Utils.setIdHash = function (id) {
+            window.location.hash = '#/id/' + id;
+        };
         /**
         * Escape column values
         * http://dracoblue.net/dev/encodedecode-special-xml-characters-in-javascript/155/
@@ -3188,7 +3283,8 @@ var Shockout;
             if (take === void 0) { take = 10; }
             var page = !!take ? take.toString() : '10';
             // Allowed system query options are $filter, $select, $orderby, $skip, $top, $count, $search, $expand, and $levels.
-            var uri = "/_vti_bin/listdata.svc/UserInformationList?$filter=startswith(Name,'{0}') or startswith(LastName,'{0}')&$select=Id,Account,Name,WorkEMail&$orderby=Name&$top={1}".replace(/\{0\}/g, term).replace(/\{1\}/, page);
+            var uri = "/_vti_bin/listdata.svc/UserInformationList?$filter=startswith(Name,'{0}')&$select=Id,Account,Name,EMail&$orderby=Name&$top={1}"
+                .replace(/\{0\}/g, term).replace(/\{1\}/, page);
             var $jqXhr = $.ajax({
                 url: uri,
                 type: 'GET',
@@ -3244,9 +3340,13 @@ var Shockout;
             if (!!!attr) {
                 return null;
             }
+            attr = attr.replace(/\$/g, '');
             var rx = /(\b:(\s+|)|\$root.)\w*\b/;
             var exec = rx.exec(attr);
-            var result = !!exec ? exec[0].replace(/:(\s+|)/gi, '').replace(/\$root\./, '') : null;
+            var result = !!exec ? exec[0].replace(/:(\s+|)/gi, '').replace(/\$root\./, '').replace(/\._metadata/, '').replace(/\s/g, '') : null;
+            if (result == 'parent') {
+                return Utils.observableNameFromControl($(control).parent());
+            }
             return result;
         };
         Utils.parseJsonDate = function (d) {
@@ -3278,6 +3378,7 @@ var Shockout;
             // Filter out special objects.
             var Constructor = objectToBeCloned.constructor;
             switch (Constructor) {
+                // Implement other special objects here.
                 case RegExp:
                     objectClone = new Constructor(objectToBeCloned);
                     break;
@@ -3287,6 +3388,7 @@ var Shockout;
                 default:
                     objectClone = new Constructor();
             }
+            // Clone each property.
             for (var prop in objectToBeCloned) {
                 objectClone[prop] = this.clone(objectToBeCloned[prop]);
             }
@@ -3411,9 +3513,12 @@ var Shockout;
             if (symbol === void 0) { symbol = '$'; }
             if (precision === void 0) { precision = 2; }
             // Clean up number:
-            var num = Utils.unformatNumber(value), format = '%s%v', neg = format.replace('%v', '-%v'), useFormat = num > 0 ? format : num < 0 ? neg : format, numFormat = Utils.formatNumber(Math.abs(num), Utils.checkPrecision(precision));
+            var num = Utils.unformatNumber(value), format = '%s%v', neg = format.replace('%v', '-%v'), useFormat = num > 0 ? format : num < 0 ? neg : format, // Choose which format to use for this value:
+            numFormat = Utils.formatNumber(Math.abs(num), Utils.checkPrecision(precision));
             // Return with currency symbol added:
-            return useFormat.replace('%s', symbol).replace('%v', numFormat);
+            return useFormat
+                .replace('%s', symbol)
+                .replace('%v', numFormat);
         };
         /**
         * Addapted from accounting.js library. http://josscrowcroft.github.com/accounting.js/
@@ -3433,7 +3538,9 @@ var Shockout;
             if (typeof value === "number")
                 return value;
             // Build regex to strip out everything except digits, decimal point and minus sign:
-            var unformatted = parseFloat((value + '').replace(/\((.*)\)/, '-$1').replace(/[^0-9-.]/g, ''));
+            var unformatted = parseFloat((value + '')
+                .replace(/\((.*)\)/, '-$1') // replace parenthesis for negative numbers
+                .replace(/[^0-9-.]/g, ''));
             return !isNaN(unformatted) ? unformatted : 0;
         };
         /**
@@ -3479,6 +3586,7 @@ var Shockout;
             val = Math.round(Math.abs(val));
             return isNaN(val) ? 0 : val;
         };
+        Utils.koNameFromControl = Utils.observableNameFromControl;
         return Utils;
     })();
     Shockout.Utils = Utils;

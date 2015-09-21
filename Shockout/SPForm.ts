@@ -89,6 +89,21 @@ module Shockout {
 
         // Run in debug mode with extra logging; disables error logging to SP list.
         public debug: boolean = false;
+
+        // jQuery UI dialog options
+        public dialogOpts: any = {
+            width: 400,
+            height: 250,
+            autoOpen: false,
+            show: {
+                effect: "blind",
+                duration: 1000
+            },
+            hide: {
+                effect: "explode",
+                duration: 1000
+            }
+        };
         
         // Override the SP List fields a user is allowed to submit. 
         public editableFields: Array<string> = [];
@@ -245,6 +260,8 @@ module Shockout {
 
         public queryStringId: string = 'formid';
 
+        public sp2013: Boolean = false;
+
         constructor(listName: string, formId: string, options: Object) {
             var self = this;
             var error;
@@ -273,7 +290,13 @@ module Shockout {
             this.listName = listName; // the name of the SP List
 
             // get the form container element
-            this.form = document.getElementById(this.formId);
+            this.form = <HTMLElement>(typeof formId == 'string' ? document.getElementById(formId) : formId);
+
+            if (!!!this.form) {
+                alert('An element with the ID "' + this.formId + '" was not found. Ensure the `formId` parameter in the constructor matches the ID attribute of the form element.');
+                return;
+            }
+
             this.$form = $(this.form).addClass('sp-form');
 
             // Prevent browsers from doing their own validation to allow users to press the `Save` button even when all required fields aren't filled in.
@@ -294,14 +317,15 @@ module Shockout {
                 }
             }
 
-            // get the SP list item ID of the form in the querystring
-            if (!!Utils.getQueryParam('id')) {
-                this.itemId = parseInt(Utils.getQueryParam('id'));
-                this.queryStringId = 'id';
-            }
-            else if (!!Utils.getQueryParam(this.queryStringId)) {
-                this.itemId = parseInt(Utils.getQueryParam(this.queryStringId));
-            }
+            // try to parse the form ID from the hash or querystring
+            this.itemId = Utils.getIdFromHash();
+            var idFromQs = Utils.getQueryParam(this.queryStringId);
+
+            if (!!!this.itemId && /\d/.test(idFromQs)) {
+                // get the SP list item ID of the form in the querystring
+                this.itemId = parseInt(idFromQs);
+                Utils.setIdHash(this.itemId);
+            }           
 
             // setup static error log list name
             SPForm.errorLogListName = this.errorLogListName;
@@ -321,19 +345,7 @@ module Shockout {
             // create jQuery Dialog for displaying feedback to user
             self.$dialog = $('<div>', { 'id': 'formdialog' })
                 .appendTo(self.$form)
-                .dialog({
-                    width: 400,
-                    height: 250,
-                    autoOpen: false,
-                    show: {
-                        effect: "blind",
-                        duration: 1000
-                    },
-                    hide: {
-                        effect: "explode",
-                        duration: 1000
-                    }
-                });
+                .dialog(self.dialogOpts);
 
             // Cascading Asynchronous Function Execution (CAFE) Array
             // Don't change the order of these unless you know what you're doing.
@@ -481,14 +493,14 @@ module Shockout {
 
                     var $rte = $('<div>', {
                         'data-bind': 'spHtmlEditor: ' + koName,
-                        'class': 'content-editable',
+                        'class': 'form-control content-editable',
                         'contenteditable': 'true'
                     });
 
-                    //if (!!$el.attr('required') || !!!$el.hasClass('required')) {
-                    //    $rte.attr('required', '');
-                    //    $rte.addClass('required');
-                    //}
+                    if (!!$el.attr('required') || !!$el.hasClass('required')) {
+                        $rte.attr('required', 'required');
+                        $rte.addClass('required');
+                    }
 
                     $rte.insertBefore($el);
                     if (!self.debug) {
@@ -1102,12 +1114,11 @@ module Shockout {
                     
                     // Append list item ID to querystring if this is a new form.
                     if (Utils.getQueryParam(self.queryStringId) == null && self.itemId != null) {
-                        saveMsg += '<p>This page will refresh in ' + timeout / 1000 + ' seconds.</p>';
                         self.showDialog(saveMsg, 'The form has been saved.', timeout);
                         setTimeout(function () {
-                            //append list item id to url
-                            window.location.search = '?' + self.queryStringId + '=' + self.itemId;
-                        }, timeout);
+                            //append list item id to hash
+                            Utils.setIdHash(this.itemId);
+                        }, 10);
                     }
                     else {
                         // refresh data from the server
@@ -1386,13 +1397,8 @@ module Shockout {
                     var $list = $(xmlDoc).find('List').first();
                     var listId = $list.attr('ID');
                     self.listId = listId;
-
-                    if (self.debug) {
-                        console.warn('List ID: ' + listId);
-                    }
-
-                    self.requireCheckout = $list.attr('RequireCheckout').toLowerCase() == 'true';
-                    self.enableAttachments = $list.attr('EnableAttachments').toLowerCase() == 'true';
+                    self.requireCheckout = $list.attr('RequireCheckout') == 'True';
+                    self.enableAttachments = $list.attr('EnableAttachments') == 'True';
                     self.defaultViewUrl = $list.attr('DefaultViewUrl');
                     self.defailtMobileViewUrl = $list.attr('MobileDefaultViewUrl');
 
@@ -1426,8 +1432,8 @@ module Shockout {
                     var spType: string = $el.attr('Type');
                     var spName: string = $el.attr('Name');
                     var spFormat: string = $el.attr('Format');
-                    var spRequired: boolean = $el.attr('Required').toLowerCase() == 'true';
-                    var spReadOnly: boolean = !!($el.attr('ReadOnly')) && $el.attr('ReadOnly').toLowerCase() == 'true';
+                    var spRequired: boolean = $el.attr('Required') == 'True';
+                    var spReadOnly: boolean = !!($el.attr('ReadOnly')) && $el.attr('ReadOnly') == 'True';
                     var spDesc: string = $el.attr('Description');
                     var vm: IViewModel = self.viewModel;
 
@@ -1460,6 +1466,17 @@ module Shockout {
                     var koObj: any = spType.toLowerCase() == 'multichoice' ? ko.observableArray([]) : ko.observable(!!defaultValue ? defaultValue : spType == 'Boolean' ? false : null);
                     
                     // add metadata to the KO object
+                    koObj._metadata = {
+                        koName: koName,
+                        displayName: displayName,
+                        name: spName,
+                        format: spFormat,
+                        required: spRequired,
+                        readOnly: spReadOnly,
+                        description: spDesc,
+                        type: spType,
+                    };
+
                     koObj._koName = koName;
                     koObj._displayName = displayName;
                     koObj._name = spName;
@@ -1479,8 +1496,12 @@ module Shockout {
 
                         koObj._choices = choices;
                         koObj._multiChoice = spType.toLowerCase() == 'multichoice';
+
+                        koObj._metadata.choices = choices;
+                        koObj._metadata.multichoice = koObj._multiChoice;
                     }
 
+                    koObj._metadata.$parent = koObj;
                     vm[koName] = koObj;
                 }
                 catch (e) {
