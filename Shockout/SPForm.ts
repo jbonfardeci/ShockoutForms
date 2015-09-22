@@ -1439,11 +1439,7 @@ module Shockout {
 
                     // Convert the Display Name to equal REST field name conventions.
                     // For example, convert 'Computer Name (if applicable)' to 'ComputerNameIfApplicable'.
-                    var koName = displayName
-                        .replace(/[^A-Za-z0-9\s]/g, '')
-                        .replace(/\s[A-Za-z]/g, function (x) {
-                            return x[1].toUpperCase();
-                        });
+                    var koName = Utils.toCamelCase(displayName);
 
                     // stop and return if it's already a Knockout object
                     if (koName in self.viewModel) { return; }
@@ -1458,12 +1454,12 @@ module Shockout {
                             val = new Date();
                         }
                         else if (spType == 'Boolean') {
-                            val == !!val;
+                            val = val == '0' ? false : true;
                         }
                         defaultValue = val;
                     });
 
-                    var koObj: any = spType.toLowerCase() == 'multichoice' ? ko.observableArray([]) : ko.observable(!!defaultValue ? defaultValue : spType == 'Boolean' ? false : null);
+                    var koObj: any = !!spType && spType == 'MultiChoice' ? ko.observableArray([]) : ko.observable(!!defaultValue ? defaultValue : spType == 'Boolean' ? false : null);
                     
                     // add metadata to the KO object
                     koObj._metadata = {
@@ -1487,7 +1483,9 @@ module Shockout {
                     koObj._type = spType;
 
                     if (rxIsChoice.test(spType)) {
-                        koObj._isFillInChoice = $el.attr('FillInChoice').toLowerCase() == 'true'; // allow fill-in choices
+                        var isFillIn = $el.attr('FillInChoice');
+
+                        koObj._isFillInChoice = !!isFillIn && isFillIn == 'True'; // allow fill-in choices
                         var choices = [];
 
                         $el.find('CHOICE').each(function (j: number, choice: any) {
@@ -1495,7 +1493,7 @@ module Shockout {
                         });
 
                         koObj._choices = choices;
-                        koObj._multiChoice = spType.toLowerCase() == 'multichoice';
+                        koObj._multiChoice = !!spType && spType == 'MultiChoice';
 
                         koObj._metadata.choices = choices;
                         koObj._metadata.multichoice = koObj._multiChoice;

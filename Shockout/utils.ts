@@ -8,6 +8,16 @@
     
     export class Utils {
     
+        public static toCamelCase(str: string): string {
+            if (!!!str) { return null; }
+
+            return str
+                .replace(/[^A-Za-z0-9\s]/g, '')
+                .replace(/\s[A-Za-z]/g, function (x) {
+                    return x[1].toUpperCase();
+                });
+        }
+
         /**
         * Parse a form ID from window.location.hash
         * @return number
@@ -47,7 +57,7 @@
 
             var page: string = !!take ? take.toString() : '10';
             // Allowed system query options are $filter, $select, $orderby, $skip, $top, $count, $search, $expand, and $levels.
-            var uri = "/_vti_bin/listdata.svc/UserInformationList?$filter=startswith(Name,'{0}')&$select=Id,Account,Name,EMail&$orderby=Name&$top={1}"
+            var uri = "/_vti_bin/listdata.svc/UserInformationList?$filter=startswith(Name,'{0}')&$select=Id,Account,Name,WorkEMail&$orderby=Name&$top={1}"
                 .replace(/\{0\}/g, term).replace(/\{1\}/, page);
 
             var $jqXhr: JQueryXHR = $.ajax({
