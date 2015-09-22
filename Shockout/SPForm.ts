@@ -1117,7 +1117,7 @@ module Shockout {
                         self.showDialog(saveMsg, 'The form has been saved.', timeout);
                         setTimeout(function () {
                             //append list item id to hash
-                            Utils.setIdHash(this.itemId);
+                            Utils.setIdHash(self.itemId);
                         }, 10);
                     }
                     else {

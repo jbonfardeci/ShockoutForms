@@ -14,7 +14,7 @@
         */
         public static getIdFromHash(): number {
             // example: parse ID from a URI `http://<mysite>/Forms/form.aspx/#/id/1`
-            var rxHash: RegExp = /\/id\/\d/i;
+            var rxHash: RegExp = /\/id\/\d+/i;
             var exec: Array<any> = rxHash.exec(window.location.hash);
             var id: any = !!exec ? exec[0].replace(/\D/g, '') : null;
             return /\d/.test(id) ? parseInt(id) : null;
