@@ -1456,6 +1456,9 @@ module Shockout {
                         else if (spType == 'Boolean') {
                             val = val == '0' ? false : true;
                         }
+                        else if (spType == 'Number' || spType == 'Currency') {
+                            val = val - 0;
+                        }
                         defaultValue = val;
                     });
 

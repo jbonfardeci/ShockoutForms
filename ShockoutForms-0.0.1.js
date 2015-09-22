@@ -1330,6 +1330,9 @@ var Shockout;
                         else if (spType == 'Boolean') {
                             val = val == '0' ? false : true;
                         }
+                        else if (spType == 'Number' || spType == 'Currency') {
+                            val = val - 0;
+                        }
                         defaultValue = val;
                     });
                     var koObj = !!spType && spType == 'MultiChoice' ? ko.observableArray([]) : ko.observable(!!defaultValue ? defaultValue : spType == 'Boolean' ? false : null);
