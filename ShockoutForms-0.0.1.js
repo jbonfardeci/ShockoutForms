@@ -2563,9 +2563,9 @@ var Shockout;
                     }, timeout);
                 }
                 else {
+                    self.showDialog(saveMsg, 'The form has been saved.', timeout);
                     // Append list item ID to querystring if this is a new form.
-                    if (Shockout.Utils.getQueryParam(self.queryStringId) == null && self.itemId != null) {
-                        self.showDialog(saveMsg, 'The form has been saved.', timeout);
+                    if (Shockout.Utils.getIdFromHash() == null && self.itemId != null) {
                         setTimeout(function () {
                             //append list item id to hash
                             Shockout.Utils.setIdHash(self.itemId);

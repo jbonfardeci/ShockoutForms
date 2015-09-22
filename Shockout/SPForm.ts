@@ -1111,10 +1111,10 @@ module Shockout {
                     }, timeout);
                 }
                 else {//saving form
-                    
+                    self.showDialog(saveMsg, 'The form has been saved.', timeout);
+
                     // Append list item ID to querystring if this is a new form.
-                    if (Utils.getQueryParam(self.queryStringId) == null && self.itemId != null) {
-                        self.showDialog(saveMsg, 'The form has been saved.', timeout);
+                    if (Utils.getIdFromHash() == null && self.itemId != null) {                     
                         setTimeout(function () {
                             //append list item id to hash
                             Utils.setIdHash(self.itemId);
