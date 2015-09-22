@@ -3247,10 +3247,7 @@ var Shockout;
         function Utils() {
         }
         Utils.toCamelCase = function (str) {
-            if (!!!str) {
-                return null;
-            }
-            return str
+            return str.toString()
                 .replace(/[^A-Za-z0-9\s]/g, '')
                 .replace(/\s[A-Za-z]/g, function (x) {
                 return x[1].toUpperCase();
