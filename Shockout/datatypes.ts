@@ -65,15 +65,15 @@
         d: T;
     }
 
-    export interface __deferredUri {
+    export interface ISpDeferred {
         uri: string;
     }
 
     export interface ISpDeferred {
-        __deferred: __deferredUri;
+        __deferred: ISpDeferred;
     }
 
-    export interface ISpItemMetadata {
+    export interface ISpMetadata {
         uri: string;
         etag: string;
         type: string;
@@ -93,7 +93,7 @@
     }
 
     export interface ISpPersonSearchResult {
-        __metadata: ISpItemMetadata;
+        __metadata: ISpMetadata;
         Id: number;
         Account: string;
         Name: string;
@@ -101,7 +101,7 @@
     }
 
     export interface ISpPerson {
-        __metadata: ISpItemMetadata;
+        __metadata: ISpMetadata;
         ContentTypeID: string;
         Name: string;
         Account: string;
@@ -168,7 +168,7 @@
     }
 
     export interface ISpItem {
-        __metadata: ISpItemMetadata;
+        __metadata: ISpMetadata;
         Title: string;
         ContentTypeID: string;
         Id: number;
@@ -186,7 +186,7 @@
     }
 
     export class SpItem implements ISpItem {
-        __metadata: ISpItemMetadata;
+        __metadata: ISpMetadata;
         Title: string;
         ContentTypeID: string;
         Id: number;
@@ -205,7 +205,7 @@
     }
 
     export interface ISpMultichoiceValue {
-        __metadata: ISpItemMetadata;
+        __metadata: ISpMetadata;
         Value: any;
     }
 }

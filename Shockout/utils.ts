@@ -45,71 +45,6 @@
         }
 
         /**
-        * Search the User Information list.
-        * @param term: string
-        * @param callback: Function
-        * @param take?: number = 10
-        * @return void
-        */
-        public static peopleSearch(term: string, callback: Function, take: number = 10): void {
-
-            var page: string = !!take ? take.toString() : '10';
-            // Allowed system query options are $filter, $select, $orderby, $skip, $top, $count, $search, $expand, and $levels.
-            var uri = "/_vti_bin/listdata.svc/UserInformationList?$filter=startswith(Name,'{0}')&$select=Id,Account,Name,WorkEMail&$orderby=Name&$top={1}"
-                .replace(/\{0\}/g, term).replace(/\{1\}/, page);
-
-            var $jqXhr: JQueryXHR = $.ajax({
-                url: uri,
-                type: 'GET',
-                cache: false,
-                dataType: 'json',
-                contentType: 'application/json; charset=utf-8',
-                headers: {
-                    'Accept': 'application/json'
-                }
-            });
-
-            $jqXhr.done(function (data: ISpWrapper<ISpPersonSearchResult>, status: string, jqXhr: any) {
-                callback(data.d);
-            });
-
-            $jqXhr.fail(function (obj: any, status: string, jqXhr: any) {
-                var msg = 'People Search error. Status: ' + obj.statusText + ' ' + status + ' ' + JSON.stringify(jqXhr);
-                Utils.logError(msg, SPForm.errorLogListName);
-                throw msg;
-            });
-        }
-
-        /**
-        * Get a person by their ID from the User Information list.
-        * @param id: number
-        * @param callback: Function
-        * @return void
-        */
-        public static getPersonById(id: number, callback: Function): void {
-            var $jqXhr: JQueryXHR = $.ajax({
-                url: "/_vti_bin/listdata.svc/UserInformationList(" + id + ")?$select=Id,Name,Account",
-                type: 'GET',
-                cache: false,
-                dataType: 'json',
-                contentType: 'application/json; charset=utf-8',
-                headers: {
-                    'Accept': 'application/json'
-                }
-            });
-
-            $jqXhr.done(function (data: ISpWrapper<ISpPerson>, status: string, jqXhr: any) {
-                callback(data.d);
-            });
-
-            $jqXhr.fail(function (obj: any, status: string, jqXhr: any) {
-                var msg = 'Get person by ID error. Status: ' + obj.statusText + ' ' + status + ' ' + JSON.stringify(jqXhr);
-                Utils.logError(msg, SPForm.errorLogListName);
-                throw msg;
-            });
-        }
-
-        /**
         * Extract the Knockout observable name from a field with `data-bind` attribute
         * @param control: HTMLElement
         * @return string
@@ -129,14 +64,36 @@
 
         public static koNameFromControl = Utils.observableNameFromControl;
 
+        public static parseDate(d: any): Date {
+            if (Utils.isJsonDateTicks(d)) {
+                return Utils.parseJsonDate(d);
+            }
+            else if (Utils.isIsoDateString(d)) {
+                return Utils.parseIsoDate(d);
+            }
+            return null;
+        }
+
         public static parseJsonDate(d: any): Date {
-            if (!Utils.isJsonDate(d)) { return null; }
+            if (!Utils.isJsonDateTicks(d)) { return null; }
             return new Date(parseInt(d.replace(/\D/g, '')));
         }
 
-        public static isJsonDate(val: any): boolean {
+        public static parseIsoDate(d: any): Date {
+            if (!Utils.isIsoDateString(d)) { return null; }
+            return new Date(d);
+        }
+
+        public static isJsonDateTicks(val: any): boolean {
+            // `/Date(1442769001000)/`
             if (!!!val) { return false; }
             return /\/Date\(\d+\)\//.test(val+'');
+        }
+
+        public static isIsoDateString(val: any) {
+            // `2015-09-23T16:21:24Z`
+            if (!!!val) { return false; }
+            return /\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z/.test(val + '');
         }
 
         public static getQueryParam(p): string {

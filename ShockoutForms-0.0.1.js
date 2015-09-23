@@ -1,3 +1,64 @@
+var Shockout;
+(function (Shockout) {
+    var SpApi15 = (function () {
+        function SpApi15() {
+        }
+        SpApi15.getCurrentUser = function (callback) {
+            var $jqXhr = $.ajax({
+                url: '/_api/Web/CurrentUser',
+                type: 'GET',
+                cache: true,
+                dataType: 'json',
+                contentType: 'application/json; charset=utf-8',
+                headers: {
+                    'Accept': 'application/json;odata=verbose'
+                }
+            });
+            $jqXhr.done(function (data, status, jqXhr) {
+                var user = data.d;
+                var currentUser = {
+                    account: user.LoginName,
+                    department: null,
+                    email: user.Email,
+                    groups: [],
+                    id: user.Id,
+                    jobtitle: null,
+                    login: user.LoginName,
+                    title: user.Title
+                };
+                callback(currentUser);
+            });
+            $jqXhr.fail(function (jqXhr, status, error) {
+                callback(null, error);
+            });
+        };
+        SpApi15.getUsersGroups = function (userId, callback) {
+            var $jqXhr = $.ajax({
+                url: '/_api/Web/GetUserById(' + userId + ')/Groups',
+                type: 'GET',
+                cache: true,
+                dataType: 'json',
+                contentType: 'application/json; charset=utf-8',
+                headers: {
+                    'Accept': 'application/json;odata=verbose'
+                }
+            });
+            $jqXhr.done(function (data, status, jqXhr) {
+                var groups = [];
+                for (var i = 0; i < data.d.results.length; i++) {
+                    var group = data.d.results[i];
+                    groups.push({ id: group.Id, name: group.Title });
+                }
+                callback(groups);
+            });
+            $jqXhr.fail(function (jqXhr, status, error) {
+                callback(null, error);
+            });
+        };
+        return SpApi15;
+    })();
+    Shockout.SpApi15 = SpApi15;
+})(Shockout || (Shockout = {}));
 /// <reference path="../typings/knockout.d.ts" />
 /// <reference path="../typings/jquery.d.ts" />
 /// <reference path="../typings/jquery.ui.datetimepicker.d.ts" />
@@ -127,90 +188,7 @@ var Shockout;
             this.sourceUrl = null;
             this.version = '0.0.1';
             this.queryStringId = 'formid';
-            this.sp2013 = false;
-            /**
-            * Update list item via SOAP services.
-            * @param listName: string
-            * @param fields: Array<Array<any>>
-            * @param isNew?: boolean = true
-            * param callback?: Function = undefined
-            * @param self: SPForm = undefined
-            * @return void
-            */
-            this.updateListItem = function (listName, fields, isNew, callback, self) {
-                if (isNew === void 0) { isNew = true; }
-                if (callback === void 0) { callback = undefined; }
-                if (self === void 0) { self = undefined; }
-                self = self || this;
-                var action = 'http://schemas.microsoft.com/sharepoint/soap/UpdateListItems';
-                var packet = '<?xml version="1.0" encoding="utf-8"?>' +
-                    '<soap:Envelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">' +
-                    '<soap:Body>' +
-                    '<UpdateListItems xmlns="http://schemas.microsoft.com/sharepoint/soap/">' +
-                    '<listName>{0}</listName>' +
-                    '<updates>{1}</updates>' +
-                    '</UpdateListItems>' +
-                    '</soap:Body>' +
-                    '</soap:Envelope>';
-                var command = isNew ? "New" : "Update";
-                var params = [listName];
-                var soapEnvelope = "<Batch OnError='Continue'><Method ID='1' Cmd='" + command + "'>";
-                var itemArray = fields;
-                for (var i = 0; i < fields.length; i++) {
-                    soapEnvelope += "<Field Name='" + fields[i][0] + "'>" + Shockout.Utils.escapeColumnValue(fields[i][1]) + "</Field>";
-                }
-                if (command !== "New") {
-                    soapEnvelope += "<Field Name='ID'>" + self.itemId + "</Field>";
-                }
-                soapEnvelope += "</Method></Batch>";
-                params.push(soapEnvelope);
-                self.executeSoapRequest(action, packet, params, self, callback);
-            };
-            /**
-            * Execute SOAP Request
-            * @param action: string
-            * @param packet: string
-            * @param params: Array<any>
-            * param self?: SPForm = undefined
-            * @param callback?: Function = undefined
-            * @return void
-            */
-            this.executeSoapRequest = function (action, packet, params, self, callback) {
-                if (self === void 0) { self = undefined; }
-                if (callback === void 0) { callback = undefined; }
-                self = self || this;
-                try {
-                    var serviceUrl = self.rootUrl + self.siteUrl + '/_vti_bin/lists.asmx';
-                    if (params != null) {
-                        for (var i = 0; i < params.length; i++) {
-                            packet = packet.replace('{' + i + '}', (params[i] == null ? '' : params[i]));
-                        }
-                    }
-                    var $jqXhr = $.ajax({
-                        url: serviceUrl,
-                        cache: false,
-                        type: 'POST',
-                        data: packet,
-                        headers: {
-                            'Content-Type': 'text/xml; charset=utf-8',
-                            'SOAPAction': action
-                        }
-                    });
-                    if (callback) {
-                        $jqXhr.done(callback);
-                    }
-                    $jqXhr.fail(function (obj, status, jqXhr) {
-                        var msg = 'executeSoapRequest() error. Status: ' + obj.statusText + ' ' + status + ' ' + JSON.stringify(jqXhr);
-                        Shockout.Utils.logError(msg, SPForm.errorLogListName);
-                        console.warn(msg);
-                    });
-                }
-                catch (e) {
-                    if (self.debug) {
-                        console.warn(e);
-                    }
-                }
-            };
+            this.isSp2013 = false;
             var self = this;
             var error;
             // sanity check
@@ -237,6 +215,7 @@ var Shockout;
             // these are the only parameters required
             this.formId = formId; // string ID of the parent form - could be any element you choose.
             this.listName = listName; // the name of the SP List
+            this.listNameRest = Shockout.Utils.toCamelCase(listName);
             // get the form container element
             this.form = (typeof formId == 'string' ? document.getElementById(formId) : formId);
             if (!!!this.form) {
@@ -393,6 +372,165 @@ var Shockout;
             this.asyncFns.shift()(self, args);
         };
         /**
+        * Get the current logged in user's profile.
+        * @param self: SPForm
+        * @param args?: any = undefined
+        * @return void
+        */
+        SPForm.prototype.getCurrentUserAsync = function (self, args) {
+            if (args === void 0) { args = undefined; }
+            self.updateStatus('Retrieving your account...');
+            var success = 'Retrieved your account.';
+            // If this is SP 2013, it will return thre current user's account.
+            Shockout.SpApi15.getCurrentUser(function (user, error) {
+                if (!!user && !!user.id) {
+                    self.isSp2013 = true;
+                    self.currentUser = user;
+                    self.viewModel.currentUser(user);
+                    self.nextAsync(true, success);
+                }
+                else {
+                    getSp2010User();
+                }
+            });
+            function getSp2010User() {
+                Shockout.SpSoap.getCurrentUser(function (user, error) {
+                    if (!error) {
+                        self.nextAsync(false, 'Failed to retrieve your account. ' + error);
+                        return;
+                    }
+                    self.currentUser = user;
+                    self.viewModel.currentUser(user);
+                    self.nextAsync(true, success);
+                });
+            }
+        };
+        /**
+        * Get metadata about an SP list and the fields to build the Knockout model.
+        * Needed to determine the list GUID, if attachments are allowed, and if checkout/in is required.
+        * @param self: SPForm
+        * @param args?: any = undefined
+        * @return void
+        */
+        SPForm.prototype.getListAsync = function (self, args) {
+            if (args === void 0) { args = undefined; }
+            // Determine if the field is a `Choice` or `MultiChoice` field with choices.
+            var rxIsChoice = /choice/i;
+            var rxExcludeNames = /^(FolderChildCount|ItemChildCount|MetaInfo|ContentType|Edit|Type|LinkTitleNoMenu|LinkTitle|LinkTitle2|Version|Attachments)/;
+            Shockout.SpSoap.getList(self.siteUrl, self.listName, function (xmlDoc, error) {
+                if (!!error) {
+                    self.nextAsync(false, 'Failed to retrieve list data. ' + error);
+                    return;
+                }
+                setupList(xmlDoc);
+            });
+            function setupList(xmlDoc) {
+                try {
+                    var $list = $(xmlDoc).find('List').first();
+                    var listId = $list.attr('ID');
+                    self.listId = listId;
+                    self.requireCheckout = $list.attr('RequireCheckout') == 'True';
+                    self.enableAttachments = $list.attr('EnableAttachments') == 'True';
+                    self.defaultViewUrl = $list.attr('DefaultViewUrl');
+                    self.defailtMobileViewUrl = $list.attr('MobileDefaultViewUrl');
+                    // Build the Knockout view model
+                    $(xmlDoc).find('Field').filter(function (i, el) {
+                        return !!!($(el).attr('Hidden')) && !!($(el).attr('DisplayName')) && !rxExcludeNames.test($(el).attr('Name')) && !rxExcludeNames.test($(el).attr('DisplayName'));
+                    }).each(setupKoVar);
+                    // sort the field names alpha
+                    self.fieldNames.sort();
+                    self.nextAsync(true);
+                    return;
+                }
+                catch (e) {
+                    self.nextAsync(false, 'Failed to initialize list settings.');
+                    if (self.debug) {
+                        console.warn(e);
+                    }
+                    return;
+                }
+            }
+            function setupKoVar(i, el) {
+                if (!!!el) {
+                    return;
+                }
+                try {
+                    var $el = $(el);
+                    var displayName = $el.attr('DisplayName');
+                    var spType = $el.attr('Type');
+                    var spName = $el.attr('Name');
+                    var spFormat = $el.attr('Format');
+                    var spRequired = $el.attr('Required') == 'True';
+                    var spReadOnly = !!($el.attr('ReadOnly')) && $el.attr('ReadOnly') == 'True';
+                    var spDesc = $el.attr('Description');
+                    var vm = self.viewModel;
+                    // Convert the Display Name to equal REST field name conventions.
+                    // For example, convert 'Computer Name (if applicable)' to 'ComputerNameIfApplicable'.
+                    var koName = Shockout.Utils.toCamelCase(displayName);
+                    // stop and return if it's already a Knockout object
+                    if (koName in self.viewModel) {
+                        return;
+                    }
+                    self.fieldNames.push(koName);
+                    var defaultValue;
+                    // find the SP field's default value if exists
+                    $el.find('> Default').each(function (j, def) {
+                        var val = $.trim($(def).text());
+                        if (val == '[today]' && spType == 'DateTime') {
+                            val = new Date();
+                        }
+                        else if (spType == 'Boolean') {
+                            val = val == '0' ? false : true;
+                        }
+                        else if (spType == 'Number' || spType == 'Currency') {
+                            val = val - 0;
+                        }
+                        defaultValue = val;
+                    });
+                    var koObj = !!spType && spType == 'MultiChoice' ? ko.observableArray([]) : ko.observable(!!defaultValue ? defaultValue : spType == 'Boolean' ? false : null);
+                    // add metadata to the KO object
+                    koObj._metadata = {
+                        koName: koName,
+                        displayName: displayName,
+                        name: spName,
+                        format: spFormat,
+                        required: spRequired,
+                        readOnly: spReadOnly,
+                        description: spDesc,
+                        type: spType,
+                    };
+                    koObj._koName = koName;
+                    koObj._displayName = displayName;
+                    koObj._name = spName;
+                    koObj._format = spFormat;
+                    koObj._required = spRequired;
+                    koObj._readOnly = spReadOnly;
+                    koObj._description = spDesc;
+                    koObj._type = spType;
+                    if (rxIsChoice.test(spType)) {
+                        var isFillIn = $el.attr('FillInChoice');
+                        koObj._isFillInChoice = !!isFillIn && isFillIn == 'True'; // allow fill-in choices
+                        var choices = [];
+                        $el.find('CHOICE').each(function (j, choice) {
+                            choices.push({ 'value': $(choice).text(), 'selected': false });
+                        });
+                        koObj._choices = choices;
+                        koObj._multiChoice = !!spType && spType == 'MultiChoice';
+                        koObj._metadata.choices = choices;
+                        koObj._metadata.multichoice = koObj._multiChoice;
+                    }
+                    koObj._metadata.$parent = koObj;
+                    vm[koName] = koObj;
+                }
+                catch (e) {
+                    if (self.debug) {
+                        console.warn(e);
+                    }
+                }
+            }
+            ;
+        };
+        /**
         * Initialize the form.
         * @param self: SPForm
         * @param args?: any = undefined
@@ -519,54 +657,27 @@ var Shockout;
             }
         };
         /**
-        * Get the current logged in user's profile.
-        * @param self: SPForm
-        * @param args?: any = undefined
-        * @return void
-        */
-        SPForm.prototype.getCurrentUserAsync = function (self, args) {
+       * Get the SP list item data and build the Knockout view model.
+       * @param self: SPForm
+       * @param args?: any = undefined
+       * @return void
+       */
+        SPForm.prototype.getListItemAsync = function (self, args) {
             if (args === void 0) { args = undefined; }
-            try {
-                var user = self.currentUser;
-                var query = '<Query><Where><Eq><FieldRef Name="ID" /><Value Type="Counter"><UserID /></Value></Eq></Where></Query>';
-                var viewFields = '<ViewFields><FieldRef Name="ID" /><FieldRef Name="Name" /><FieldRef Name="EMail" /><FieldRef Name="Department" /><FieldRef Name="JobTitle" /><FieldRef Name="UserName" /><FieldRef Name="Office" /></ViewFields>';
-                self.getListItemsSoap('', 'User Information List', viewFields, query, function (xmlDoc, status, jqXhr) {
-                    /*
-                    // Returns
-                    <z:row xmlns:z="#RowsetSchema"
-                        ows_ID="1" ows_Name="<DOMAIN\login>"
-                        ows_EMail="<email>"
-                        ows_JobTitle="<job title>"
-                        ows_UserName="<username>"
-                        ows_Office="<office>"
-                        ows__ModerationStatus="0" ows__Level="1"
-                        ows_Title="<Fullname>"
-                        ows_UniqueId="1;#{2AFFA9A1-87D4-44A7-9D4F-618BCBD990D7}"
-                        ows_owshiddenversion="306" ows_FSObjType="1;#0"/>
-                    */
-                    $(xmlDoc).find('*').filter(function () {
-                        return this.nodeName == 'z:row';
-                    }).each(function (i, node) {
-                        user.id = parseInt($(node).attr('ows_ID'));
-                        user.title = $(node).attr('ows_Name').replace(/\\/, '\\');
-                        user.login = $(node).attr('ows_UserName');
-                        user.email = $(node).attr('ows_EMail');
-                        user.jobtitle = $(node).attr('ows_JobTitle');
-                        user.department = $(node).attr('ows_Department');
-                        user.account = user.id + ';#' + user.title;
-                    });
-                    self.viewModel.currentUser(user);
-                    self.nextAsync(true, 'Retrieved your account.');
-                    return;
-                });
-            }
-            catch (e) {
-                if (self.debug) {
-                    throw e;
-                }
-                self.logError('getCurrentUserAsync():' + e);
-                self.nextAsync(false, 'Failed to retrieve your account.');
+            if (!!!self.itemId) {
+                self.nextAsync(true, "This is a New form.");
                 return;
+            }
+            self.updateStatus("Retrieving form values...");
+            Shockout.SpApi.getListItem(self.listName, self.itemId, callback, self.siteUrl);
+            function callback(data, error) {
+                if (!!error) {
+                    self.nextAsync(false, error);
+                    return;
+                }
+                self.listItem = data;
+                self.bindListItemValues(self);
+                self.nextAsync(true, "Retrieved form data.");
             }
         };
         /**
@@ -577,62 +688,23 @@ var Shockout;
         */
         SPForm.prototype.getUsersGroupsAsync = function (self, args) {
             if (args === void 0) { args = undefined; }
-            try {
-                var msg = "Retrieved your groups.";
-                if (self.$form.find("[data-sp-groups], [user-groups]").length == 0) {
-                    self.nextAsync(true, msg);
-                    return;
-                }
-                var packet = '<soap:Envelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">' +
-                    '<soap:Body>' +
-                    '<GetGroupCollectionFromUser xmlns="http://schemas.microsoft.com/sharepoint/soap/directory/">' +
-                    '<userLoginName>' + self.currentUser.title + '</userLoginName>' +
-                    '</GetGroupCollectionFromUser>' +
-                    '</soap:Body>' +
-                    '</soap:Envelope>';
-                var $jqXhr = $.ajax({
-                    url: self.rootUrl + '/_vti_bin/usergroup.asmx',
-                    type: 'POST',
-                    dataType: 'xml',
-                    data: packet,
-                    contentType: 'text/xml; charset="utf-8"'
-                });
-                $jqXhr.done(function (xmlDoc, status, jqXhr) {
-                    var $errorText = $(xmlDoc).find('errorstring');
-                    // catch and handle returned error
-                    if (!!$errorText && $errorText.text() != "") {
-                        self.logError($errorText.text());
-                        return;
-                    }
-                    $(xmlDoc).find("Group").each(function (i, el) {
-                        self.currentUser.groups.push({
-                            id: parseInt($(el).attr("ID")),
-                            name: $(el).attr("Name")
-                        });
-                    });
-                    self.nextAsync(true, "Retrieved your groups.");
-                    return;
-                });
-                $jqXhr.fail(function (xmlDoc, status) {
-                    var msg = "Failed to retrieve your groups: " + status;
-                    var $errorText = $(xmlDoc).find('errorstring');
-                    // catch and handle returned error
-                    if (!!$errorText && $errorText.text() != "") {
-                        msg += $errorText.text();
-                    }
-                    self.logError(msg);
-                    self.nextAsync(false, msg);
-                    return;
-                });
-                self.updateStatus("Retrieving your groups...");
-            }
-            catch (e) {
-                if (self.debug) {
-                    throw e;
-                }
-                self.logError("getUsersGroupsAsync: " + e);
-                self.nextAsync(false, "Failed to retrieve your groups.");
+            if (self.$form.find("[data-sp-groups], [user-groups]").length == 0) {
+                self.nextAsync(true);
                 return;
+            }
+            self.updateStatus("Retrieving your groups...");
+            if (self.isSp2013) {
+                Shockout.SpApi15.getUsersGroups(self.currentUser.id, callback);
+            }
+            else {
+                Shockout.SpSoap.getUsersGroups(self.currentUser.title, callback);
+            }
+            function callback(groups, error) {
+                if (error) {
+                    self.nextAsync(false, "Failed to retrieve your groups. " + error);
+                    return;
+                }
+                self.nextAsync(true, "Retrieved your groups.");
             }
         };
         /**
@@ -702,47 +774,6 @@ var Shockout;
             }
         };
         /**
-        * Get the SP list item data and build the Knockout view model.
-        * @param self: SPForm
-        * @param args?: any = undefined
-        * @return void
-        */
-        SPForm.prototype.getListItemAsync = function (self, args) {
-            if (args === void 0) { args = undefined; }
-            try {
-                self.updateStatus("Retrieving form values...");
-                if (!!!self.itemId) {
-                    self.nextAsync(true, "This is a New form.");
-                    return;
-                }
-                var uri = self.rootUrl + self.siteUrl + '/_vti_bin/listdata.svc/' + self.listName.replace(/\s/g, '') + '(' + self.itemId + ')';
-                // get the list item data
-                self.getListItemsRest(uri, function bind(data, status, jqXhr) {
-                    self.listItem = Shockout.Utils.clone(data.d); //store copy of the original SharePoint list item
-                    self.bindListItemValues(self);
-                    self.nextAsync(true, "Retrieved form data.");
-                }, function fail(obj, status, jqXhr) {
-                    var msg = null;
-                    if (obj.status && obj.status == '404') {
-                        msg = obj.statusText + ". A form with ID " + self.itemId + " doesn't exist or it may have been deleted by another user.";
-                    }
-                    else {
-                        msg = status + ' ' + jqXhr;
-                    }
-                    self.showDialog(msg);
-                    self.nextAsync(false, msg);
-                    return;
-                });
-            }
-            catch (e) {
-                if (self.debug) {
-                    throw e;
-                }
-                self.nextAsync(false, e);
-                return;
-            }
-        };
-        /**
         * Get the workflow history for this form, if any.
         * @param self: SPForm
         * @param args?: any = undefined
@@ -754,23 +785,25 @@ var Shockout;
                 self.nextAsync(true);
                 return;
             }
-            try {
-                var historyItems = [];
-                var uri = self.rootUrl + self.siteUrl + "/_vti_bin/listdata.svc/" + self.workflowHistoryListName.replace(/\s/g, '') +
-                    "?$filter=ListID eq '" + self.listId + "' and PrimaryItemID eq " + self.itemId + "&$select=Description,DateOccurred&$orderby=DateOccurred asc";
-                self.getListItemsRest(uri, function (data, status, jqXhr) {
-                    $(data.d.results).each(function (i, item) {
-                        historyItems.push(new Shockout.HistoryItem(item.Description, Shockout.Utils.parseJsonDate(item.DateOccurred)));
-                    });
-                    self.viewModel.history(historyItems);
-                    self.nextAsync(true, "Retrieved workflow history.");
+            self.updateStatus('Retrieving workflow history...');
+            var historyItems = [];
+            var filter = "ListID eq '" + self.listId + "' and PrimaryItemID eq " + self.itemId;
+            var select = "Description,DateOccurred";
+            var orderby = "DateOccurred";
+            Shockout.SpApi.getListItems(self.workflowHistoryListName, callback, self.siteUrl, filter, select, orderby, 25, false);
+            function callback(items, error) {
+                if (!!error) {
+                    var msg = 'The ' + self.workflowHistoryListName + ' list may be full at <a href="{url}">{url}</a>. Failed to retrieve workflow history in method, getHistoryAsync().'
+                        .replace(/\{url\}/g, self.rootUrl + self.siteUrl + '/Lists/' + self.workflowHistoryListName.replace(/\s/g, '%20'));
+                    self.logError(msg);
+                    self.nextAsync(false, 'Failed to retrieve workflow history. ' + error);
+                    return;
+                }
+                $(items).each(function (i, item) {
+                    historyItems.push(new Shockout.HistoryItem(item.Description, Shockout.Utils.parseJsonDate(item.DateOccurred)));
                 });
-            }
-            catch (ex) {
-                var wfUrl = self.rootUrl + self.siteUrl + '/Lists/' + self.workflowHistoryListName.replace(/\s/g, '%20');
-                self.logError('The Workflow History list may be full at <a href="{url}">{url}</a>. Failed to retrieve workflow history in method, getHistoryAsync(). Error: '
-                    .replace(/\{url\}/g, wfUrl) + JSON.stringify(ex));
-                self.nextAsync(true, 'Failed to retrieve workflow history.');
+                self.viewModel.history(items);
+                self.nextAsync(true, "Retrieved workflow history.");
             }
         };
         /**
@@ -790,23 +823,26 @@ var Shockout;
                 var vm = self.viewModel;
                 // Exclude these read-only metadata fields from the Knockout view model.
                 var rxExclude = /^(__metadata|ContentTypeID|ContentType|CreatedBy|ModifiedBy|Owshiddenversion|Version|Attachments|Path)/;
+                var rxExcludeTypes = /^(MultiChoice|User|Choice)/;
                 var isObj = /Object/;
                 self.itemId = item.Id;
                 vm.Id(item.Id);
                 for (var key in self.viewModel) {
-                    if (!(key in item) || rxExclude.test(key) || vm[key]._type == 'MultiChoice' || vm[key]._type == 'User' || vm[key]._type == 'Choice') {
+                    if (!(key in item) || !('_type' in vm[key]) || rxExclude.test(key) || rxExcludeTypes.test(vm[key]._type)) {
                         continue;
                     }
-                    if (item[key] != null && Shockout.Utils.isJsonDate(item[key])) {
-                        vm[key](Shockout.Utils.parseJsonDate(item[key]));
-                        continue;
+                    if ((item[key] != null && vm[key]._type == 'DateTime')) {
+                        vm[key](Shockout.Utils.parseDate(item[key]));
                     }
                     var val = item[key];
                     vm[key](val || null);
                 }
+                // Created Modified
+                vm.Created(Shockout.Utils.parseDate(item.Created));
+                vm.Modified(Shockout.Utils.parseDate(item.Modified));
                 var $info = self.$createdInfo.find('.create-mod-info').empty();
                 // get CreatedBy profile
-                self.getListItemsRest(item.CreatedBy.__deferred.uri, function (data, status, jqXhr) {
+                Shockout.SpApi.executeRestRequest(item.CreatedBy.__deferred.uri, function (data, status, jqXhr) {
                     var person = data.d;
                     vm.CreatedBy(person);
                     vm.CreatedByName(person.Name);
@@ -815,9 +851,9 @@ var Shockout;
                         $info.prepend(Shockout.Templates.getUserProfileTemplate(person, "Created By"));
                     }
                     vm.isAuthor(self.currentUser.id == person.Id);
-                });
+                }, true);
                 // get ModifiedBy profile
-                self.getListItemsRest(item.ModifiedBy.__deferred.uri, function (data, status, jqXhr) {
+                Shockout.SpApi.executeRestRequest(item.ModifiedBy.__deferred.uri, function (data, status, jqXhr) {
                     var person = data.d;
                     vm.ModifiedBy(person);
                     vm.ModifiedByName(person.Name);
@@ -825,7 +861,7 @@ var Shockout;
                     if (self.includeUserProfiles) {
                         $info.append(Shockout.Templates.getUserProfileTemplate(person, "Last Modified By"));
                     }
-                });
+                }, true);
                 // Object types `Choice` and `User` will have a corresponding key name plus the suffix `Value` or `Id` for lookups.
                 // For example: `SupervisorApproval` is an object container for `__deferred` that corresponds to `SupervisorApprovalValue` which is an ID or string value.
                 // query values for the `User` types
@@ -833,11 +869,8 @@ var Shockout;
                     if (!!!self.viewModel[key]) {
                         return false;
                     }
-                    return self.viewModel[key]._type == 'User';
+                    return self.viewModel[key]._type == 'User' && (key + 'Id') in item;
                 }).each(function (i, key) {
-                    if (!(key + 'Id' in item)) {
-                        return;
-                    }
                     self.getPersonById(parseInt(item[key + 'Id']), vm[key]);
                 });
                 // query values for `Choice` types
@@ -845,26 +878,17 @@ var Shockout;
                     if (!!!self.viewModel[key]) {
                         return false;
                     }
-                    return self.viewModel[key]._type == 'Choice';
+                    return self.viewModel[key]._type == 'Choice' && (key + 'Value' in item);
                 }).each(function (i, key) {
-                    if (!(key + 'Value' in item)) {
-                        return;
-                    }
                     vm[key](item[key + 'Value']);
                 });
                 // query values for `MultiChoice` types
                 $(self.fieldNames).filter(function (i, key) {
-                    if (!!!self.viewModel[key]) {
-                        return false;
-                    }
-                    return self.viewModel[key]._type == 'MultiChoice';
+                    return !!self.viewModel[key] && self.viewModel[key]._type == 'MultiChoice' && '__deferred' in item[key];
                 }).each(function (i, key) {
-                    if (!('__deferred' in item[key])) {
-                        return;
-                    }
-                    self.getListItemsRest(item[key].__deferred.uri, function (data, status, jqXhr) {
+                    Shockout.SpApi.executeRestRequest(item[key].__deferred.uri, function (data, status, jqXhr) {
                         var values = [];
-                        $.each(data.d.results, function (i, choice) {
+                        $.each(data, function (i, choice) {
                             values.push(choice.Value);
                         });
                         vm[key](values);
@@ -872,8 +896,9 @@ var Shockout;
                 });
             }
             catch (e) {
+                self.logError('Faile to bind form values. ' + JSON.stringify(e));
                 if (self.debug) {
-                    throw e;
+                    console.warn(e);
                 }
             }
         };
@@ -891,16 +916,13 @@ var Shockout;
             }
             var self = model.parent;
             var item = self.listItem;
-            var $jqXhr = $.ajax({
-                url: item.__metadata.uri,
-                type: 'POST',
-                headers: {
-                    'Accept': 'application/json;odata=verbose',
-                    'X-Http-Method': 'DELETE',
-                    'If-Match': item.__metadata.etag
+            Shockout.SpApi.deleteListItem(item, function (data, error) {
+                if (!!error) {
+                    if (callback) {
+                        callback(data, error);
+                    }
+                    return;
                 }
-            });
-            $jqXhr.done(function (data, status, jqXhr) {
                 self.showDialog("The form was deleted. You'll be redirected in " + timeout / 1000 + " seconds.");
                 if (callback) {
                     callback(data);
@@ -908,9 +930,6 @@ var Shockout;
                 setTimeout(function () {
                     window.location.replace(self.sourceUrl != null ? self.sourceUrl : self.rootUrl);
                 }, timeout);
-            });
-            $jqXhr.fail(function (data, status, jqXhr) {
-                throw data.responseJSON.error;
             });
         };
         /**
@@ -967,7 +986,7 @@ var Shockout;
                     val = val == null ? '' : val;
                     fields.push([vm[key]._name, val]);
                 });
-                self.updateListItem(self.listName, fields, isNew, callback);
+                Shockout.SpSoap.updateListItem(self.itemId, self.listName, fields, isNew, self.siteUrl, callback);
             }
             catch (e) {
                 self.logError(e);
@@ -1044,91 +1063,6 @@ var Shockout;
             ;
         };
         /**
-        * Save the list item with REST services.
-        * UNUSED since saving list items in SP 2010 via REST is ridiculously difficult and chatty for saving multichoice fields.
-        * Use saveListItem instead, especiallt for for updating a list item with multichoice fields.
-        */
-        // http://blog.vgrem.com/2014/03/22/list-items-manipulation-via-rest-api-in-sharepoint-2010/
-        SPForm.prototype.saveListItemREST = function (model, isSubmit, refresh, customMsg) {
-            if (isSubmit === void 0) { isSubmit = true; }
-            if (refresh === void 0) { refresh = true; }
-            if (customMsg === void 0) { customMsg = undefined; }
-            var self = model.parent, isNew = !!!self['itemId'], timeout = 3000, saveMsg = customMsg || '<p>Your form has been saved.</p>', postData = {}, headers = { 'Accept': 'application/json;odata=verbose' }, url, contentType = 'application/json';
-            // run presave action and stop if the presave action returns false
-            if (self.preSave) {
-                var retVal = self.preSave(self);
-                if (typeof (retVal) != 'undefined' && !!!retVal) {
-                    return;
-                }
-            }
-            // validate the form
-            if (isSubmit && !self.formIsValid(model, true)) {
-                return;
-            }
-            // prepare data to post
-            $.each(self.editableFields, function (i, key) {
-                postData[key] = model[key]();
-            });
-            //Only update IsSubmitted if it's != true -- if it was already submitted.
-            //Otherwise pressing Save would set it from true back to false - breaking any workflow logic in place!
-            if (typeof model[Shockout.ViewModel.isSubmittedKey] != "undefined" && (model[Shockout.ViewModel.isSubmittedKey]() == null || model[Shockout.ViewModel.isSubmittedKey]() == false)) {
-                postData[Shockout.ViewModel.isSubmittedKey] = isSubmit;
-            }
-            if (isNew) {
-                url = self.rootUrl + self.siteUrl + '/_vti_bin/listdata.svc/' + self.listName.replace(/\s/g, '') + '(' + self.itemId + ')';
-                //postData = JSON.stringify(postData);
-                contentType += ';odata=verbose';
-            }
-            else {
-                url = self.listItem.__metadata.uri;
-                headers['X-HTTP-Method'] = 'MERGE';
-                headers['If-Match'] = self.listItem.__metadata.etag;
-            }
-            var $jqXhr = $.ajax({
-                url: url,
-                type: 'POST',
-                processData: false,
-                contentType: contentType,
-                data: JSON.stringify(postData),
-                headers: headers
-            });
-            $jqXhr.done(function (data, status, jqXhr) {
-                self.listItem = Shockout.Utils.clone(data.d);
-                self.itemId = self.listItem.Id;
-                if (isSubmit && !self.debug) {
-                    //submitting form
-                    self.showDialog("<p>Your form has been submitted. You will be redirected in " + timeout / 1000 + " seconds.</p>", "Form Submission Successful");
-                    setTimeout(function () {
-                        window.location.href = self.sourceUrl != null ? self.sourceUrl : self.confirmationUrl;
-                    }, timeout);
-                }
-                else {
-                    //saving form
-                    if (isNew || refresh) {
-                        saveMsg += "<p>This page will refresh in " + timeout / 1000 + " seconds.</p>";
-                    }
-                    self.showDialog(saveMsg, "The form has been saved.", timeout);
-                    if (isNew || refresh) {
-                        setTimeout(function () {
-                            //append list item id to url
-                            window.location.search = "?formid=" + self.itemId;
-                        }, timeout);
-                    }
-                    else {
-                        // update model values
-                        self.bindListItemValues(self);
-                        //give WF History list 5 seconds to update
-                        setTimeout(function () { self.getHistoryAsync(self); }, 5000);
-                    }
-                }
-            });
-            $jqXhr.fail(function (obj, status, jqXhr) {
-                var msg = obj.statusText + '. An error occurred while saving the form.';
-                self.showDialog(msg);
-                self.logError(msg + ': ' + JSON.stringify(arguments));
-            });
-        };
-        /**
         * Get attachments for this form.
         */
         SPForm.prototype.getAttachmentsAsync = function (self, args) {
@@ -1142,6 +1076,24 @@ var Shockout;
                 return;
             });
         };
+        /**
+        * Delete an attachment.
+        */
+        SPForm.prototype.deleteAttachment = function (att, event) {
+            if (!confirm('Are you sure you want to delete ' + att.Name + '? This can\'t be undone.')) {
+                return;
+            }
+            var self = Shockout.ViewModel.parent;
+            var vm = self.viewModel;
+            Shockout.SpApi.deleteAttachment(att, function (data, error) {
+                if (!!error) {
+                    alert("Failed to delete attachment: " + error);
+                    return;
+                }
+                var attachments = vm.attachments;
+                attachments.remove(att);
+            });
+        };
         SPForm.prototype.getAttachments = function (self, callback) {
             if (self === void 0) { self = undefined; }
             if (callback === void 0) { callback = undefined; }
@@ -1152,9 +1104,9 @@ var Shockout;
                 }
                 return;
             }
-            try {
-                var attachments = [];
-                self.getListItemsRest(self.listItem.Attachments.__deferred.uri, function (data, status, jqXhr) {
+            var attachments = [];
+            Shockout.SpApi.executeRestRequest(self.listItem.Attachments.__deferred.uri, function (data, status, jqXhr) {
+                try {
                     $.each(data.d.results, function (i, att) {
                         attachments.push(att);
                     });
@@ -1163,220 +1115,14 @@ var Shockout;
                     if (callback) {
                         callback(attachments);
                     }
-                });
-            }
-            catch (e) {
-                self.showDialog("Failed to retrieve attachments: " + JSON.stringify(e));
-                if (self.debug) {
-                    throw e;
-                }
-            }
-        };
-        /**
-        * Delete an attachment.
-        */
-        SPForm.prototype.deleteAttachment = function (att, event) {
-            if (!confirm('Are you sure you want to delete ' + att.Name + '? This can\'t be undone.')) {
-                return;
-            }
-            try {
-                var $jqXhr = $.ajax({
-                    url: att.__metadata.uri,
-                    type: 'POST',
-                    dataType: 'json',
-                    contentType: "application/json",
-                    headers: {
-                        'Accept': 'application/json;odata=verbose',
-                        'X-HTTP-Method': 'DELETE'
-                    }
-                });
-                $jqXhr.done(function (xData, status) {
-                    var attachments = Shockout.ViewModel.parent.viewModel.attachments;
-                    attachments.remove(att);
-                });
-                $jqXhr.fail(function (xData, status) {
-                    var msg = "Failed to delete attachment: " + status;
-                });
-            }
-            catch (e) {
-                throw e;
-            }
-        };
-        /**
-        * Get list items via SOAP.
-        */
-        SPForm.prototype.getListItemsSoap = function (siteUrl, listName, viewFields, query, callback, rowLimit, viewName, queryOptions) {
-            if (rowLimit === void 0) { rowLimit = 25; }
-            if (viewName === void 0) { viewName = '<ViewName/>'; }
-            if (queryOptions === void 0) { queryOptions = '<QueryOptions/>'; }
-            var self = this;
-            try {
-                var packet = '<?xml version="1.0" encoding="utf-8"?>' +
-                    '<soap:Envelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">' +
-                    '<soap:Body>' +
-                    '<GetListItems xmlns="http://schemas.microsoft.com/sharepoint/soap/">' +
-                    '<listName>' + listName + '</listName>' +
-                    //'<viewName>' + viewName + '</viewName>' +
-                    '<query>' + query + '</query>' +
-                    '<viewFields>' + viewFields + '</viewFields>' +
-                    '<rowLimit>' + rowLimit + '</rowLimit>' +
-                    //'<queryOptions>' + queryOptions + '</queryOptions>' +
-                    '</GetListItems>' +
-                    '</soap:Body>' +
-                    '</soap:Envelope>';
-                var $jqXhr = $.ajax({
-                    url: siteUrl + '/_vti_bin/lists.asmx',
-                    type: 'POST',
-                    dataType: 'xml',
-                    data: packet,
-                    headers: {
-                        "SOAPAction": "http://schemas.microsoft.com/sharepoint/soap/GetListItems",
-                        "Content-Type": "text/xml; charset=utf-8"
-                    }
-                });
-                $jqXhr.done(callback);
-                $jqXhr.fail(function (xData, status) {
-                    self.logError('<pre>' + xData + '</pre>');
-                });
-            }
-            catch (e) {
-                self.logError(e);
-            }
-        };
-        /**
-        * Get metadata about an SP list and the fields to build the Knockout model.
-        * Needed to determine the list GUID, if attachments are allowed, and if checkout/in is required.
-        * @param self: SPForm
-        * @param args?: any = undefined
-        * @return void
-        */
-        SPForm.prototype.getListAsync = function (self, args) {
-            if (args === void 0) { args = undefined; }
-            var packet = '<?xml version="1.0" encoding="utf-8"?><soap:Envelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/"><soap:Body><GetList xmlns="http://schemas.microsoft.com/sharepoint/soap/"><listName>{0}</listName></GetList></soap:Body></soap:Envelope>';
-            // Determine if the field is a `Choice` or `MultiChoice` field with choices.
-            var rxIsChoice = /choice/i;
-            var rxExcludeNames = /^(FolderChildCount|ItemChildCount|MetaInfo|ContentType|Edit|Type|LinkTitleNoMenu|LinkTitle|LinkTitle2|Version|Attachments)/;
-            var $jqXhr = $.ajax({
-                url: self.rootUrl + self.siteUrl + '/_vti_bin/lists.asmx',
-                type: 'POST',
-                cache: false,
-                dataType: "xml",
-                data: packet.replace('{0}', self.listName),
-                headers: {
-                    "SOAPAction": "http://schemas.microsoft.com/sharepoint/soap/GetList",
-                    "Content-Type": "text/xml; charset=utf-8"
-                }
-            });
-            $jqXhr.done(setupList);
-            $jqXhr.fail(function () {
-                self.nextAsync(false, 'Failed to retrieve list data.');
-                return;
-            });
-            function setupList(xmlDoc, status, jqXhr) {
-                try {
-                    var $list = $(xmlDoc).find('List').first();
-                    var listId = $list.attr('ID');
-                    self.listId = listId;
-                    self.requireCheckout = $list.attr('RequireCheckout') == 'True';
-                    self.enableAttachments = $list.attr('EnableAttachments') == 'True';
-                    self.defaultViewUrl = $list.attr('DefaultViewUrl');
-                    self.defailtMobileViewUrl = $list.attr('MobileDefaultViewUrl');
-                    // Build the Knockout view model
-                    $(xmlDoc).find('Field').filter(function (i, el) {
-                        return !!!($(el).attr('Hidden')) && !!($(el).attr('DisplayName')) && !rxExcludeNames.test($(el).attr('Name')) && !rxExcludeNames.test($(el).attr('DisplayName'));
-                    }).each(setupKoVar);
-                    // sort the field names alpha
-                    self.fieldNames.sort();
-                    self.nextAsync(true);
-                    return;
                 }
                 catch (e) {
-                    self.nextAsync(false, 'Failed to initialize list settings.');
-                    if (self.debug) {
-                        console.warn(e);
-                    }
-                    return;
-                }
-            }
-            function setupKoVar(i, el) {
-                if (!!!el) {
-                    return;
-                }
-                try {
-                    var $el = $(el);
-                    var displayName = $el.attr('DisplayName');
-                    var spType = $el.attr('Type');
-                    var spName = $el.attr('Name');
-                    var spFormat = $el.attr('Format');
-                    var spRequired = $el.attr('Required') == 'True';
-                    var spReadOnly = !!($el.attr('ReadOnly')) && $el.attr('ReadOnly') == 'True';
-                    var spDesc = $el.attr('Description');
-                    var vm = self.viewModel;
-                    // Convert the Display Name to equal REST field name conventions.
-                    // For example, convert 'Computer Name (if applicable)' to 'ComputerNameIfApplicable'.
-                    var koName = Shockout.Utils.toCamelCase(displayName);
-                    // stop and return if it's already a Knockout object
-                    if (koName in self.viewModel) {
-                        return;
-                    }
-                    self.fieldNames.push(koName);
-                    var defaultValue;
-                    // find the SP field's default value if exists
-                    $el.find('> Default').each(function (j, def) {
-                        var val = $.trim($(def).text());
-                        if (val == '[today]' && spType == 'DateTime') {
-                            val = new Date();
-                        }
-                        else if (spType == 'Boolean') {
-                            val = val == '0' ? false : true;
-                        }
-                        else if (spType == 'Number' || spType == 'Currency') {
-                            val = val - 0;
-                        }
-                        defaultValue = val;
-                    });
-                    var koObj = !!spType && spType == 'MultiChoice' ? ko.observableArray([]) : ko.observable(!!defaultValue ? defaultValue : spType == 'Boolean' ? false : null);
-                    // add metadata to the KO object
-                    koObj._metadata = {
-                        koName: koName,
-                        displayName: displayName,
-                        name: spName,
-                        format: spFormat,
-                        required: spRequired,
-                        readOnly: spReadOnly,
-                        description: spDesc,
-                        type: spType,
-                    };
-                    koObj._koName = koName;
-                    koObj._displayName = displayName;
-                    koObj._name = spName;
-                    koObj._format = spFormat;
-                    koObj._required = spRequired;
-                    koObj._readOnly = spReadOnly;
-                    koObj._description = spDesc;
-                    koObj._type = spType;
-                    if (rxIsChoice.test(spType)) {
-                        var isFillIn = $el.attr('FillInChoice');
-                        koObj._isFillInChoice = !!isFillIn && isFillIn == 'True'; // allow fill-in choices
-                        var choices = [];
-                        $el.find('CHOICE').each(function (j, choice) {
-                            choices.push({ 'value': $(choice).text(), 'selected': false });
-                        });
-                        koObj._choices = choices;
-                        koObj._multiChoice = !!spType && spType == 'MultiChoice';
-                        koObj._metadata.choices = choices;
-                        koObj._metadata.multichoice = koObj._multiChoice;
-                    }
-                    koObj._metadata.$parent = koObj;
-                    vm[koName] = koObj;
-                }
-                catch (e) {
+                    self.showDialog("Failed to retrieve attachments: " + JSON.stringify(e));
                     if (self.debug) {
                         console.warn(e);
                     }
                 }
-            }
-            ;
+            });
         };
         /**
         * Log to console in degug mode.
@@ -1419,43 +1165,6 @@ var Shockout;
             self.$dialog.html(msg).dialog('open');
             if (timeout) {
                 setTimeout(function () { self.$dialog.dialog('close'); }, timeout);
-            }
-        };
-        /**
-        * Get list items via REST services.
-        * @param uri: string
-        * @param done: JQueryPromiseCallback<any>
-        * @param fail?: JQueryPromiseCallback<any> = undefined
-        * @param always?: JQueryPromiseCallback<any> = undefined
-        * @return void
-        */
-        SPForm.prototype.getListItemsRest = function (uri, done, fail, always) {
-            if (fail === void 0) { fail = undefined; }
-            if (always === void 0) { always = undefined; }
-            var self = this;
-            var $jqXhr = $.ajax({
-                url: uri,
-                type: 'GET',
-                cache: false,
-                dataType: 'json',
-                contentType: 'application/json; charset=utf-8',
-                headers: {
-                    'Accept': 'application/json'
-                }
-            });
-            $jqXhr.done(done);
-            var fail = fail || function (obj, status, jqXhr) {
-                if (obj.status && obj.status == '404') {
-                    var msg = obj.statusText + ". The data may have been deleted by another user.";
-                }
-                else {
-                    msg = status + ' ' + jqXhr;
-                }
-                self.showDialog(msg);
-            };
-            $jqXhr.fail(fail);
-            if (always) {
-                $jqXhr.always(always);
             }
         };
         /**
@@ -1508,19 +1217,6 @@ var Shockout;
                 return false;
             }
         };
-        SPForm.prototype.checkInFile = function (pageUrl, checkinType, comment) {
-            if (comment === void 0) { comment = ''; }
-            var action = 'http://schemas.microsoft.com/sharepoint/soap/CheckInFile';
-            var params = [pageUrl, comment, checkinType];
-            var packet = '<?xml version="1.0" encoding="utf-8"?><soap:Envelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/"><soap:Body><CheckInFile xmlns="http://schemas.microsoft.com/sharepoint/soap/"><pageUrl>{0}</pageUrl><comment>{1}</comment><CheckinType>{2}</CheckinType></CheckInFile></soap:Body></soap:Envelope>';
-            return this.executeSoapRequest(action, packet, params);
-        };
-        SPForm.prototype.checkOutFile = function (pageUrl, checkoutToLocal, lastmodified) {
-            var action = 'http://schemas.microsoft.com/sharepoint/soap/CheckOutFile';
-            var params = [pageUrl, checkoutToLocal, lastmodified];
-            var packet = '<?xml version="1.0" encoding="utf-8"?><soap:Envelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/"><soap:Body><CheckOutFile xmlns="http://schemas.microsoft.com/sharepoint/soap/"><pageUrl>{0}</pageUrl><checkoutToLocal>{1}</checkoutToLocal><lastmodified>{2}</lastmodified></CheckOutFile></soap:Body></soap:Envelope>';
-            return this.executeSoapRequest(action, packet, params);
-        };
         /**
         * Get a person by their ID from the User Information list.
         * @param id: number
@@ -1529,32 +1225,22 @@ var Shockout;
         */
         SPForm.prototype.getPersonById = function (id, koField) {
             var self = this;
-            if (!id || id.constructor != Number) {
+            if (!!!id) {
                 return;
             }
-            var $jqXhr = $.ajax({
-                url: this.rootUrl + "/_vti_bin/listdata.svc/UserInformationList(" + id + ")?$select=Id,Account",
-                type: 'GET',
-                cache: false,
-                dataType: 'json',
-                contentType: 'application/json; charset=utf-8',
-                headers: {
-                    'Accept': 'application/json'
+            Shockout.SpApi.getPersonById(id, function (person, error) {
+                if (!!error) {
+                    var msg = 'Error in SPForm.getPersonById: ' + error;
+                    Shockout.Utils.logError(msg, SPForm.errorLogListName);
+                    if (self.debug) {
+                        console.warn(msg);
+                    }
+                    return;
                 }
-            });
-            $jqXhr.done(function (data, status, jqXhr) {
-                var d = data.d;
-                var name = d.Id + ';#' + d.Account.replace(/\\/, '\\');
+                var name = person.Id + ';#' + person.Name;
                 koField(name);
                 if (self.debug) {
                     console.warn('Retrieved person by ID... ' + name);
-                }
-            });
-            $jqXhr.fail(function (obj, status, jqXhr) {
-                var msg = 'Get person by ID error. Status: ' + obj.statusText + ' ' + status + ' ' + JSON.stringify(jqXhr);
-                Shockout.Utils.logError(msg, SPForm.errorLogListName);
-                if (self.debug) {
-                    console.warn(msg);
                 }
             });
         };
@@ -2798,11 +2484,13 @@ var Shockout;
                     }).insertAfter($element);
                     var autoCompleteOpts = {
                         source: function (request, response) {
-                            Shockout.Utils.peopleSearch(request.term, function (data) {
+                            Shockout.SpApi.peopleSearch(request.term, function (data) {
                                 response($.map(data, function (item) {
+                                    var email = item['EMail'] || item['WorkEMail']; // SP 2013 vs SP 2010 Email key name.
+                                    var name = item['Name'] || item['Account'];
                                     return {
-                                        label: item.Name + ' (' + item.WorkEMail + ')',
-                                        value: item.Id + ';#' + item.Account
+                                        label: item.Name + ' (' + email + ')',
+                                        value: item.Id + ';#' + name
                                     };
                                 }));
                             });
@@ -3132,6 +2820,449 @@ var Shockout;
 })(Shockout || (Shockout = {}));
 var Shockout;
 (function (Shockout) {
+    var SpApi = (function () {
+        function SpApi() {
+        }
+        /**
+        * Search the User Information list.
+        * @param term: string
+        * @param callback: Function
+        * @param take?: number = 10
+        * @return void
+        */
+        SpApi.peopleSearch = function (term, callback, take) {
+            if (take === void 0) { take = 10; }
+            var filter = "startswith(Name,'{0}') or startswith(Department,'{0}') or startswith(JobTitle,'{0}') and Hidden eq false".replace(/\{0\}/g, term);
+            var select = null;
+            var orderby = "Name";
+            var top = 10;
+            var cache = true;
+            SpApi.getListItems('UserInformationList', fn, '/', filter, select, orderby, top, cache);
+            function fn(data, error) {
+                if (!!error) {
+                    callback(null, error);
+                    return;
+                }
+                callback(data, error);
+            }
+            ;
+        };
+        /**
+        * Get a person by their ID from the User Information list.
+        * @param id: number
+        * @param callback: Function
+        * @return void
+        */
+        SpApi.getPersonById = function (id, callback) {
+            SpApi.getListItem('UserInformationList', id, function (data, error) {
+                if (!!error) {
+                    callback(null, error);
+                }
+                callback(data);
+            }, '/', true);
+        };
+        SpApi.executeRestRequest = function (url, callback, cache, type) {
+            if (cache === void 0) { cache = false; }
+            if (type === void 0) { type = 'GET'; }
+            var $jqXhr = $.ajax({
+                url: url,
+                type: type,
+                cache: cache,
+                dataType: 'json',
+                contentType: 'application/json; charset=utf-8',
+                headers: {
+                    'Accept': 'application/json;odata=verbose'
+                }
+            });
+            $jqXhr.done(function (data, status, jqXhr) {
+                callback(data);
+            });
+            $jqXhr.fail(function (jqXhr, status, error) {
+                if (!!status && status == '404') {
+                    var msg = status + ". The data may have been deleted by another user.";
+                }
+                else {
+                    msg = status + ' ' + error;
+                }
+                callback(null, msg);
+            });
+        };
+        /**
+        * Get list item via REST services.
+        * @param uri: string
+        * @param done: JQueryPromiseCallback<any>
+        * @param fail?: JQueryPromiseCallback<any> = undefined
+        * @param always?: JQueryPromiseCallback<any> = undefined
+        * @return void
+        */
+        SpApi.getListItem = function (listName, itemId, callback, siteUrl, cache) {
+            if (siteUrl === void 0) { siteUrl = '/'; }
+            if (cache === void 0) { cache = false; }
+            siteUrl = siteUrl == '' ? '/' : siteUrl;
+            var url = siteUrl + '_vti_bin/listdata.svc/' + Shockout.Utils.toCamelCase(listName) + '(' + itemId + ')';
+            SpApi.executeRestRequest(url, fn, cache, 'GET');
+            function fn(data, error) {
+                var data = 'd' in data ? data.d : data;
+                callback(data, error);
+            }
+            ;
+        };
+        /**
+        * Get list item via REST services.
+        * @param uri: string
+        * @param done: JQueryPromiseCallback<any>
+        * @param fail?: JQueryPromiseCallback<any> = undefined
+        * @param always?: JQueryPromiseCallback<any> = undefined
+        * @return void
+        */
+        SpApi.getListItems = function (listName, callback, siteUrl, filter, select, orderby, top, cache) {
+            if (siteUrl === void 0) { siteUrl = '/'; }
+            if (filter === void 0) { filter = null; }
+            if (select === void 0) { select = null; }
+            if (orderby === void 0) { orderby = null; }
+            if (top === void 0) { top = 10; }
+            if (cache === void 0) { cache = false; }
+            siteUrl = siteUrl == '' ? '/' : siteUrl;
+            var url = [siteUrl + '_vti_bin/listdata.svc/' + Shockout.Utils.toCamelCase(listName)];
+            if (!!filter) {
+                url.push('$filter=' + filter);
+            }
+            if (!!select) {
+                url.push('$select=' + select);
+            }
+            if (!!orderby) {
+                url.push('$orderby=' + orderby);
+            }
+            url.push('$top=' + top);
+            SpApi.executeRestRequest(url.join('&').replace(/\&/, '\?'), fn, cache, 'GET');
+            function fn(data, error) {
+                var data = !!data && 'd' in data ? data.d : data;
+                var results = null;
+                if (!!data) {
+                    results = 'results' in data ? data.results : data;
+                }
+                callback(results, error);
+            }
+            ;
+        };
+        SpApi.insertListItem = function (url, callback, data) {
+            if (data === void 0) { data = undefined; }
+            var $jqXhr = $.ajax({
+                url: url,
+                type: 'POST',
+                processData: false,
+                contentType: 'application/json',
+                data: data ? JSON.stringify(data) : null,
+                headers: {
+                    'Accept': 'application/json;odata=verbose'
+                }
+            });
+            $jqXhr.done(function (data, status, jqXhr) {
+                callback(data);
+            });
+            $jqXhr.fail(function (jqXhr, status, error) {
+                callback(null, status + ': ' + error);
+            });
+        };
+        SpApi.updateListItem = function (item, callback, data) {
+            if (data === void 0) { data = undefined; }
+            var $jqXhr = $.ajax({
+                url: item.__metadata.uri,
+                type: 'POST',
+                processData: false,
+                contentType: 'application/json',
+                data: data ? JSON.stringify(data) : null,
+                headers: {
+                    'Accept': 'application/json;odata=verbose',
+                    'X-HTTP-Method': 'MERGE',
+                    'If-Match': item.__metadata.etag
+                }
+            });
+            $jqXhr.done(function (data, status, jqXhr) {
+                callback(data);
+            });
+            $jqXhr.fail(function (jqXhr, status, error) {
+                callback(null, status + ': ' + error);
+            });
+        };
+        /**
+        * Delete the list item.
+        * @param model: IViewModel
+        * @param callback?: Function = undefined
+        * @return void
+        */
+        SpApi.deleteListItem = function (item, callback) {
+            var $jqXhr = $.ajax({
+                url: item.__metadata.uri,
+                type: 'POST',
+                headers: {
+                    'Accept': 'application/json;odata=verbose',
+                    'X-Http-Method': 'DELETE',
+                    'If-Match': item.__metadata.etag
+                }
+            });
+            $jqXhr.done(function (data, status, jqXhr) {
+                callback(data);
+            });
+            $jqXhr.fail(function (jqXhr, status, error) {
+                callback(null, error);
+            });
+        };
+        /**
+        * Delete an attachment.
+        */
+        SpApi.deleteAttachment = function (att, callback) {
+            var $jqXhr = $.ajax({
+                url: att.__metadata.uri,
+                type: 'POST',
+                dataType: 'json',
+                contentType: "application/json",
+                headers: {
+                    'Accept': 'application/json;odata=verbose',
+                    'X-HTTP-Method': 'DELETE'
+                }
+            });
+            $jqXhr.done(function (data, status, jqXhr) {
+                callback(data, status);
+            });
+            $jqXhr.fail(function (jqXhr, status, error) {
+                callback(null, status + ': ' + error);
+            });
+        };
+        return SpApi;
+    })();
+    Shockout.SpApi = SpApi;
+})(Shockout || (Shockout = {}));
+var Shockout;
+(function (Shockout) {
+    var SpSoap = (function () {
+        function SpSoap() {
+        }
+        SpSoap.getCurrentUser = function (callback) {
+            var user = {};
+            var query = '<Query><Where><Eq><FieldRef Name="ID" /><Value Type="Counter"><UserID /></Value></Eq></Where></Query>';
+            var viewFields = '<ViewFields><FieldRef Name="ID" /><FieldRef Name="Name" /><FieldRef Name="EMail" /><FieldRef Name="Department" /><FieldRef Name="JobTitle" /><FieldRef Name="UserName" /><FieldRef Name="Office" /></ViewFields>';
+            SpSoap.getListItems('', 'User Information List', viewFields, query, function (xmlDoc, status, jqXhr) {
+                $(xmlDoc).find('*').filter(function () {
+                    return this.nodeName == 'z:row';
+                }).each(function (i, node) {
+                    user.id = parseInt($(node).attr('ows_ID'));
+                    user.title = $(node).attr('ows_Title');
+                    user.login = $(node).attr('ows_Name');
+                    user.email = $(node).attr('ows_EMail');
+                    user.jobtitle = $(node).attr('ows_JobTitle');
+                    user.department = $(node).attr('ows_Department');
+                    user.account = user.id + ';#' + user.title;
+                });
+                callback(user);
+            });
+            /*
+            // Returns
+            <z:row xmlns:z="#RowsetSchema"
+                ows_ID="1"
+                ows_Name="<DOMAIN\login>"
+                ows_EMail="<email>"
+                ows_JobTitle="<job title>"
+                ows_UserName="<username>"
+                ows_Office="<office>"
+                ows__ModerationStatus="0"
+                ows__Level="1"
+                ows_Title="<Fullname>"
+                ows_Dapartment="<Department>"
+                ows_UniqueId="1;#{2AFFA9A1-87D4-44A7-9D4F-618BCBD990D7}"
+                ows_owshiddenversion="306"
+                ows_FSObjType="1;#0"/>
+            */
+        };
+        SpSoap.getUsersGroups = function (loginName, callback) {
+            var packet = '<soap:Envelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">' +
+                '<soap:Body>' +
+                '<GetGroupCollectionFromUser xmlns="http://schemas.microsoft.com/sharepoint/soap/directory/">' +
+                '<userLoginName>' + loginName + '</userLoginName>' +
+                '</GetGroupCollectionFromUser>' +
+                '</soap:Body>' +
+                '</soap:Envelope>';
+            var $jqXhr = $.ajax({
+                url: '/_vti_bin/usergroup.asmx',
+                type: 'POST',
+                dataType: 'xml',
+                data: packet,
+                contentType: 'text/xml; charset="utf-8"'
+            });
+            $jqXhr.done(cb);
+            $jqXhr.fail(cb);
+            function cb(xmlDoc, status, jqXhr) {
+                var $errorText = $(xmlDoc).find('errorstring');
+                // catch and handle returned error
+                if (!!$errorText && $errorText.text() != "") {
+                    callback(null, $errorText.text());
+                    return;
+                }
+                var groups = [];
+                $(xmlDoc).find("Group").each(function (i, el) {
+                    groups.push({
+                        id: parseInt($(el).attr("ID")),
+                        name: $(el).attr("Name")
+                    });
+                });
+                callback(groups);
+            }
+        };
+        SpSoap.getListItems = function (siteUrl, listName, viewFields, query, callback, rowLimit, viewName, queryOptions) {
+            if (rowLimit === void 0) { rowLimit = 25; }
+            if (viewName === void 0) { viewName = '<ViewName/>'; }
+            if (queryOptions === void 0) { queryOptions = '<QueryOptions/>'; }
+            var packet = '<?xml version="1.0" encoding="utf-8"?>' +
+                '<soap:Envelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">' +
+                '<soap:Body>' +
+                '<GetListItems xmlns="http://schemas.microsoft.com/sharepoint/soap/">' +
+                '<listName>' + listName + '</listName>' +
+                '<query>' + query + '</query>' +
+                '<viewFields>' + viewFields + '</viewFields>' +
+                '<rowLimit>' + rowLimit + '</rowLimit>' +
+                '</GetListItems>' +
+                '</soap:Body>' +
+                '</soap:Envelope>';
+            var $jqXhr = $.ajax({
+                url: siteUrl + '/_vti_bin/lists.asmx',
+                type: 'POST',
+                dataType: 'xml',
+                data: packet,
+                headers: {
+                    "SOAPAction": "http://schemas.microsoft.com/sharepoint/soap/GetListItems",
+                    "Content-Type": "text/xml; charset=utf-8"
+                }
+            });
+            $jqXhr.done(function (xmlDoc, status, error) {
+                callback(xmlDoc);
+            });
+            $jqXhr.fail(function (jqXhr, status, error) {
+                callback(null, status + ': ' + error);
+            });
+        };
+        SpSoap.getList = function (siteUrl, listName, callback) {
+            if (siteUrl === void 0) { siteUrl = '/'; }
+            siteUrl = siteUrl == '' ? '/' : siteUrl;
+            var packet = '<?xml version="1.0" encoding="utf-8"?><soap:Envelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/"><soap:Body><GetList xmlns="http://schemas.microsoft.com/sharepoint/soap/"><listName>{0}</listName></GetList></soap:Body></soap:Envelope>'
+                .replace('{0}', listName);
+            var $jqXhr = $.ajax({
+                url: siteUrl + '_vti_bin/lists.asmx',
+                type: 'POST',
+                cache: false,
+                dataType: "xml",
+                data: packet,
+                headers: {
+                    "SOAPAction": "http://schemas.microsoft.com/sharepoint/soap/GetList",
+                    "Content-Type": "text/xml; charset=utf-8"
+                }
+            });
+            $jqXhr.done(function (xmlDoc, status, jqXhr) {
+                callback(xmlDoc);
+            });
+            $jqXhr.fail(function (jqXhr, status, error) {
+                callback(null, status + ': ' + error);
+            });
+        };
+        SpSoap.checkInFile = function (pageUrl, checkinType, comment) {
+            if (comment === void 0) { comment = ''; }
+            var action = 'http://schemas.microsoft.com/sharepoint/soap/CheckInFile';
+            var params = [pageUrl, comment, checkinType];
+            var packet = '<?xml version="1.0" encoding="utf-8"?><soap:Envelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/"><soap:Body><CheckInFile xmlns="http://schemas.microsoft.com/sharepoint/soap/"><pageUrl>{0}</pageUrl><comment>{1}</comment><CheckinType>{2}</CheckinType></CheckInFile></soap:Body></soap:Envelope>';
+            return this.executeSoapRequest(action, packet, params);
+        };
+        SpSoap.checkOutFile = function (pageUrl, checkoutToLocal, lastmodified) {
+            var action = 'http://schemas.microsoft.com/sharepoint/soap/CheckOutFile';
+            var params = [pageUrl, checkoutToLocal, lastmodified];
+            var packet = '<?xml version="1.0" encoding="utf-8"?><soap:Envelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/"><soap:Body><CheckOutFile xmlns="http://schemas.microsoft.com/sharepoint/soap/"><pageUrl>{0}</pageUrl><checkoutToLocal>{1}</checkoutToLocal><lastmodified>{2}</lastmodified></CheckOutFile></soap:Body></soap:Envelope>';
+            return this.executeSoapRequest(action, packet, params);
+        };
+        /**
+        * Execute SOAP Request
+        * @param action: string
+        * @param packet: string
+        * @param params: Array<any>
+        * param self?: SPForm = undefined
+        * @param callback?: Function = undefined
+        * @return void
+        */
+        SpSoap.executeSoapRequest = function (action, packet, params, siteUrl, callback) {
+            if (siteUrl === void 0) { siteUrl = '/'; }
+            if (callback === void 0) { callback = undefined; }
+            siteUrl = siteUrl == '' ? '/' : siteUrl;
+            try {
+                var serviceUrl = siteUrl + '_vti_bin/lists.asmx';
+                if (params != null) {
+                    for (var i = 0; i < params.length; i++) {
+                        packet = packet.replace('{' + i + '}', (params[i] == null ? '' : params[i]));
+                    }
+                }
+                var $jqXhr = $.ajax({
+                    url: serviceUrl,
+                    cache: false,
+                    type: 'POST',
+                    data: packet,
+                    headers: {
+                        'Content-Type': 'text/xml; charset=utf-8',
+                        'SOAPAction': action
+                    }
+                });
+                if (callback) {
+                    $jqXhr.done(callback);
+                }
+                $jqXhr.fail(function (jqXhr, status, error) {
+                    var msg = 'Error in SpSoap.executeSoapRequest. ' + status + ': ' + error + ' ';
+                    Shockout.Utils.logError(msg, Shockout.SPForm.errorLogListName);
+                    console.warn(msg);
+                });
+            }
+            catch (e) {
+                Shockout.Utils.logError('Error in SpSoap.executeSoapRequest.', JSON.stringify(e), Shockout.SPForm.errorLogListName);
+                console.warn(e);
+            }
+        };
+        /**
+        * Update list item via SOAP services.
+        * @param listName: string
+        * @param fields: Array<Array<any>>
+        * @param isNew?: boolean = true
+        * param callback?: Function = undefined
+        * @param self: SPForm = undefined
+        * @return void
+        */
+        SpSoap.updateListItem = function (itemId, listName, fields, isNew, siteUrl, callback) {
+            if (isNew === void 0) { isNew = true; }
+            if (siteUrl === void 0) { siteUrl = '/'; }
+            if (callback === void 0) { callback = undefined; }
+            var action = 'http://schemas.microsoft.com/sharepoint/soap/UpdateListItems';
+            var packet = '<?xml version="1.0" encoding="utf-8"?>' +
+                '<soap:Envelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">' +
+                '<soap:Body>' +
+                '<UpdateListItems xmlns="http://schemas.microsoft.com/sharepoint/soap/">' +
+                '<listName>{0}</listName>' +
+                '<updates>{1}</updates>' +
+                '</UpdateListItems>' +
+                '</soap:Body>' +
+                '</soap:Envelope>';
+            var command = isNew ? "New" : "Update";
+            var params = [listName];
+            var soapEnvelope = "<Batch OnError='Continue'><Method ID='1' Cmd='" + command + "'>";
+            var itemArray = fields;
+            for (var i = 0; i < fields.length; i++) {
+                soapEnvelope += "<Field Name='" + fields[i][0] + "'>" + Shockout.Utils.escapeColumnValue(fields[i][1]) + "</Field>";
+            }
+            if (command !== "New") {
+                soapEnvelope += "<Field Name='ID'>" + itemId + "</Field>";
+            }
+            soapEnvelope += "</Method></Batch>";
+            params.push(soapEnvelope);
+            SpSoap.executeSoapRequest(action, packet, params, siteUrl, callback);
+        };
+        return SpSoap;
+    })();
+    Shockout.SpSoap = SpSoap;
+})(Shockout || (Shockout = {}));
+var Shockout;
+(function (Shockout) {
     var Templates = (function () {
         function Templates() {
         }
@@ -3165,7 +3296,7 @@ var Shockout;
             if (allowDelete === void 0) { allowDelete = true; }
             if (allowPrint === void 0) { allowPrint = true; }
             var template = [];
-            //template.push('<div class="form-breadcrumbs"><a href="/">Home</a> &gt; eForms</div>');
+            template.push('<label>Logged in as:</label> <span data-bind="text: currentUser().title" class="current-user"></span>');
             template.push('<button class="btn btn-default cancel" data-bind="event: { click: cancel }" title="Close"><span class="glyphicon glyphicon-remove"></span><span class="hidden-xs">Close</span></button>');
             if (allowPrint) {
                 template.push('<button class="btn btn-primary print" data-bind="visible: Id() != null, event: {click: print}" title="Print"><span class="glyphicon glyphicon-print"></span><span class="hidden-xs">Print</span></button>');
@@ -3280,64 +3411,6 @@ var Shockout;
             }
         };
         /**
-        * Search the User Information list.
-        * @param term: string
-        * @param callback: Function
-        * @param take?: number = 10
-        * @return void
-        */
-        Utils.peopleSearch = function (term, callback, take) {
-            if (take === void 0) { take = 10; }
-            var page = !!take ? take.toString() : '10';
-            // Allowed system query options are $filter, $select, $orderby, $skip, $top, $count, $search, $expand, and $levels.
-            var uri = "/_vti_bin/listdata.svc/UserInformationList?$filter=startswith(Name,'{0}')&$select=Id,Account,Name,WorkEMail&$orderby=Name&$top={1}"
-                .replace(/\{0\}/g, term).replace(/\{1\}/, page);
-            var $jqXhr = $.ajax({
-                url: uri,
-                type: 'GET',
-                cache: false,
-                dataType: 'json',
-                contentType: 'application/json; charset=utf-8',
-                headers: {
-                    'Accept': 'application/json'
-                }
-            });
-            $jqXhr.done(function (data, status, jqXhr) {
-                callback(data.d);
-            });
-            $jqXhr.fail(function (obj, status, jqXhr) {
-                var msg = 'People Search error. Status: ' + obj.statusText + ' ' + status + ' ' + JSON.stringify(jqXhr);
-                Utils.logError(msg, Shockout.SPForm.errorLogListName);
-                throw msg;
-            });
-        };
-        /**
-        * Get a person by their ID from the User Information list.
-        * @param id: number
-        * @param callback: Function
-        * @return void
-        */
-        Utils.getPersonById = function (id, callback) {
-            var $jqXhr = $.ajax({
-                url: "/_vti_bin/listdata.svc/UserInformationList(" + id + ")?$select=Id,Name,Account",
-                type: 'GET',
-                cache: false,
-                dataType: 'json',
-                contentType: 'application/json; charset=utf-8',
-                headers: {
-                    'Accept': 'application/json'
-                }
-            });
-            $jqXhr.done(function (data, status, jqXhr) {
-                callback(data.d);
-            });
-            $jqXhr.fail(function (obj, status, jqXhr) {
-                var msg = 'Get person by ID error. Status: ' + obj.statusText + ' ' + status + ' ' + JSON.stringify(jqXhr);
-                Utils.logError(msg, Shockout.SPForm.errorLogListName);
-                throw msg;
-            });
-        };
-        /**
         * Extract the Knockout observable name from a field with `data-bind` attribute
         * @param control: HTMLElement
         * @return string
@@ -3356,17 +3429,40 @@ var Shockout;
             }
             return result;
         };
+        Utils.parseDate = function (d) {
+            if (Utils.isJsonDateTicks(d)) {
+                return Utils.parseJsonDate(d);
+            }
+            else if (Utils.isIsoDateString(d)) {
+                return Utils.parseIsoDate(d);
+            }
+            return null;
+        };
         Utils.parseJsonDate = function (d) {
-            if (!Utils.isJsonDate(d)) {
+            if (!Utils.isJsonDateTicks(d)) {
                 return null;
             }
             return new Date(parseInt(d.replace(/\D/g, '')));
         };
-        Utils.isJsonDate = function (val) {
+        Utils.parseIsoDate = function (d) {
+            if (!Utils.isIsoDateString(d)) {
+                return null;
+            }
+            return new Date(d);
+        };
+        Utils.isJsonDateTicks = function (val) {
+            // `/Date(1442769001000)/`
             if (!!!val) {
                 return false;
             }
             return /\/Date\(\d+\)\//.test(val + '');
+        };
+        Utils.isIsoDateString = function (val) {
+            // `2015-09-23T16:21:24Z`
+            if (!!!val) {
+                return false;
+            }
+            return /\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z/.test(val + '');
         };
         Utils.getQueryParam = function (p) {
             var escape = window["escape"], unescape = window["unescape"];
@@ -3520,7 +3616,8 @@ var Shockout;
             if (symbol === void 0) { symbol = '$'; }
             if (precision === void 0) { precision = 2; }
             // Clean up number:
-            var num = Utils.unformatNumber(value), format = '%s%v', neg = format.replace('%v', '-%v'), useFormat = num > 0 ? format : num < 0 ? neg : format, numFormat = Utils.formatNumber(Math.abs(num), Utils.checkPrecision(precision));
+            var num = Utils.unformatNumber(value), format = '%s%v', neg = format.replace('%v', '-%v'), useFormat = num > 0 ? format : num < 0 ? neg : format, // Choose which format to use for this value:
+            numFormat = Utils.formatNumber(Math.abs(num), Utils.checkPrecision(precision));
             // Return with currency symbol added:
             return useFormat
                 .replace('%s', symbol)

@@ -22,10 +22,14 @@
     <Service Include="{4A0DDDB5-7A95-4FBF-97CC-616D07737A77}" />
   </ItemGroup>
   <ItemGroup>
-    <TypeScriptCompile Include="Shockout\spForm.ts" />
+    <TypeScriptCompile Include="Shockout\datatypes15.ts" />
+    <TypeScriptCompile Include="Shockout\SpApi15.ts" />
+    <TypeScriptCompile Include="Shockout\SpForm.ts" />
     <TypeScriptCompile Include="Shockout\datatypes.ts" />
     <TypeScriptCompile Include="Shockout\fileUploader.ts" />
     <TypeScriptCompile Include="Shockout\koHandlers.ts" />
+    <TypeScriptCompile Include="Shockout\SpApi.ts" />
+    <TypeScriptCompile Include="Shockout\SpSoap.ts" />
     <TypeScriptCompile Include="Shockout\templates.ts" />
     <TypeScriptCompile Include="Shockout\utils.ts" />
     <TypeScriptCompile Include="Shockout\viewModel.ts" />
@@ -42,6 +46,13 @@
   <ItemGroup>
     <None Include="content\shockout.spform.scss" />
     <Content Include="Shockout.SpForms.master" />
+    <Content Include="web.config" />
+    <None Include="web.Debug.config">
+      <DependentUpon>web.config</DependentUpon>
+    </None>
+    <None Include="web.Release.config">
+      <DependentUpon>web.config</DependentUpon>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <Content Include="README.md" />

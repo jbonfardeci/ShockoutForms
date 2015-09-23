@@ -83,11 +83,13 @@
                     
                     var autoCompleteOpts: any = {
                         source: function (request, response) {
-                            Utils.peopleSearch(request.term, function (data: Array<ISpPersonSearchResult>) {
+                            SpApi.peopleSearch(request.term, function (data: Array<ISpPersonSearchResult>) {
                                 response($.map(data, function (item) {
+                                    var email: string = item['EMail'] || item['WorkEMail']; // SP 2013 vs SP 2010 Email key name.
+                                    var name: string = item['Name'] || item['Account'];
                                     return {
-                                        label: item.Name + ' (' + item.WorkEMail + ')',
-                                        value: item.Id + ';#' + item.Account
+                                        label: item.Name + ' (' + email + ')',
+                                        value: item.Id + ';#' + name
                                     }
                                 }));
                             });

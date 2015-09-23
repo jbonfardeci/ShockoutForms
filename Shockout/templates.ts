@@ -78,7 +78,7 @@
 
         public static getFormAction(allowSave: boolean = true, allowDelete: boolean = true, allowPrint: boolean = true): JQuery {
             var template: Array<string> = [];
-            //template.push('<div class="form-breadcrumbs"><a href="/">Home</a> &gt; eForms</div>');
+            template.push('<label>Logged in as:</label> <span data-bind="text: currentUser().title" class="current-user"></span>');
             template.push('<button class="btn btn-default cancel" data-bind="event: { click: cancel }" title="Close"><span class="glyphicon glyphicon-remove"></span><span class="hidden-xs">Close</span></button>');
 
             if (allowPrint) {
