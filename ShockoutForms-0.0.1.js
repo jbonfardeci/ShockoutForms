@@ -3023,7 +3023,7 @@ var Shockout;
                 }
             });
             $jqXhr.done(function (data, status, jqXhr) {
-                callback(data, status);
+                callback(data);
             });
             $jqXhr.fail(function (jqXhr, status, error) {
                 callback(null, status + ': ' + error);

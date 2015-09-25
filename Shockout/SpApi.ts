@@ -220,7 +220,7 @@
             });
 
             $jqXhr.done(function (data: any, status: string, jqXhr: JQueryXHR) {
-                callback(data, status);
+                callback(data);
             });
 
             $jqXhr.fail(function (jqXhr: JQueryXHR, status: string, error: string) {
