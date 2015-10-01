@@ -983,8 +983,16 @@ var Shockout;
                     return !!self.viewModel[key] && self.viewModel[key]._type == 'MultiChoice' && '__deferred' in item[key];
                 }).each(function (i, key) {
                     Shockout.SpApi.executeRestRequest(item[key].__deferred.uri, function (data, status, jqXhr) {
+                        if (self.debug) {
+                            console.info('Retrieved multichoice data for ' + key + '...');
+                            console.info(data);
+                        }
+                        var json = data.d || data;
+                        if ('results' in json) {
+                            json = json.results;
+                        }
                         var values = [];
-                        $.each(data, function (i, choice) {
+                        $.each(json, function (i, choice) {
                             values.push(choice.Value);
                         });
                         vm[key](values);
@@ -1063,15 +1071,38 @@ var Shockout;
                     fields.push([Shockout.ViewModel.isSubmittedKey, (isSubmit ? 1 : 0)]);
                 }
                 // build the `fields` array 
+                //$(self.editableFields).each(function (i:number, key: any) {
+                //    var val = vm[key]();
+                //    if (typeof (val) == "undefined" || key == Shockout.ViewModel.isSubmittedKey) {
+                //        return;
+                //    }
+                //    if (val != null && val.constructor === Array) {
+                //        if (val.length > 0) {
+                //            val = ';#' + val.join(';#') + ';#';
+                //        }
+                //    }
+                //    else if (val != null && val.constructor == Date) {
+                //        val = Utils.parseDate(val).toISOString();
+                //    }
+                //    else if (val != null && vm[key]._type == 'Note') {
+                //        val = '<![CDATA[' + $('<div>').html(val).html() + ']]>';
+                //    }
+                //    val = val == null ? '' : val;
+                //    fields.push([vm[key]._name, val]);
+                //});
                 $(self.editableFields).each(function (i, key) {
+                    if (!('_metadata' in vm[key])) {
+                        return;
+                    }
                     var val = vm[key]();
-                    var spType = vm[key]._type.toLowerCase();
+                    var spType = vm[key]._type || vm[key]._metadata.type;
+                    spType = !!spType ? spType.toLowerCase() : null;
                     if (typeof (val) == "undefined" || key == Shockout.ViewModel.isSubmittedKey) {
                         return;
                     }
-                    if (val != null && spType == 'multichoice') {
+                    if (val != null && val.constructor === Array) {
                         if (val.length > 0) {
-                            val = ';#' + val.join(';#') + ';#';
+                            val = val.join(';#') + ';#';
                         }
                     }
                     else if (spType == 'datetime' && Shockout.Utils.parseDate(val) != null) {
@@ -2604,8 +2635,10 @@ var Shockout;
                         .on('mouseout', function () { onChangeSpPersonEvent(this, modelValue); });
                 }
                 catch (e) {
-                    var msg = 'Error in Knockout handler spPerson init(): ' + JSON.stringify(e);
-                    Shockout.Utils.logError(msg, Shockout.SPForm.errorLogListName);
+                    if (Shockout.SPForm.DEBUG) {
+                        console.info('Error in Knockout handler spPerson init()');
+                        console.info(e);
+                    }
                 }
                 function onChangeSpPersonEvent(self, modelValue) {
                     var value = $.trim($(self).val());
@@ -2648,9 +2681,10 @@ var Shockout;
                     }
                 }
                 catch (e) {
-                    var msg = 'Error in Knockout handler spPerson update(): ' + JSON.stringify(e);
-                    Shockout.Utils.logError(msg, Shockout.SPForm.errorLogListName);
-                    throw msg;
+                    if (Shockout.SPForm.DEBUG) {
+                        console.info('Error in Knockout handler spPerson update()');
+                        console.info(e);
+                    }
                 }
             }
         };
@@ -2675,8 +2709,6 @@ var Shockout;
                 var modelValue = valueAccessor();
                 var date = Shockout.Utils.parseDate(ko.unwrap(modelValue));
                 var dateStr = '';
-                //console.info('ko.bindingHandlers.spDate.update: value is ...');
-                //console.info(date);
                 if (!!date && date != null) {
                     dateStr = Shockout.Utils.dateToLocaleString(date);
                 }
@@ -2685,116 +2717,6 @@ var Shockout;
                 }
                 else {
                     $(element).text(dateStr);
-                }
-            }
-        };
-        ko.bindingHandlers['_spDateTime'] = {
-            init: function (element, valueAccessor, allBindings, viewModel, bindingContext) {
-                if (element.tagName.toLowerCase() != 'input' || $(element).attr('type') == 'hidden') {
-                    return;
-                } // stop if not an editable field
-                var modelValue = valueAccessor(), required, $time, $display, $error, $element = $(element);
-                try {
-                    $display = $('<span>', { 'class': 'no-print' }).insertAfter($element);
-                    $error = $('<span>', { 'class': 'error', 'html': 'Invalid Date-time', 'style': 'display:none;' }).insertAfter($element);
-                    element.$display = $display;
-                    element.$error = $error;
-                    required = $element.hasClass('required') || $element.attr('required') != null;
-                    $element.attr({
-                        'placeholder': 'MM/DD/YYYY',
-                        'maxlength': 10,
-                        'class': 'datepicker med form-control'
-                    }).css('display', 'inline-block')
-                        .datepicker().on('change', function () {
-                        try {
-                            $error.hide();
-                            var date = Shockout.Utils.parseDate(this.value);
-                            modelValue(date);
-                            $display.html(Shockout.Utils.toDateTimeLocaleString(date));
-                        }
-                        catch (e) {
-                            $error.show();
-                        }
-                    });
-                    $time = $("<input>", {
-                        'type': 'text',
-                        'maxlength': 8,
-                        'style': 'width:10em;display:inline-block;',
-                        'class': 'form-control',
-                        'placeholder': 'HH:MM PM'
-                    });
-                    if (required) {
-                        $time.attr('required', 'required');
-                    }
-                    $time.insertAfter($element);
-                    $time.on('blur', onTimeChange).on('change', onTimeChange);
-                    $time.before('<span> Time: </span>').after('<span class="no-print"> (HH:MM PM) </span>');
-                    element.$time = $time;
-                    if (modelValue() == null) {
-                        $element.val('');
-                        $time.val('');
-                    }
-                }
-                catch (e) {
-                    var msg = 'Error in Knockout handler spDateTime init(): ' + JSON.stringify(e);
-                    Shockout.Utils.logError(msg, Shockout.SPForm.errorLogListName);
-                }
-                function onTimeChange() {
-                    try {
-                        $error.hide();
-                        var date = Shockout.Utils.parseDate(modelValue());
-                        if (!!!date) {
-                            return;
-                        }
-                        var time = this.value.toString().toUpperCase().replace(/[^\d\:AMP\s]/g, '');
-                        this.value = time;
-                        if (!Shockout.Utils.isTime(time)) {
-                            $error.show();
-                            return;
-                        }
-                        var tt = time.replace(/[^AMP]/g, ''); // AM/PM
-                        var t = time.replace(/[^\d\:]/g, '').split(':');
-                        var h = t[0] - 0; //hours
-                        var m = t[1] - 0; //minutes
-                        if (tt == 'PM' && h < 12) {
-                            h += 12; //convert to military time
-                        }
-                        else if (tt == 'AM' && h == 12) {
-                            h = 0; //convert to military midnight
-                        }
-                        date.setHours(h);
-                        date.setMinutes(m);
-                        modelValue(date);
-                        $display.html(date.toLocaleTimeString());
-                        $error.hide();
-                    }
-                    catch (e) {
-                        $display.html(e);
-                        $error.show();
-                    }
-                }
-                ;
-            },
-            update: function (element, valueAccessor, allBindings, viewModel, bindingContext) {
-                try {
-                    var modelValue = valueAccessor();
-                    var date = Shockout.Utils.parseDate(ko.unwrap(modelValue));
-                    if (!!date) {
-                        var dateStr = date.toLocaleDateString();
-                        var timeStr = date.toLocaleTimeString();
-                        if (element.tagName.toLowerCase() == 'input') {
-                            element.value = dateStr;
-                            element.$time.val(timeStr);
-                            element.$display.html(dateStr + ' ' + timeStr);
-                        }
-                        else {
-                            element.innerHTML = dateStr + ' ' + timeStr;
-                        }
-                    }
-                }
-                catch (e) {
-                    var msg = 'Error in Knockout handler spDateTime update(): ' + JSON.stringify(e);
-                    Shockout.Utils.logError(msg, Shockout.SPForm.errorLogListName);
                 }
             }
         };
@@ -3037,8 +2959,10 @@ var Shockout;
                     }
                 }
                 catch (e) {
-                    var msg = 'Error in Knockout handler spDateTime update(): ' + JSON.stringify(e);
-                    Shockout.Utils.logError(msg, Shockout.SPForm.errorLogListName);
+                    if (Shockout.SPForm.DEBUG) {
+                        console.warn('Error in Knockout handler spDateTime update()...s');
+                        console.warn(e);
+                    }
                 }
             }
         };
@@ -3815,17 +3739,8 @@ var Shockout;
             var time = Utils.toTimeLocaleString(d);
             return Utils.dateToLocaleString(d) + ' ' + time;
         };
-        //public static parseDate(d: any): Date {
-        //    if (Utils.isJsonDateTicks(d)) {
-        //        return Utils.parseJsonDate(d);
-        //    }
-        //    else if (Utils.isIsoDateString(d)) {
-        //        return Utils.parseIsoDate(d);
-        //    }
-        //    return null;
-        //}
         /**
-        * Parse dates in format: "MM/DD/YYYY", "MM-DD-YYYY", "YYYY-MM-DD", or "/Date(1442769001000)/"
+        * Parse dates in format: "MM/DD/YYYY", "MM-DD-YYYY", "YYYY-MM-DD", "/Date(1442769001000)/", or YYYY-MM-DDTHH:MM:SSZ
         * @param val: string
         * @return Date
         */
@@ -3846,14 +3761,16 @@ var Shockout;
                 m = parseInt(tmp[0]) - 1;
                 d = parseInt(tmp[1]);
                 y = parseInt(tmp[2]);
-                date = new Date(y, m, d);
+                y = y < 100 ? 2000 + y : y;
+                date = new Date(y, m, d, 0, 0, 0, 0);
             }
             else if (rxIsoDate.test(val)) {
                 tmp = val.split('-');
                 y = parseInt(tmp[0]);
                 m = parseInt(tmp[1]) - 1;
                 d = parseInt(tmp[2]);
-                date = new Date(y, m, d);
+                y = y < 100 ? 2000 + y : y;
+                date = new Date(y, m, d, 0, 0, 0, 0);
             }
             else if (rxIsoDateTime.test(val)) {
                 date = new Date(val);
@@ -4010,4 +3927,4 @@ var Shockout;
     })();
     Shockout.ViewModel = ViewModel;
 })(Shockout || (Shockout = {}));
-//# sourceMappingURL=ShockoutForms-0.0.x.js.map
+//# sourceMappingURL=ShockoutForms-0.0.2.js.map

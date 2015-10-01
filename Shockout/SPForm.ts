@@ -1127,9 +1127,20 @@ module Shockout {
                     return !!self.viewModel[key] && self.viewModel[key]._type == 'MultiChoice' && '__deferred' in item[key];
                 }).each(function (i: number, key: any) {
 
-                    SpApi.executeRestRequest(item[key].__deferred.uri, function (data: Array<ISpMultichoiceValue>, status: string, jqXhr: any) {
+                    SpApi.executeRestRequest(item[key].__deferred.uri, function (data: ISpCollectionWrapper<ISpMultichoiceValue>, status: string, jqXhr: any) {
+
+                        if (self.debug) {
+                            console.info('Retrieved multichoice data for ' + key + '...');
+                            console.info(data);
+                        }
+
+                        var json: any = data.d || data;
+                        if ('results' in json) {
+                            json = json.results;
+                        }
+
                         var values: Array<any> = [];
-                        $.each(data, function (i: number, choice: ISpMultichoiceValue) {
+                        $.each(json, function (i: number, choice: ISpMultichoiceValue) {
                             values.push(choice.Value);
                         });
                         vm[key](values);
@@ -1218,16 +1229,38 @@ module Shockout {
                 }
 
                 // build the `fields` array 
+                //$(self.editableFields).each(function (i:number, key: any) {
+                //    var val = vm[key]();
+                //    if (typeof (val) == "undefined" || key == Shockout.ViewModel.isSubmittedKey) {
+                //        return;
+                //    }
+                //    if (val != null && val.constructor === Array) {
+                //        if (val.length > 0) {
+                //            val = ';#' + val.join(';#') + ';#';
+                //        }
+                //    }
+                //    else if (val != null && val.constructor == Date) {
+                //        val = Utils.parseDate(val).toISOString();
+                //    }
+                //    else if (val != null && vm[key]._type == 'Note') {
+                //        val = '<![CDATA[' + $('<div>').html(val).html() + ']]>';
+                //    }
+                //    val = val == null ? '' : val;
+                //    fields.push([vm[key]._name, val]);
+                //});
 
-                $(self.editableFields).each(function(i: number, key: any): void {
+                $(self.editableFields).each(function (i: number, key: any): void {
+                    if (!('_metadata' in vm[key])) { return; }
+
                     var val: any = vm[key]();
-                    var spType = vm[key]._type.toLowerCase();
+                    var spType = vm[key]._type || vm[key]._metadata.type;
+                    spType = !!spType ? spType.toLowerCase() : null;
 
                     if (typeof (val) == "undefined" || key == ViewModel.isSubmittedKey) { return; }
 
-                    if (val != null && spType == 'multichoice') {
+                    if (val != null && val.constructor === Array) {
                         if (val.length > 0) {
-                            val = ';#' + val.join(';#') + ';#';
+                            val = val.join(';#') + ';#';
                         }
                     }
                     else if (spType == 'datetime' && Utils.parseDate(val) != null) {

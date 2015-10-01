@@ -106,8 +106,10 @@
                         .on('mouseout', function () { onChangeSpPersonEvent(this, modelValue); });
                 }
                 catch (e) {
-                    var msg = 'Error in Knockout handler spPerson init(): ' + JSON.stringify(e);
-                    Utils.logError(msg, Shockout.SPForm.errorLogListName);
+                    if (SPForm.DEBUG) {
+                        console.info('Error in Knockout handler spPerson init()');
+                        console.info(e);
+                    }
                 }
 
                 function onChangeSpPersonEvent(self, modelValue) {
@@ -154,9 +156,10 @@
                     }
                 }
                 catch (e) {
-                    var msg = 'Error in Knockout handler spPerson update(): ' + JSON.stringify(e);
-                    Utils.logError(msg, Shockout.SPForm.errorLogListName);
-                    throw msg;
+                    if (SPForm.DEBUG) {
+                        console.info('Error in Knockout handler spPerson update()');
+                        console.info(e);
+                    }
                 }
             }
         };
@@ -183,155 +186,14 @@
                 var date: Date = Utils.parseDate( ko.unwrap(modelValue) );
                 var dateStr = '';
 
-                //console.info('ko.bindingHandlers.spDate.update: value is ...');
-                //console.info(date);
-
                 if (!!date && date != null) {
                     dateStr = Utils.dateToLocaleString(date);
-                    //console.info('dateStr: ' + dateStr);
                 }
 
                 if ('value' in element) {
                     $(element).val(dateStr);
                 } else {
                     $(element).text(dateStr);
-                }
-            }
-        };
-
-        ko.bindingHandlers['_spDateTime'] = {
-            init: function (element, valueAccessor, allBindings, viewModel: IViewModel, bindingContext) {
-
-                if (element.tagName.toLowerCase() != 'input' || $(element).attr('type') == 'hidden') { return; }// stop if not an editable field
-
-                var modelValue: KnockoutObservable<Date> = valueAccessor()
-                    , required
-                    , $time
-                    , $display
-                    , $error
-                    , $element = $(element);
-
-                try {
-
-                    $display = $('<span>', { 'class': 'no-print' }).insertAfter($element);
-                    $error = $('<span>', { 'class': 'error', 'html': 'Invalid Date-time', 'style': 'display:none;' }).insertAfter($element);
-                    element.$display = $display;
-                    element.$error = $error;
-
-                    required = $element.hasClass('required') || $element.attr('required') != null;
-
-                    $element.attr({
-                        'placeholder': 'MM/DD/YYYY',
-                        'maxlength': 10,
-                        'class': 'datepicker med form-control'
-                    }).css('display', 'inline-block')
-                        .datepicker().on('change', function () {
-                        try {
-                            $error.hide();
-                            var date = Utils.parseDate(this.value);
-                            modelValue(date);
-                            $display.html(Utils.toDateTimeLocaleString(date));
-                        }
-                        catch (e) {
-                            $error.show();
-                        }
-                    });
-
-                    $time = $("<input>", {
-                        'type': 'text',
-                        'maxlength': 8,
-                        'style': 'width:10em;display:inline-block;',
-                        'class': 'form-control',
-                        'placeholder': 'HH:MM PM'
-                    });
-                    
-                    if (required) {
-                        $time.attr('required', 'required');
-                    }
-
-                    $time.insertAfter($element);
-
-                    $time.on('blur', onTimeChange).on('change', onTimeChange);
-
-                    $time.before('<span> Time: </span>').after('<span class="no-print"> (HH:MM PM) </span>');
-
-                    element.$time = $time;
-
-                    if (modelValue() == null) {
-                        $element.val('');
-                        $time.val('');
-                    }
-
-                }
-                catch (e) {
-                    var msg = 'Error in Knockout handler spDateTime init(): ' + JSON.stringify(e);
-                    Utils.logError(msg, Shockout.SPForm.errorLogListName);
-                }
-
-                function onTimeChange() {
-                    try {
-                        $error.hide();
-
-                        var date: Date = Utils.parseDate(modelValue());
-
-                        if (!!!date) { return; }
-
-                        var time = this.value.toString().toUpperCase().replace(/[^\d\:AMP\s]/g, '');
-                        this.value = time;
-
-                        if (!Utils.isTime(time)) {
-                            $error.show();
-                            return;
-                        }
-
-                        var tt = time.replace(/[^AMP]/g, ''); // AM/PM
-                        var t = time.replace(/[^\d\:]/g, '').split(':');
-                        var h = t[0] - 0; //hours
-                        var m = t[1] - 0; //minutes
-
-                        if (tt == 'PM' && h < 12) {
-                            h += 12; //convert to military time
-                        }
-                        else if (tt == 'AM' && h == 12) {
-                            h = 0; //convert to military midnight
-                        }
-
-                        date.setHours(h);
-                        date.setMinutes(m);
-                        modelValue(date);
-
-                        $display.html(date.toLocaleTimeString());
-                        $error.hide();
-                    }
-                    catch (e) {
-                        $display.html(e);
-                        $error.show();
-                    }
-                };
-            },
-            update: function (element, valueAccessor, allBindings, viewModel: IViewModel, bindingContext) {
-
-                try {
-                    var modelValue: KnockoutObservable<Date> = valueAccessor();
-                    var date: Date = Utils.parseDate(ko.unwrap(modelValue));
-
-                    if (!!date) {
-                        var dateStr = date.toLocaleDateString();
-                        var timeStr = date.toLocaleTimeString();
-
-                        if (element.tagName.toLowerCase() == 'input') {
-                            element.value = dateStr;
-                            element.$time.val(timeStr);
-                            element.$display.html(dateStr + ' ' + timeStr);
-                        }
-                        else {
-                            element.innerHTML = dateStr + ' ' + timeStr;
-                        }
-                    }
-                }
-                catch (e) {
-                    var msg = 'Error in Knockout handler spDateTime update(): ' + JSON.stringify(e);
-                    Utils.logError(msg, Shockout.SPForm.errorLogListName);
                 }
             }
         };
@@ -622,8 +484,10 @@
                     }
                 }
                 catch (e) {
-                    var msg = 'Error in Knockout handler spDateTime update(): ' + JSON.stringify(e);
-                    Utils.logError(msg, Shockout.SPForm.errorLogListName);
+                    if (SPForm.DEBUG) {
+                        console.warn('Error in Knockout handler spDateTime update()...s');
+                        console.warn(e);
+                    }
                 }
             }
         };

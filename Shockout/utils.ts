@@ -244,18 +244,8 @@
             return Utils.dateToLocaleString(d) + ' ' + time;
         }
 
-        //public static parseDate(d: any): Date {
-        //    if (Utils.isJsonDateTicks(d)) {
-        //        return Utils.parseJsonDate(d);
-        //    }
-        //    else if (Utils.isIsoDateString(d)) {
-        //        return Utils.parseIsoDate(d);
-        //    }
-        //    return null;
-        //}
-
         /**
-        * Parse dates in format: "MM/DD/YYYY", "MM-DD-YYYY", "YYYY-MM-DD", or "/Date(1442769001000)/"
+        * Parse dates in format: "MM/DD/YYYY", "MM-DD-YYYY", "YYYY-MM-DD", "/Date(1442769001000)/", or YYYY-MM-DDTHH:MM:SSZ
         * @param val: string
         * @return Date
         */
@@ -284,14 +274,16 @@
                 m = parseInt(tmp[0]) - 1;
                 d = parseInt(tmp[1]);
                 y = parseInt(tmp[2]);
-                date = new Date(y, m, d);
+                y = y < 100 ? 2000 + y : y;
+                date = new Date(y, m, d, 0, 0, 0, 0);
             }
             else if (rxIsoDate.test(val)) {
                 tmp = val.split('-');
                 y = parseInt(tmp[0]);
                 m = parseInt(tmp[1]) - 1;
                 d = parseInt(tmp[2]);
-                date = new Date(y, m, d);
+                y = y < 100 ? 2000 + y : y;
+                date = new Date(y, m, d, 0, 0, 0, 0);
             }
             else if (rxIsoDateTime.test(val)){
                 date = new Date(val);
