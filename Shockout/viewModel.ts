@@ -12,7 +12,7 @@
         ModifiedByEmail: KnockoutObservable<string>;
 
         parent: any;
-        history: KnockoutObservable<Array<any>>;
+        historyItems: KnockoutObservable<Array<IHistoryItem>>;
         attachments: KnockoutObservable<Array<any>>;
         isAuthor: KnockoutObservable<boolean>;
         currentUser: KnockoutObservable<any>;
@@ -51,8 +51,8 @@
         public ModifiedByEmail: KnockoutObservable<string> = ko.observable(null);
 
         public parent: Shockout.SPForm;
-        public history: KnockoutObservable<Array<any>> = ko.observableArray([]);
-        public attachments: KnockoutObservableArray<ISpAttachment> = ko.observableArray([]);
+        public historyItems: KnockoutObservable<Array<any>> = ko.observableArray();
+        public attachments: KnockoutObservableArray<any> = ko.observableArray();
         public isAuthor: KnockoutObservable<boolean>;
         public currentUser: KnockoutObservable<ICurrentUser>;
         public isValid: KnockoutComputed<boolean>;

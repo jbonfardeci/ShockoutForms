@@ -40,6 +40,8 @@ module Shockout {
 
     export class SPForm {
 
+        public static DEBUG: boolean = false;
+
         ///////////////////////////////////////////
         // Minimum Required Constructor Parameters
         ///////////////////////////////////////////
@@ -319,6 +321,8 @@ module Shockout {
                 }
             }
 
+            SPForm.DEBUG = this.debug;
+
             // try to parse the form ID from the hash or querystring
             this.itemId = Utils.getIdFromHash();
             var idFromQs = Utils.getQueryParam(this.queryStringId);
@@ -421,29 +425,47 @@ module Shockout {
             self.updateStatus('Retrieving your account...');
             var success: string = 'Retrieved your account.';
 
+            if (self.debug) {
+                console.info('Testing for SP 2013 API...');
+            }
+
             // If this is SP 2013, it will return thre current user's account.
-            SpApi15.getCurrentUser(function (user: ICurrentUser, error: string) {
-                if (!!user && !!user.id) {
+            SpApi15.getCurrentUser(function (user: ICurrentUser, error: number) {
+
+                if (error == 404) {
+                    getSp2010User();
+                } else {
                     self.isSp2013 = true;
                     self.currentUser = user;
                     self.viewModel.currentUser(user);
-                    self.nextAsync(true, success);
 
-                } else {
-                    getSp2010User();
+                    if (self.debug) {
+                        console.info('This is the SP 2013 API.');
+                        console.info('Current user is...');
+                        console.info(self.viewModel.currentUser());
+                    }
+
+                    self.nextAsync(true, success);
                 }
             });
 
             function getSp2010User() {
                 SpSoap.getCurrentUser(function (user: ICurrentUser, error: string) {
 
-                    if (!error) {
+                    if (!!error) {
                         self.nextAsync(false, 'Failed to retrieve your account. ' + error);
                         return;
                     }
 
                     self.currentUser = user;
                     self.viewModel.currentUser(user);
+
+                    if (self.debug) {
+                        console.info('This is SP 2010 REST services.');
+                        console.info('Current user is...');
+                        console.info(self.viewModel.currentUser());
+                    }
+
                     self.nextAsync(true, success);
                 });
             }
@@ -464,7 +486,9 @@ module Shockout {
 
             SpSoap.getList(self.siteUrl, self.listName, function (xmlDoc: XMLDocument, error: string) {
                 if (!!error) {
+                    var msg = 'Failed to retrieve list data. ' + error;
                     self.nextAsync(false, 'Failed to retrieve list data. ' + error);
+                    self.logError(msg);
                     return;
                 }
 
@@ -477,18 +501,33 @@ module Shockout {
                     var $list = $(xmlDoc).find('List').first();
                     var listId = $list.attr('ID');
                     self.listId = listId;
-                    self.requireCheckout = $list.attr('RequireCheckout') == 'True';
-                    self.enableAttachments = $list.attr('EnableAttachments') == 'True';
+
+                    var requireCheckout = $list.attr('RequireCheckout');
+                    self.requireCheckout = !!requireCheckout ? requireCheckout.toLowerCase() == 'true' : false;
+
+                    var enableAttachments = $list.attr('EnableAttachments');
+                    self.enableAttachments = !!enableAttachments ? enableAttachments.toLowerCase() == 'true' : false;
+
                     self.defaultViewUrl = $list.attr('DefaultViewUrl');
                     self.defailtMobileViewUrl = $list.attr('MobileDefaultViewUrl');
 
                     // Build the Knockout view model
+                    //$(xmlDoc).find('Field').filter(function (i: number, el: any) {
+                    //    return !!!($(el).attr('Hidden')) && !!($(el).attr('DisplayName')) && !rxExcludeNames.test($(el).attr('Name')) && !rxExcludeNames.test($(el).attr('DisplayName'));
+                    //}).each(setupKoVar);
+
                     $(xmlDoc).find('Field').filter(function (i: number, el: any) {
-                        return !!!($(el).attr('Hidden')) && !!($(el).attr('DisplayName')) && !rxExcludeNames.test($(el).attr('Name')) && !rxExcludeNames.test($(el).attr('DisplayName'));
+                        return !!($(el).attr('DisplayName')) && $(el).attr('Hidden') != 'TRUE' && !rxExcludeNames.test($(el).attr('Name'));
                     }).each(setupKoVar);
 
                     // sort the field names alpha
                     self.fieldNames.sort();
+
+                    if (self.debug) {
+                        console.info(self.listName + ' list ID = ' + self.listId);
+                        console.info('Field names are...');
+                        console.info(self.fieldNames);
+                    }
 
                     self.nextAsync(true);
                     return;
@@ -512,8 +551,8 @@ module Shockout {
                     var spType: string = $el.attr('Type');
                     var spName: string = $el.attr('Name');
                     var spFormat: string = $el.attr('Format');
-                    var spRequired: boolean = $el.attr('Required') == 'True';
-                    var spReadOnly: boolean = !!($el.attr('ReadOnly')) && $el.attr('ReadOnly') == 'True';
+                    var spRequired: boolean = !!($el.attr('Required')) ? $el.attr('Required').toLowerCase() == 'true' : false;
+                    var spReadOnly: boolean = !!($el.attr('ReadOnly')) ? $el.attr('ReadOnly').toLowerCase() == 'true' : false;
                     var spDesc: string = $el.attr('Description');
                     var vm: IViewModel = self.viewModel;
 
@@ -530,14 +569,25 @@ module Shockout {
                     // find the SP field's default value if exists
                     $el.find('> Default').each(function (j: number, def: any): void {
                         var val: any = $.trim($(def).text());
-                        if (val == '[today]' && spType == 'DateTime') {
-                            val = new Date();
-                        }
-                        else if (spType == 'Boolean') {
-                            val = val == '0' ? false : true;
-                        }
-                        else if (spType == 'Number' || spType == 'Currency') {
-                            val = val - 0;
+
+                        if (!!spType) {
+
+                            switch (spType.toLowerCase()) {
+                                case 'boolean':
+                                    val = val == '0' ? false : true;
+                                    break;
+                                case 'number':
+                                case 'currency':
+                                    val = val - 0;
+                                    break;
+                                case 'datetime':
+                                    if (val == '[today]') { val = new Date(); }
+                                    break;
+                                default:
+                                    //val = (val+'').length == 0 ? null : val;
+                                    break;
+                            }
+
                         }
                         defaultValue = val;
                     });
@@ -546,14 +596,14 @@ module Shockout {
                     
                     // add metadata to the KO object
                     koObj._metadata = {
-                        koName: koName,
-                        displayName: displayName,
-                        name: spName,
-                        format: spFormat,
-                        required: spRequired,
-                        readOnly: spReadOnly,
-                        description: spDesc,
-                        type: spType,
+                        'koName': koName,
+                        'displayName': displayName || null,
+                        'name': spName || null,
+                        'format': spFormat || null,
+                        'required': spRequired || false,
+                        'readOnly': spReadOnly || false,
+                        'description': spDesc || null,
+                        'type': spType
                     };
 
                     koObj._koName = koName;
@@ -584,11 +634,18 @@ module Shockout {
 
                     koObj._metadata.$parent = koObj;
                     vm[koName] = koObj;
+
+                    if (self.debug) {
+                        console.info('Created KO object: ' + koName + ', type: ' + spType + ', default val: ' + defaultValue);
+                    }
                 }
                 catch (e) {
+                    var error = 'Failed to setup KO object at getListAsync.setupKoVar: ';
                     if (self.debug) {
+                        console.warn(error);
                         console.warn(e);
                     }
+                    self.logError(error + JSON.stringify(e));
                 }
             };
         }
@@ -611,12 +668,18 @@ module Shockout {
                 if (self.fieldNames.indexOf('IsSubmitted') > -1) {
                     self.allowSave = true;
                     ViewModel.isSubmittedKey = 'IsSubmitted';
+                    if (self.debug) {
+                        console.info('initFormAsync: IsSubmitted key: ' + ViewModel.isSubmittedKey);
+                    }
                 }
 
                 // append action buttons
                 self.$formAction = $(Templates.getFormAction(self.allowSave, self.allowDelete, self.allowPrint)).appendTo(self.$form);
                 if (self.allowSave) {
                     self.$formAction.find('.btn.save').show();
+                    if (self.debug) {
+                        console.info('initFormAsync: Unhide Save button.');
+                    }
                 }
 
                 if (self.enableAttachments) {
@@ -669,10 +732,14 @@ module Shockout {
                         self.fileUploaderSettings.element = document.getElementById(id);
                         self.fileUploader = new Shockout.qq.FileUploader(self.fileUploaderSettings);
                     });
+
+                    if (self.debug) {
+                        console.info('initFormAsync: Attachments are enabled.');
+                    }
                 }
 
                 // set up HTML editors in the form
-                self.$form.find(".rte, [data-bind*='spHtml']").each(function (i: number, el: HTMLElement) {
+                self.$form.find(".rte, [data-bind*='spHtml'], [data-sp-html]").each(function (i: number, el: HTMLElement) {
                     var $el = $(el);
                     var koName = Utils.observableNameFromControl(el);
 
@@ -691,6 +758,10 @@ module Shockout {
                     if (!self.debug) {
                         $el.hide();
                     }
+
+                    if (self.debug) {
+                        console.info('initFormAsync: Created spHtml field: ' + koName);
+                    }
                 });
 
                 //append Created/Modified info to predefined section or append to form
@@ -701,6 +772,10 @@ module Shockout {
                     if (self.includeWorkflowHistory) {
                         self.$form.append(Templates.getHistoryTemplate());
                     }
+
+                    if (self.debug) {
+                        console.info('initFormAsync: show created/mod info.');
+                    }
                 }
 
                 // remove elements with attribute `data-edit-only` from the DOM if not editing an existing form - a new form where `itemId == null || undefined`
@@ -708,6 +783,10 @@ module Shockout {
                     self.$form.find('[data-edit-only]').each(function () {
                         $(this).remove();
                     });
+
+                    if (self.debug) {
+                        console.info('initFormAsync: setup elements with `data-edit-only` attribute.');
+                    }
                 }
 
                 // remove elements with attribute `data-new-only` from the DOM if not a new form - an edit form where `itemId != null`
@@ -715,16 +794,35 @@ module Shockout {
                     self.$form.find('[data-new-only]').each(function () {
                         $(this).remove();
                     });
+
+                    if (self.debug) {
+                        console.info('initFormAsync: setup elements with `data-new-only` attribute.');
+                    }
                 }
                
+                // data-submitted, data-not-submitted
+
                 // add control validation to Bootstrap form elements
                 // http://getbootstrap.com/css/#forms-control-validation 
                 self.$form.find('[required], .required').each(function (i: number, el: HTMLElement) {
                     var koName = Utils.observableNameFromControl(el);
-                    var $parent = $(el).closest('.form-group')
-                        .attr("data-bind", "css: { 'has-error': !!!" + koName + "(), 'has-success has-feedback': !!" + koName + "()}")
-                        .append('<span class="glyphicon glyphicon-ok form-control-feedback" aria-hidden="true"></span>');
+                    var $parent = $(el).closest('.form-group');
+                    var css = "css: { 'has-error': !!!" + koName + "(), 'has-success has-feedback': !!" + koName + "()}";
+
+                    // If the parent already has a data-bind attribute, append the css.
+                    if (!!$parent.attr('data-bind')) {
+                        var dataBind = $parent.attr("data-bind");
+                        $parent.attr("data-bind", dataBind + ", " + css);
+                    } else {
+                        $parent.attr("data-bind", css);
+                    }
+
+                    $parent.append('<span class="glyphicon glyphicon-ok form-control-feedback" aria-hidden="true"></span>');
                 });
+
+                if (self.debug) {
+                    console.info('initFormAsync: Required elements are initialized.');
+                }
 
                 self.nextAsync(true, "Form initialized.");
                 return;
@@ -784,7 +882,7 @@ module Shockout {
             if (self.isSp2013) {
                 SpApi15.getUsersGroups(self.currentUser.id, callback);
             } else {
-                SpSoap.getUsersGroups(self.currentUser.title, callback);
+                SpSoap.getUsersGroups(self.currentUser.login, callback);
             }
 
             function callback(groups: Array<any>, error: string) {
@@ -792,6 +890,14 @@ module Shockout {
                     self.nextAsync(false, "Failed to retrieve your groups. " + error);
                     return;
                 }
+
+                self.currentUser.groups = groups;
+
+                if (self.debug) {
+                    console.info("Retrieved current user's groups...");
+                    console.info(self.currentUser.groups);
+                }
+
                 self.nextAsync(true, "Retrieved your groups.");
             }
         }
@@ -817,13 +923,23 @@ module Shockout {
                     }
 
                     var groupNames: Array<string> = groups.match(/\,/) != null ? groups.split(',') : [groups];
+
+                    if (self.debug) {
+                        console.info('element is restricted to groups...');
+                        console.info(groupNames);
+                    }
+
                     var ct = 0;
                     $.each(groupNames, function (j: number, group: string): void {
                         group = group.match(/\;#/) != null ? group.split(';')[0] : group; //either id;#groupname or groupname
                         group = $.trim(group);
 
+                        if (!('groups' in self.currentUser)){ return; }
+
                         $.each(self.currentUser.groups, function (k: number, g: any): void {
-                            if (group == g.name || parseInt(group) == g.id) { ct++; }
+                            if (group == g.name || parseInt(group) == g.id) {
+                                ct++;
+                            }
                         });
                     });
 
@@ -857,15 +973,21 @@ module Shockout {
                     }
                 });
 
-                self.editableFields.sort()
+                self.editableFields.sort();
+
+                if (self.debug) {
+                    console.info('Editable fields...');
+                    console.info(self.editableFields);
+                }
 
                 self.nextAsync(true, "Retrieved your permissions.");
             }
             catch (e) {
                 if (self.debug) {
-                    throw e;
+                    console.warn('Error in implementPermissionsAsync:');
+                    console.warn(e);
                 }
-                self.logError("restrictSpGroupElementsAsync: " + e);
+                self.logError("implementPermissionsAsync: " + e);
                 self.nextAsync(true, "Failed to retrieve your permissions.");
             }
         }
@@ -885,14 +1007,19 @@ module Shockout {
 
             self.updateStatus('Retrieving workflow history...');
 
-            var historyItems: Array<any> = [];
             var filter: string = "ListID eq '" + self.listId + "' and PrimaryItemID eq " + self.itemId;
             var select: string = "Description,DateOccurred";
             var orderby: string = "DateOccurred";
             SpApi.getListItems(self.workflowHistoryListName, callback, self.siteUrl, filter, select, orderby, 25, false);
 
             function callback(items: Array<any>, error: string) {
-                if (!!error) {
+
+                if (self.debug) {
+                    console.info('Retrieved workflow hsitory...');
+                    console.info(items);
+                }
+
+                if (!!error || !!!items) {
                     var msg = 'The ' + self.workflowHistoryListName + ' list may be full at <a href="{url}">{url}</a>. Failed to retrieve workflow history in method, getHistoryAsync().'
                         .replace(/\{url\}/g, self.rootUrl + self.siteUrl + '/Lists/' + self.workflowHistoryListName.replace(/\s/g, '%20'));
 
@@ -901,11 +1028,12 @@ module Shockout {
                     return;
                 }
 
-                $(items).each(function (i: number, item: any) {
-                    historyItems.push(new HistoryItem(item.Description, Utils.parseJsonDate(item.DateOccurred)));
-                });
+                self.viewModel.historyItems([]);
+                for (var i = 0; i < items.length; i++) {
+                    self.viewModel.historyItems().push(new HistoryItem(items[i].Description, Utils.parseDate(items[i].DateOccurred)));
+                }
 
-                self.viewModel.history(items);
+                self.viewModel.historyItems.valueHasMutated();
                 self.nextAsync(true, "Retrieved workflow history.");
             }
 
@@ -1006,11 +1134,10 @@ module Shockout {
                         });
                         vm[key](values);
                     });
-
                 });
             }
             catch (e) {
-                self.logError('Faile to bind form values. ' + JSON.stringify(e));
+                self.logError('Failed to bind form values. ' + JSON.stringify(e));
                 if (self.debug) {
                     console.warn(e);
                 }
@@ -1094,18 +1221,19 @@ module Shockout {
 
                 $(self.editableFields).each(function(i: number, key: any): void {
                     var val: any = vm[key]();
+                    var spType = vm[key]._type.toLowerCase();
 
                     if (typeof (val) == "undefined" || key == ViewModel.isSubmittedKey) { return; }
 
-                    if (val != null && val.constructor === Array) {
+                    if (val != null && spType == 'multichoice') {
                         if (val.length > 0) {
                             val = ';#' + val.join(';#') + ';#';
                         }
                     }
-                    else if (val != null && val.constructor == Date) {
-                        val = new Date(val).toISOString();
+                    else if (spType == 'datetime' && Utils.parseDate(val) != null) {
+                        val = Utils.parseDate(val).toISOString();
                     }
-                    else if (val != null && vm[key]._type == 'Note') {
+                    else if (val != null && spType == 'note') {
                         val = '<![CDATA[' + $('<div>').html(val).html() + ']]>';
                     }
 

@@ -15,16 +15,16 @@
     }
 
     export interface IHistoryItem {
-        description: string;
-        date: Date;
+        _description: string;
+        _dateOccurred: Date;
     }
 
     export class HistoryItem implements IHistoryItem {
-        public description: string;
-        public date: Date;
-        constructor(description: string, date: Date) {
-            this.description = description;
-            this.date = date;
+        public _description: string;
+        public _dateOccurred: Date;
+        constructor(d: string, date: Date) {
+            this._description = d || null;
+            this._dateOccurred = date || null;
         }
     }
 

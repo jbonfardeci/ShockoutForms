@@ -55,7 +55,11 @@
             attr = attr.replace(/\$/g, '');
             var rx: RegExp = /(\b:(\s+|)|\$root.)\w*\b/;
             var exec: Array<string> = rx.exec(attr);
-            var result: string = !!exec ? exec[0].replace(/:(\s+|)/gi, '').replace(/\$root\./, '').replace(/\._metadata/, '').replace(/\s/g, '') : null;
+            var result: string = !!exec ? exec[0]
+                .replace(/:(\s+|)/gi, '')
+                .replace(/\$root\./, '')
+                .replace(/\._metadata/, '')
+                .replace(/\s/g, '') : null;
             if (result == 'parent') {
                 return Utils.observableNameFromControl( $(control).parent() );
             }
@@ -63,16 +67,6 @@
         }
 
         public static koNameFromControl = Utils.observableNameFromControl;
-
-        public static parseDate(d: any): Date {
-            if (Utils.isJsonDateTicks(d)) {
-                return Utils.parseJsonDate(d);
-            }
-            else if (Utils.isIsoDateString(d)) {
-                return Utils.parseIsoDate(d);
-            }
-            return null;
-        }
 
         public static parseJsonDate(d: any): Date {
             if (!Utils.isJsonDateTicks(d)) { return null; }
@@ -178,13 +172,13 @@
 
         public static isTime(val: string): boolean {
             if (!!!val) { return false; }
-            var rx = new RegExp("\\d{1,2}:\\d{2}\\s{0,1}(AM|PM)");
+            var rx: RegExp = /\d{1,2}:\d{2}(:\d{2}|)\s{0,1}(AM|PM)/;
             return rx.test(val);
         }
 
         public static isDate(val: string): boolean {
             if (!!!val) { return false; }
-            var rx = new RegExp("\\d{1,2}\/\\d{1,2}\/\\d{4}");
+            var rx: RegExp = /\d{1,2}\/\d{1,2}\/\d{4}/;
             return rx.test(val.toString());
         }
 
@@ -248,6 +242,65 @@
         public static toDateTimeLocaleString(d):string {
             var time = Utils.toTimeLocaleString(d);
             return Utils.dateToLocaleString(d) + ' ' + time;
+        }
+
+        //public static parseDate(d: any): Date {
+        //    if (Utils.isJsonDateTicks(d)) {
+        //        return Utils.parseJsonDate(d);
+        //    }
+        //    else if (Utils.isIsoDateString(d)) {
+        //        return Utils.parseIsoDate(d);
+        //    }
+        //    return null;
+        //}
+
+        /**
+        * Parse dates in format: "MM/DD/YYYY", "MM-DD-YYYY", "YYYY-MM-DD", or "/Date(1442769001000)/"
+        * @param val: string
+        * @return Date
+        */
+        public static parseDate(val: any): Date {
+
+            if (!!!val) { return null; }
+
+            if (typeof val == 'object' && val.constructor == Date) { return val; }
+
+            val = (val + '').replace(/[^0-9\/\-]/g, '');
+            if (val == '') { return null; }
+
+            var rxSlash: RegExp = /\d{1,2}\/\d{1,2}\/\d{2,4}/, // "09/29/2015" 
+                rxHyphen: RegExp = /\d{1,2}-\d{1,2}-\d{2,4}/, // "09-29-2015"
+                rxIsoDate: RegExp = /\d{4}-\d{1,2}-\d{1,2}/, // "2015-09-29"
+                rxTicks: RegExp = /(\/|)\d{13}(\/|)/, // "/1442769001000/"
+                rxIsoDateTime: RegExp = /\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z/,
+                tmp: Array<string>,
+                m: number,
+                d: number,
+                y: number,
+                date: Date = null;
+
+            if (rxSlash.test(val) || rxHyphen.test(val)) {
+                tmp = rxSlash.test(val) ? val.split('/') : val.split('-');
+                m = parseInt(tmp[0]) - 1;
+                d = parseInt(tmp[1]);
+                y = parseInt(tmp[2]);
+                date = new Date(y, m, d);
+            }
+            else if (rxIsoDate.test(val)) {
+                tmp = val.split('-');
+                y = parseInt(tmp[0]);
+                m = parseInt(tmp[1]) - 1;
+                d = parseInt(tmp[2]);
+                date = new Date(y, m, d);
+            }
+            else if (rxIsoDateTime.test(val)){
+                date = new Date(val);
+            }
+            else if (rxTicks.test(val)) {
+                date = new Date(parseInt(val.replace(/\D/g, '')));
+            }
+
+            return date;
         }
 
         /**

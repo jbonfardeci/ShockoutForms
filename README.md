@@ -3,6 +3,9 @@
 
 Forget the frustrations of legacy InfoPath and XSL SharePoint form development. Leverage the power of Knockout's databinding plus SharePoint's REST services to create modern and truly dynamic web forms.
 
+###Compatibilty
+Compatible with SharePoint 2010 and 2013, Foundation, Standard, and Enterprise.
+
 ####Dependencies: 
 jQuery 1.72+, jQuery UI<any>, KnockoutJS 3.2+
 

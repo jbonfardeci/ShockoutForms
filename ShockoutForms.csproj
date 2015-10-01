@@ -46,6 +46,7 @@
   <ItemGroup>
     <None Include="content\shockout.spform.scss" />
     <Content Include="Shockout.SpForms.master" />
+    <Content Include="test.html" />
     <Content Include="web.config" />
     <None Include="web.Debug.config">
       <DependentUpon>web.config</DependentUpon>
@@ -59,7 +60,6 @@
     <Content Include="README.md" />
   </ItemGroup>
   <ItemGroup>
-    <Reference Include="Microsoft.SharePoint, Version=15.0.0.0, Culture=neutral, PublicKeyToken=71e9bce111e9429c, processorArchitecture=MSIL" />
     <Reference Include="System" />
     <Reference Include="System.Data" />
     <Reference Include="System.Data.DataSetExtensions" />
@@ -102,7 +102,7 @@
   <PropertyGroup Condition="'$(Configuration)' == 'Debug'">
     <TypeScriptRemoveComments>false</TypeScriptRemoveComments>
     <TypeScriptSourceMap>true</TypeScriptSourceMap>
-    <TypeScriptOutFile>ShockoutForms-0.0.1.js</TypeScriptOutFile>
+    <TypeScriptOutFile>ShockoutForms-0.0.2.js</TypeScriptOutFile>
     <TypeScriptTarget>ES5</TypeScriptTarget>
     <TypeScriptCompileOnSaveEnabled>True</TypeScriptCompileOnSaveEnabled>
     <TypeScriptNoImplicitAny>False</TypeScriptNoImplicitAny>

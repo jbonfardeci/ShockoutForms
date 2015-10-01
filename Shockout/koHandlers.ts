@@ -108,7 +108,6 @@
                 catch (e) {
                     var msg = 'Error in Knockout handler spPerson init(): ' + JSON.stringify(e);
                     Utils.logError(msg, Shockout.SPForm.errorLogListName);
-                    throw msg;
                 }
 
                 function onChangeSpPersonEvent(self, modelValue) {
@@ -163,28 +162,33 @@
         };
 
         ko.bindingHandlers['spDate'] = {
-            init: function (element, valueAccessor, allBindings, bindingContext) {
-                var modelValue = valueAccessor();
-                if (element.tagName.toLowerCase() != 'input' || $(element).attr('type') == 'hidden') { return; }/*stop if not an editable field */
-                $(element).datepicker().addClass('datepicker med').on('blur', onDateChange).on('change', onDateChange);
-                $(element).attr('placeholder', 'MM/DD/YYYY');
+            init: function (element, valueAccessor, allBindings, viewModel: IViewModel, bindingContext) {
+                var modelValue: KnockoutObservable<Date> = valueAccessor();
+
+                if (element.tagName.toLowerCase() != 'input' || $(element).attr('type') == 'hidden') { return; }// stop if not an editable field
+
+                $(element)
+                    .datepicker()
+                    .addClass('datepicker med')
+                    .attr('placeholder', 'MM/DD/YYYY')
+                    .on('blur', onDateChange)
+                    .on('change', onDateChange);
 
                 function onDateChange() {
-                    try {
-                        if ($.trim(this.value) == '') { modelValue(null); return; }
-                        modelValue(new Date(this.value));
-                    } catch (e) { modelValue(null); this.value = ''; }
+                    modelValue(Utils.parseDate(this.value));
                 };
             },
-            update: function (element, valueAccessor, allBindings, bindingContext) {
-                var viewModel = bindingContext.$data;
-                var modelValue = valueAccessor();
-                var value = ko.unwrap(modelValue);
+            update: function (element, valueAccessor, allBindings, viewModel: IViewModel, bindingContext) {
+                var modelValue: KnockoutObservable<Date> = valueAccessor();
+                var date: Date = Utils.parseDate( ko.unwrap(modelValue) );
                 var dateStr = '';
 
-                if (value && value != null) {
-                    var d: Date = new Date(value);
-                    dateStr = Utils.dateToLocaleString(d);
+                //console.info('ko.bindingHandlers.spDate.update: value is ...');
+                //console.info(date);
+
+                if (!!date && date != null) {
+                    dateStr = Utils.dateToLocaleString(date);
+                    //console.info('dateStr: ' + dateStr);
                 }
 
                 if ('value' in element) {
@@ -195,19 +199,17 @@
             }
         };
 
-        ko.bindingHandlers['spDateTime'] = {
-            init: function (element, valueAccessor, allBindings, bindingContext) {
-                if (element.tagName.toLowerCase() != 'input' || $(element).attr('type') == 'hidden') { return; }/*stop if not an editable field */
+        ko.bindingHandlers['_spDateTime'] = {
+            init: function (element, valueAccessor, allBindings, viewModel: IViewModel, bindingContext) {
 
-                var viewModel = bindingContext.$data
-                    , modelValue = valueAccessor()
-                    , value = ko.unwrap(modelValue)
+                if (element.tagName.toLowerCase() != 'input' || $(element).attr('type') == 'hidden') { return; }// stop if not an editable field
+
+                var modelValue: KnockoutObservable<Date> = valueAccessor()
                     , required
                     , $time
                     , $display
                     , $error
-                    , $element = $(element)
-                    ;
+                    , $element = $(element);
 
                 try {
 
@@ -221,23 +223,12 @@
                     $element.attr({
                         'placeholder': 'MM/DD/YYYY',
                         'maxlength': 10,
-                        'class': 'datepicker med'
-                    }).datepicker().on('change', function () {
+                        'class': 'datepicker med form-control'
+                    }).css('display', 'inline-block')
+                        .datepicker().on('change', function () {
                         try {
                             $error.hide();
-                            if (!Utils.isDate(this.value)) {
-                                $error.show();
-                                return;
-                            }
-                            var val = this.value;
-                            val = val.split('/');
-                            var m = val[0] - 1;
-                            var d = val[1] - 0;
-                            var y = val[2] - 0;
-                            var date = modelValue() == null ? new Date(y, m, d) : modelValue();
-                            date.setMonth(m);
-                            date.setDate(d);
-                            date.setYear(y);
+                            var date = Utils.parseDate(this.value);
                             modelValue(date);
                             $display.html(Utils.toDateTimeLocaleString(date));
                         }
@@ -249,50 +240,18 @@
                     $time = $("<input>", {
                         'type': 'text',
                         'maxlength': 8,
-                        'style': 'width:6em;',
-                        'class': (required ? 'required' : ''),
+                        'style': 'width:10em;display:inline-block;',
+                        'class': 'form-control',
                         'placeholder': 'HH:MM PM'
-                    }).insertAfter($element)
-                        .on('change', function () {
-                            try {
-                                $error.hide();
-                                var time = this.value.toString().toUpperCase().replace(/[^\d\:AMP\s]/g, '');
-                                this.value = time;
+                    });
+                    
+                    if (required) {
+                        $time.attr('required', 'required');
+                    }
 
-                                if (modelValue() == null) {
-                                    return;
-                                }
+                    $time.insertAfter($element);
 
-                                if (!Utils.isTime(time)) {
-                                    $error.show();
-                                    return;
-                                }
-
-                                var d = modelValue();
-                                var tt = time.replace(/[^AMP]/g, ''); // AM/PM
-                                var t = time.replace(/[^\d\:]/g, '').split(':');
-                                var h = t[0] - 0; //hours
-                                var m = t[1] - 0; //minutes
-
-                                if (tt == 'PM' && h < 12) {
-                                    h += 12; //convert to military time
-                                }
-                                else if (tt == 'AM' && h == 12) {
-                                    h = 0; //convert to military midnight
-                                }
-
-                                d.setHours(h);
-                                d.setMinutes(m);
-                                modelValue(d);
-
-                                $display.html(Utils.toDateTimeLocaleString(d));
-                                $error.hide();
-                            }
-                            catch (e) {
-                                $display.html(e);
-                                $error.show();
-                            }
-                        });
+                    $time.on('blur', onTimeChange).on('change', onTimeChange);
 
                     $time.before('<span> Time: </span>').after('<span class="no-print"> (HH:MM PM) </span>');
 
@@ -308,24 +267,64 @@
                     var msg = 'Error in Knockout handler spDateTime init(): ' + JSON.stringify(e);
                     Utils.logError(msg, Shockout.SPForm.errorLogListName);
                 }
+
+                function onTimeChange() {
+                    try {
+                        $error.hide();
+
+                        var date: Date = Utils.parseDate(modelValue());
+
+                        if (!!!date) { return; }
+
+                        var time = this.value.toString().toUpperCase().replace(/[^\d\:AMP\s]/g, '');
+                        this.value = time;
+
+                        if (!Utils.isTime(time)) {
+                            $error.show();
+                            return;
+                        }
+
+                        var tt = time.replace(/[^AMP]/g, ''); // AM/PM
+                        var t = time.replace(/[^\d\:]/g, '').split(':');
+                        var h = t[0] - 0; //hours
+                        var m = t[1] - 0; //minutes
+
+                        if (tt == 'PM' && h < 12) {
+                            h += 12; //convert to military time
+                        }
+                        else if (tt == 'AM' && h == 12) {
+                            h = 0; //convert to military midnight
+                        }
+
+                        date.setHours(h);
+                        date.setMinutes(m);
+                        modelValue(date);
+
+                        $display.html(date.toLocaleTimeString());
+                        $error.hide();
+                    }
+                    catch (e) {
+                        $display.html(e);
+                        $error.show();
+                    }
+                };
             },
-            update: function (element, valueAccessor, allBindings, bindingContext) {
-                var viewModel = bindingContext.$data
-                    , modelValue = valueAccessor()
-                    , value = ko.unwrap(modelValue)
-                    ;
+            update: function (element, valueAccessor, allBindings, viewModel: IViewModel, bindingContext) {
 
                 try {
-                    if (value && value != null) {
-                        var d: Date = new Date(value);
-                        var dateStr = Utils.dateToLocaleString(d);
-                        var timeStr = Utils.toTimeLocaleString(d);
+                    var modelValue: KnockoutObservable<Date> = valueAccessor();
+                    var date: Date = Utils.parseDate(ko.unwrap(modelValue));
+
+                    if (!!date) {
+                        var dateStr = date.toLocaleDateString();
+                        var timeStr = date.toLocaleTimeString();
 
                         if (element.tagName.toLowerCase() == 'input') {
                             element.value = dateStr;
                             element.$time.val(timeStr);
                             element.$display.html(dateStr + ' ' + timeStr);
-                        } else {
+                        }
+                        else {
                             element.innerHTML = dateStr + ' ' + timeStr;
                         }
                     }
@@ -338,7 +337,7 @@
         };
 
         ko.bindingHandlers['spMoney'] = {
-            'init': function (element, valueAccessor, allBindings, viewModel, bindingContext) {
+            'init': function (element, valueAccessor, allBindings, viewModel: IViewModel, bindingContext) {
 
                 /* stop if not an editable field */
                 if (element.tagName.toLowerCase() != 'input' || $(element).attr('type') == 'hidden') { return; }
@@ -451,5 +450,182 @@
             }
         };
 
+        ko.bindingHandlers['spDateTime'] = {
+            init: function (element, valueAccessor, allBindings, viewModel: IViewModel, bindingContext) {
+
+                if (element.tagName.toLowerCase() != 'input' || $(element).attr('type') == 'hidden') { return; }// stop if not an editable field
+
+                var modelValue: KnockoutObservable<Date> = valueAccessor()
+                    , required
+                    , $hh: JQuery
+                    , $mm: JQuery
+                    , $tt: JQuery
+                    , $display
+                    , $error
+                    , $element: JQuery = $(element)
+                    , $parent: JQuery = $element.parent()
+                    , $time: any;
+
+                try {
+
+                    var currentVal: Date = Utils.parseDate(modelValue());
+
+                    $display = $('<span>', { 'class': 'no-print', 'style': 'margin-left:1em;' }).insertAfter($element);
+                    $error = $('<span>', { 'class': 'error', 'html': 'Invalid Date-time', 'style': 'display:none;' }).insertAfter($element);
+                    element.$display = $display;
+                    element.$error = $error;
+
+                    required = $element.hasClass('required') || $element.attr('required') != null;
+
+                    $element.attr({
+                        'placeholder': 'MM/DD/YYYY',
+                        'maxlength': 10,
+                        'class': 'datepicker med form-control'
+                    }).css('display', 'inline-block').datepicker().on('change', function () {
+                            try {
+                                $error.hide();
+                                var currentVal: Date = Utils.parseDate(modelValue());
+                                var date = Utils.parseDate(this.value);                            
+
+                                if (!!currentVal) {
+                                    date.setUTCHours(currentVal.getUTCHours(), currentVal.getUTCMinutes(), currentVal.getUTCSeconds(), currentVal.getUTCMilliseconds());
+                                }
+
+                                modelValue(date);
+                            }
+                            catch (e) {
+                                $error.show();
+                            }
+                    });
+
+                    if (required) {
+                        $element.attr('required', 'required');
+                    }
+
+                    var timeHtml: Array<string> = [];
+
+                    // Hours 
+                    timeHtml.push('<select class="form-control select-hours" style="margin-left:1em;width:5em;display:inline-block;">');
+                    for (var i = 1; i <= 12; i++) {
+                        timeHtml.push('<option value="' + i + '">' + (i < 10 ? '0' + i : i) + '</option>');
+                    }
+                    timeHtml.push('</select>');
+
+                    timeHtml.push('<span> : </span>');
+                    
+                    // Minutes     
+                    timeHtml.push('<select class="form-control select-minutes" style="width:5em;display:inline-block;">');
+                    for (var i = 0; i < 60; i++) {
+                        timeHtml.push('<option value="' + i +'">' + (i < 10 ? '0'+i : i) + '</option>');
+                    }
+                    timeHtml.push('</select>');
+                         
+                    // TT: AM/PM
+                    timeHtml.push('<select class="form-control select-tt" style="margin-left:1em;width:5em;display:inline-block;"><option value="AM">AM</option><option value="PM">PM</option></select>');
+
+                    $element.after(timeHtml.join(''));
+
+                    $hh = $parent.find('.select-hours');
+                    $mm = $parent.find('.select-minutes');
+                    $tt = $parent.find('.select-tt');
+
+                    $hh.on('change', setDateTime);
+                    $mm.on('change', setDateTime);
+                    $tt.on('change', setDateTime);
+
+                    element.$hh = $hh;
+                    element.$mm = $mm;
+                    element.$tt = $tt;
+
+                    // set default time
+                    if (!!currentVal) {
+                        setDateTime();
+                    }
+                    else {
+                        $element.val('');
+                        $hh.val('12');
+                        $mm.val('0');
+                        $tt.val('AM');
+                    }
+
+                }
+                catch (e) {
+                    if (SPForm.DEBUG) {
+                        console.warn('Error in Knockout handler spDateTime init()...s');
+                        console.warn(e);
+                    }
+                }
+
+                function setDateTime(): void {
+                    try {
+                        var date: Date = Utils.parseDate($element.val());
+                        if (!!!date) {
+                            date = new Date();
+                        }
+                        var hrs: number = parseInt($hh.val());
+                        var min: number = parseInt($mm.val());
+                        var tt: string = $tt.val();
+
+                        if (tt == 'PM' && hrs < 12) {
+                            hrs += 12;
+                        }
+                        else if (tt == 'AM' && hrs > 11) {
+                            hrs -= 12;
+                        }
+
+                        var curDateTime: Date = new Date(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate(), hrs, min, 0, 0);
+                        modelValue(curDateTime);
+                    }
+                    catch (e) {
+                        if (SPForm.DEBUG) {
+                            console.warn(e);
+                        }
+                    }
+                }
+
+            },
+            update: function (element, valueAccessor, allBindings, viewModel: IViewModel, bindingContext) {
+
+                try {
+                    var modelValue: KnockoutObservable<Date> = valueAccessor();
+                    var date: Date = Utils.parseDate(ko.unwrap(modelValue));
+
+                    if (!!date) {
+                        var dateTimeStr: string = date.toLocaleString(); // Utils.toDateTimeLocaleString(date);
+
+                        if (element.tagName.toLowerCase() == 'input') {
+                            element.value = Utils.dateToLocaleString(date);
+                            var hrs = date.getHours();
+
+                            if (hrs > 12) {
+                                hrs -= 12;
+                                element.$tt.val('PM');
+                            }
+                            else if (hrs == 0) {
+                                hrs = 12;
+                                element.$tt.val('AM');
+                            }
+                            else if (hrs == 12) {
+                                element.$tt.val('PM');
+                            }
+                            else {
+                                element.$tt.val('AM');
+                            }
+
+                            element.$hh.val(hrs);
+                            element.$mm.val(date.getMinutes());
+                            element.$display.html(dateTimeStr);
+                        }
+                        else {
+                            element.innerHTML = dateTimeStr;
+                        }
+                    }
+                }
+                catch (e) {
+                    var msg = 'Error in Knockout handler spDateTime update(): ' + JSON.stringify(e);
+                    Utils.logError(msg, Shockout.SPForm.errorLogListName);
+                }
+            }
+        };
     }
 }

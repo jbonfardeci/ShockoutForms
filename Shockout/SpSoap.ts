@@ -21,6 +21,7 @@
                     user.jobtitle = $(node).attr('ows_JobTitle');
                     user.department = $(node).attr('ows_Department');
                     user.account = user.id + ';#' + user.title;
+                    user.groups = [];
                 });
 
                 callback(user);
@@ -90,14 +91,8 @@
 
         }
 
-        public static getListItems(siteUrl: string,
-            listName: string,
-            viewFields: string,
-            query: string,
-            callback: Function,
-            rowLimit: number = 25,
-            viewName: string = '<ViewName/>',
-            queryOptions: string = '<QueryOptions/>'): void {
+        public static getListItems(siteUrl: string, listName: string, viewFields: string, query: string, callback: Function, rowLimit: number = 25): void {
+            siteUrl = siteUrl == '' ? '/' : siteUrl;
 
             var packet = '<?xml version="1.0" encoding="utf-8"?>' +
                 '<soap:Envelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">' +
@@ -112,7 +107,7 @@
                 '</soap:Envelope>';
 
             var $jqXhr: JQueryXHR = $.ajax({
-                url: siteUrl + '/_vti_bin/lists.asmx',
+                url: siteUrl + '_vti_bin/lists.asmx',
                 type: 'POST',
                 dataType: 'xml',
                 data: packet,
@@ -132,15 +127,15 @@
 
         }
 
-        public static getList(siteUrl: string = '/', listName: string, callback: Function): void {
+        public static getList(siteUrl: string, listName: string, callback: Function): void {
 
-            siteUrl = siteUrl == '' ? '/' : siteUrl;
+            siteUrl = siteUrl == '/' ? '' : siteUrl;
 
             var packet = '<?xml version="1.0" encoding="utf-8"?><soap:Envelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/"><soap:Body><GetList xmlns="http://schemas.microsoft.com/sharepoint/soap/"><listName>{0}</listName></GetList></soap:Body></soap:Envelope>'
                 .replace('{0}', listName);
 
             var $jqXhr = $.ajax({
-                url: siteUrl + '_vti_bin/lists.asmx',
+                url: siteUrl + '/_vti_bin/lists.asmx',
                 type: 'POST',
                 cache: false,
                 dataType: "xml",
@@ -188,10 +183,10 @@
         */
         public static executeSoapRequest = function (action: string, packet: string, params: Array<any>, siteUrl: string = '/', callback: Function = undefined): void {
 
-            siteUrl = siteUrl == '' ? '/' : siteUrl;
+            siteUrl = siteUrl == '/' ? '' : siteUrl;
 
             try {
-                var serviceUrl: string = siteUrl + '_vti_bin/lists.asmx';
+                var serviceUrl: string = siteUrl + '/_vti_bin/lists.asmx';
 
                 if (params != null) {
                     for (var i = 0; i < params.length; i++) {

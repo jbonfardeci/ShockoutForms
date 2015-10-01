@@ -32,7 +32,8 @@ module Shockout {
             });
 
             $jqXhr.fail(function (jqXhr: JQueryXHR, status: string, error: string) {
-                callback(null, error);
+
+                callback(null, jqXhr.status); // '404'
             });
         }
 

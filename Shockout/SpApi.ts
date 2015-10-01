@@ -11,7 +11,7 @@
         */
         public static peopleSearch(term: string, callback: Function, take: number = 10): void {
 
-            var filter: string  = "startswith(Name,'{0}') or startswith(Department,'{0}') or startswith(JobTitle,'{0}') and Hidden eq false".replace(/\{0\}/g, term);
+            var filter: string  = "startswith(Name,'{0}')".replace(/\{0\}/g, term);
             var select: string  = null;
             var orderby: string = "Name";
             var top: number = 10;
@@ -81,10 +81,10 @@
         * @param always?: JQueryPromiseCallback<any> = undefined
         * @return void 
         */
-        public static getListItem(listName: string, itemId: number, callback: Function, siteUrl: string = '/', cache: boolean = false): void {
+        public static getListItem(listName: string, itemId: number, callback: Function, siteUrl: string = '', cache: boolean = false): void {
 
-            siteUrl = siteUrl == '' ? '/' : siteUrl;
-            var url: string = siteUrl + '_vti_bin/listdata.svc/' + Utils.toCamelCase(listName) + '(' + itemId + ')';
+            siteUrl = siteUrl == '/' ? '' : siteUrl;
+            var url: string = siteUrl + '/_vti_bin/listdata.svc/' + Utils.toCamelCase(listName) + '(' + itemId + ')';
 
             SpApi.executeRestRequest(url, fn, cache, 'GET');
 
@@ -102,11 +102,11 @@
         * @param always?: JQueryPromiseCallback<any> = undefined
         * @return void 
         */
-        public static getListItems(listName: string, callback: Function, siteUrl: string = '/', filter: string = null, select: string = null, orderby: string = null, top: number = 10, cache: boolean = false): void {
+        public static getListItems(listName: string, callback: Function, siteUrl: string = '', filter: string = null, select: string = null, orderby: string = null, top: number = 10, cache: boolean = false): void {
 
-            siteUrl = siteUrl == '' ? '/' : siteUrl;
+            siteUrl = siteUrl == '/' ? '' : siteUrl;
 
-            var url: Array<string> = [siteUrl + '_vti_bin/listdata.svc/' + Utils.toCamelCase(listName)];
+            var url: Array<string> = [siteUrl + '/_vti_bin/listdata.svc/' + Utils.toCamelCase(listName)];
 
             if (!!filter) { url.push('$filter='+filter); }
 

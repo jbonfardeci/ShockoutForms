@@ -26,13 +26,14 @@
         
         public static historyTemplate: string = '<h4>Workflow History</h4>' +
             '<div class="row">' +
-            '<div class="col-md-8 col-xs-8"><strong>Description</strong></div>' +
-            '<div class="col-md-4 col-xs-4"><strong>Date</strong></div>' +
+            '<div class="col-md-6 col-xs-6"><strong>Description</strong></div>' +
+            '<div class="col-md-6 col-xs-6"><strong>Date</strong></div>' +
             '</div>' +
-            '<div class="row" data-bind="foreach: {0}">' +
-            '<div data-bind="text: {1}" class="col-md-8 col-xs-8"></div>' +
-            '<div data-bind="spDateTime: {2}" class="col-md-4 col-xs-4"></div>' +
-            '</div>';
+            '<div data-bind="foreach: historyItems">' + 
+            '<div class="row">' +
+            '<div class="col-md-6 col-xs-6"><span data-bind="text: _description"></span></div>' +
+            '<div class="col-md-6 col-xs-6"><span data-bind="spDateTime: _dateOccurred"></span></div>' +
+            '</div></div>';
 
         public static userProfileTemplate = '<h4>{header}</h4>' +
             '<img src="{pictureurl}" alt="{name}" />' +
@@ -63,16 +64,8 @@
         }
 
         public static getHistoryTemplate(): JQuery {
-            var template: string = Templates.historyTemplate.replace(/\{0\}/g, ViewModel.historyKey)
-                        .replace(/\{1\}/g, ViewModel.historyDescriptionKey)
-                        .replace(/\{2\}/g, ViewModel.historyDateKey);
-
-            var $el = $('<section>', {
-                'id': 'workflowHistory',
-                'html': template,
-                'data-bind': 'visible: {0}().length > 0'.replace(/\{0\}/, ViewModel.historyKey)
-            });
-
+            var $el = $('<section>', {'id': 'workflowHistory'});
+            $el.html(Templates.historyTemplate);
             return $el;
         }
 
