@@ -166,6 +166,7 @@ var Shockout;
                 account: null,
                 jobtitle: null,
                 department: null,
+                isAdmin: false,
                 groups: []
             };
             this.itemId = null;
@@ -747,6 +748,9 @@ var Shockout;
             Shockout.SpApi.getListItem(self.listName, self.itemId, callback, self.siteUrl);
             function callback(data, error) {
                 if (!!error) {
+                    if (/not found/i.test(error + '')) {
+                        self.showDialog("The form with ID " + self.itemId + " doesn't exist or it was deleted.");
+                    }
                     self.nextAsync(false, error);
                     return;
                 }
@@ -987,12 +991,8 @@ var Shockout;
                             console.info('Retrieved multichoice data for ' + key + '...');
                             console.info(data);
                         }
-                        var json = data.d || data;
-                        if ('results' in json) {
-                            json = json.results;
-                        }
                         var values = [];
-                        $.each(json, function (i, choice) {
+                        $.each(data.d.results, function (i, choice) {
                             values.push(choice.Value);
                         });
                         vm[key](values);
@@ -2824,14 +2824,18 @@ var Shockout;
                 }
             }
         };
+        // 1. REST returns UTC
+        // 2. getUTCHours converts UTC to Locale
         ko.bindingHandlers['spDateTime'] = {
             init: function (element, valueAccessor, allBindings, viewModel, bindingContext) {
                 if (element.tagName.toLowerCase() != 'input' || $(element).attr('type') == 'hidden') {
                     return;
                 } // stop if not an editable field
-                var modelValue = valueAccessor(), required, $hh, $mm, $tt, $display, $error, $element = $(element), $parent = $element.parent(), $time;
+                var modelValue = valueAccessor(), required, $hh, $mm, $tt, $display, $error, $element = $(element), $parent = $element.parent();
                 try {
                     var currentVal = Shockout.Utils.parseDate(modelValue());
+                    modelValue(currentVal); // just in case it was a string date
+                    var koName = Shockout.Utils.koNameFromControl(element);
                     $display = $('<span>', { 'class': 'no-print', 'style': 'margin-left:1em;' }).insertAfter($element);
                     $error = $('<span>', { 'class': 'error', 'html': 'Invalid Date-time', 'style': 'display:none;' }).insertAfter($element);
                     element.$display = $display;
@@ -2844,12 +2848,9 @@ var Shockout;
                     }).css('display', 'inline-block').datepicker().on('change', function () {
                         try {
                             $error.hide();
-                            var currentVal = Shockout.Utils.parseDate(modelValue());
                             var date = Shockout.Utils.parseDate(this.value);
-                            if (!!currentVal) {
-                                date.setUTCHours(currentVal.getUTCHours(), currentVal.getUTCMinutes(), currentVal.getUTCSeconds(), currentVal.getUTCMilliseconds());
-                            }
                             modelValue(date);
+                            $display.html(Shockout.Utils.toDateTimeLocaleString(date));
                         }
                         catch (e) {
                             $error.show();
@@ -2858,7 +2859,7 @@ var Shockout;
                     if (required) {
                         $element.attr('required', 'required');
                     }
-                    var timeHtml = [];
+                    var timeHtml = ['<span class="glyphicon glyphicon-calendar" style="margin-left:.2em;"></span>'];
                     // Hours 
                     timeHtml.push('<select class="form-control select-hours" style="margin-left:1em;width:5em;display:inline-block;">');
                     for (var i = 1; i <= 12; i++) {
@@ -2901,6 +2902,7 @@ var Shockout;
                         console.warn(e);
                     }
                 }
+                // must conver user's locale date/time to UTC for SP
                 function setDateTime() {
                     try {
                         var date = Shockout.Utils.parseDate($element.val());
@@ -2916,7 +2918,12 @@ var Shockout;
                         else if (tt == 'AM' && hrs > 11) {
                             hrs -= 12;
                         }
-                        var curDateTime = new Date(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate(), hrs, min, 0, 0);
+                        // SP saves date/time in UTC
+                        var curDateTime = new Date();
+                        curDateTime.setUTCFullYear(date.getFullYear());
+                        curDateTime.setUTCMonth(date.getMonth());
+                        curDateTime.setUTCDate(date.getDate());
+                        curDateTime.setUTCHours(hrs, min, 0, 0);
                         modelValue(curDateTime);
                     }
                     catch (e) {
@@ -2930,11 +2937,18 @@ var Shockout;
                 try {
                     var modelValue = valueAccessor();
                     var date = Shockout.Utils.parseDate(ko.unwrap(modelValue));
+                    if (typeof modelValue == 'function') {
+                        modelValue(date); // just in case it was a string date 
+                    }
                     if (!!date) {
-                        var dateTimeStr = date.toLocaleString(); // Utils.toDateTimeLocaleString(date);
+                        var dateTimeStr = Shockout.Utils.toDateTimeLocaleString(date); // convert from UTC to locale
+                        // add time zone
+                        dateTimeStr += /\b\s\(\w+\s\w+\s\w+\)/i.exec(date.toString())[0];
                         if (element.tagName.toLowerCase() == 'input') {
-                            element.value = Shockout.Utils.dateToLocaleString(date);
-                            var hrs = date.getHours();
+                            element.value = (date.getUTCMonth() + 1) + '/' + date.getUTCDate() + '/' + date.getUTCFullYear();
+                            var hrs = date.getUTCHours(); // converts UTC hours to locale hours
+                            var min = date.getUTCMinutes();
+                            // set TT based on military hours
                             if (hrs > 12) {
                                 hrs -= 12;
                                 element.$tt.val('PM');
@@ -2950,7 +2964,7 @@ var Shockout;
                                 element.$tt.val('AM');
                             }
                             element.$hh.val(hrs);
-                            element.$mm.val(date.getMinutes());
+                            element.$mm.val(min);
                             element.$display.html(dateTimeStr);
                         }
                         else {
@@ -3052,8 +3066,18 @@ var Shockout;
             var url = siteUrl + '/_vti_bin/listdata.svc/' + Shockout.Utils.toCamelCase(listName) + '(' + itemId + ')';
             SpApi.executeRestRequest(url, fn, cache, 'GET');
             function fn(data, error) {
-                var data = 'd' in data ? data.d : data;
-                callback(data, error);
+                if (!!error) {
+                    callback(data, error);
+                    return;
+                }
+                if (!!data) {
+                    if (data.d) {
+                        callback(data.d);
+                    }
+                    else {
+                        callback(data);
+                    }
+                }
             }
             ;
         };

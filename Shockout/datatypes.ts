@@ -49,6 +49,7 @@
         account: string;
         jobtitle: string;
         department: string;
+        isAdmin: boolean;
         groups: Array<any>;
     }
 

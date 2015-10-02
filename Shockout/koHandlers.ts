@@ -312,6 +312,8 @@
             }
         };
 
+        // 1. REST returns UTC
+        // 2. getUTCHours converts UTC to Locale
         ko.bindingHandlers['spDateTime'] = {
             init: function (element, valueAccessor, allBindings, viewModel: IViewModel, bindingContext) {
 
@@ -326,11 +328,13 @@
                     , $error
                     , $element: JQuery = $(element)
                     , $parent: JQuery = $element.parent()
-                    , $time: any;
+                    ;
 
                 try {
 
                     var currentVal: Date = Utils.parseDate(modelValue());
+                    modelValue(currentVal); // just in case it was a string date
+                    var koName = Utils.koNameFromControl(element);
 
                     $display = $('<span>', { 'class': 'no-print', 'style': 'margin-left:1em;' }).insertAfter($element);
                     $error = $('<span>', { 'class': 'error', 'html': 'Invalid Date-time', 'style': 'display:none;' }).insertAfter($element);
@@ -344,27 +348,22 @@
                         'maxlength': 10,
                         'class': 'datepicker med form-control'
                     }).css('display', 'inline-block').datepicker().on('change', function () {
-                            try {
-                                $error.hide();
-                                var currentVal: Date = Utils.parseDate(modelValue());
-                                var date = Utils.parseDate(this.value);                            
-
-                                if (!!currentVal) {
-                                    date.setUTCHours(currentVal.getUTCHours(), currentVal.getUTCMinutes(), currentVal.getUTCSeconds(), currentVal.getUTCMilliseconds());
-                                }
-
-                                modelValue(date);
-                            }
-                            catch (e) {
-                                $error.show();
-                            }
+                        try {
+                            $error.hide();
+                            var date: Date = Utils.parseDate(this.value);
+                            modelValue(date);
+                            $display.html(Utils.toDateTimeLocaleString(date));
+                        }
+                        catch (e) {
+                            $error.show();
+                        }
                     });
 
                     if (required) {
                         $element.attr('required', 'required');
                     }
 
-                    var timeHtml: Array<string> = [];
+                    var timeHtml: Array<string> = ['<span class="glyphicon glyphicon-calendar" style="margin-left:.2em;"></span>'];
 
                     // Hours 
                     timeHtml.push('<select class="form-control select-hours" style="margin-left:1em;width:5em;display:inline-block;">');
@@ -418,6 +417,7 @@
                     }
                 }
 
+                // must conver user's locale date/time to UTC for SP
                 function setDateTime(): void {
                     try {
                         var date: Date = Utils.parseDate($element.val());
@@ -435,7 +435,12 @@
                             hrs -= 12;
                         }
 
-                        var curDateTime: Date = new Date(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate(), hrs, min, 0, 0);
+                        // SP saves date/time in UTC
+                        var curDateTime: Date = new Date();
+                        curDateTime.setUTCFullYear(date.getFullYear());
+                        curDateTime.setUTCMonth(date.getMonth());
+                        curDateTime.setUTCDate(date.getDate());
+                        curDateTime.setUTCHours(hrs, min, 0, 0);
                         modelValue(curDateTime);
                     }
                     catch (e) {
@@ -452,13 +457,21 @@
                     var modelValue: KnockoutObservable<Date> = valueAccessor();
                     var date: Date = Utils.parseDate(ko.unwrap(modelValue));
 
+                    if (typeof modelValue == 'function') {
+                        modelValue(date); // just in case it was a string date 
+                    }
+
                     if (!!date) {
-                        var dateTimeStr: string = date.toLocaleString(); // Utils.toDateTimeLocaleString(date);
-
+                        var dateTimeStr: string = Utils.toDateTimeLocaleString(date); // convert from UTC to locale
+                        // add time zone
+                        dateTimeStr += /\b\s\(\w+\s\w+\s\w+\)/i.exec(date.toString())[0];
+                        
                         if (element.tagName.toLowerCase() == 'input') {
-                            element.value = Utils.dateToLocaleString(date);
-                            var hrs = date.getHours();
+                            element.value = (date.getUTCMonth()+1) + '/' + date.getUTCDate() + '/' + date.getUTCFullYear();
+                            var hrs: number = date.getUTCHours(); // converts UTC hours to locale hours
+                            var min: number = date.getUTCMinutes(); 
 
+                            // set TT based on military hours
                             if (hrs > 12) {
                                 hrs -= 12;
                                 element.$tt.val('PM');
@@ -475,7 +488,7 @@
                             }
 
                             element.$hh.val(hrs);
-                            element.$mm.val(date.getMinutes());
+                            element.$mm.val(min);
                             element.$display.html(dateTimeStr);
                         }
                         else {

@@ -6,8 +6,8 @@ $white: #fff;
 $grey: #ccc;
 $lt-grey: #efefef;
 $md-grey: #777;
-$dk-grey: #555;
-$yellow: #fc0;
+$dk-grey: #333;
+$yellow: #FAD42E;
 $black: #000;
 $pink: #FF7171;
 $lt-pink: #FF9797;
@@ -25,12 +25,6 @@ $lt-pink: #FF9797;
 
     .sp-form{
         
-        .has-error {
-            .required, *[required] {
-                border-color: $red;
-            }
-        }
-
         .req{
             color: $red;
             padding: 0 5px;
@@ -178,6 +172,7 @@ $lt-pink: #FF9797;
             
             > h4 {
             	font-size:1em;
+                font-weight:bold;
             	color:$blue;
                 width: auto;
                 padding: 5px;
@@ -186,7 +181,7 @@ $lt-pink: #FF9797;
                 position: absolute;
                 left: 10px;
                 top: -14px;
-                border:1px solid $grey;
+                /*border:1px solid $grey;*/
                 border-radius: 3px;
             }
 
@@ -204,6 +199,24 @@ $lt-pink: #FF9797;
             }
 
             em{font-weight:bold; font-size:.7em; font-style:oblique; color:$blue;}
+
+            .form-group{
+                padding:.4em;
+                margin-bottom:.2em;
+            }
+
+            > .form-group:nth-child(even){
+                background-color: aliceblue;
+                input, input.form-control{
+                    background-color:$white;
+                    color:$dk-grey;
+                }
+                border-radius:4px;
+            }
+
+            .form-group.has-feedback label~.form-control-feedback {
+                top: 2.2em;
+            }
         }
 
         label{font-size:.9em; margin-right:.4em;}
@@ -306,6 +319,42 @@ $lt-pink: #FF9797;
             .btn{margin-right:1em; margin-bottom:1em;}
         }
 
+        /*boostrap overrides*/
+
+        .highlight{
+            background-color:#ff9 !important;
+            padding:.5em;
+            color:$dk-grey;
+            label, label.control-label{
+                color:$dk-grey;
+            }
+            input, input.form-control, textarea{
+                background-color:$white;
+            }
+        }
+
+        .has-error {
+            .required, *[required] {
+                border-color: $red;
+            }
+        }
+
+        .has-feedback select.form-control {
+            padding:0;
+        }
+
+        .has-success{
+            .form-control{
+                border-color:$blue;
+            }
+            .control-label{
+                color:$dk-grey;
+            }
+        }
+
+        .row{
+            margin-left:0;
+        }
     }/*.sp-form*/
 }
 

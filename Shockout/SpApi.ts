@@ -89,8 +89,19 @@
             SpApi.executeRestRequest(url, fn, cache, 'GET');
 
             function fn(data: any, error) {
-                var data = 'd' in data ? data.d : data;
-                callback(data, error);
+                if (!!error) {
+                    callback(data, error);
+                    return;
+                }
+
+                if (!!data) {
+                    if (data.d) {
+                        callback(data.d);
+                    }
+                    else {
+                        callback(data);
+                    }
+                }
             };
         }
 

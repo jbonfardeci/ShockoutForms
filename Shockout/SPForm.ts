@@ -182,6 +182,7 @@ module Shockout {
             account: null,
             jobtitle: null,
             department: null,
+            isAdmin: false,
             groups: []
         };
       
@@ -856,6 +857,9 @@ module Shockout {
 
             function callback(data: ISpItem, error: string) {
                 if (!!error) {
+                    if (/not found/i.test(error + '')) {
+                        self.showDialog("The form with ID " + self.itemId + " doesn't exist or it was deleted.");
+                    }
                     self.nextAsync(false, error);
                     return;
                 }
@@ -1134,13 +1138,8 @@ module Shockout {
                             console.info(data);
                         }
 
-                        var json: any = data.d || data;
-                        if ('results' in json) {
-                            json = json.results;
-                        }
-
                         var values: Array<any> = [];
-                        $.each(json, function (i: number, choice: ISpMultichoiceValue) {
+                        $.each(data.d.results, function (i: number, choice: ISpMultichoiceValue) {
                             values.push(choice.Value);
                         });
                         vm[key](values);
