@@ -13,7 +13,7 @@
                 .replace(/[^A-Za-z0-9\s]/g, '')
                 .replace(/\s[A-Za-z]/g, function (x) {
                     return x[1].toUpperCase();
-                });
+                }).replace(/\s/g, '');
         }
 
         /**

@@ -21,6 +21,24 @@ $lt-pink: #FF9797;
 
     .container, .container-fluid{
         padding-top:3em;
+
+        a.back-to-top{
+            display:block;
+            font-size:1.4em;
+            background-color:$red;
+            padding:.5em .7em;
+            position:fixed;
+            bottom:2em;
+            right:1em;
+            border-radius:7px;
+            cursor:pointer;
+            color:#fff;
+            text-align:center;
+            box-shadow:rgba(0,0,0,0.4) 5px 5px 10px;
+        }
+	        a.back-to-top:visited {
+                color:#fff;
+	        }
     }
 
     .sp-form{
@@ -355,7 +373,17 @@ $lt-pink: #FF9797;
         .row{
             margin-left:0;
         }
+
+        .right{
+            text-align:right !important;
+        }
+
     }/*.sp-form*/
+
+    .sp-form .indent{
+        margin-left:2em;
+    }
+ 
 }
 
 
