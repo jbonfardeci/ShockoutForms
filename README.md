@@ -213,9 +213,9 @@ Simply add the `required="required"` attribute to required fields. Shockout will
 ##Knockout SharePoint Field Binding Handlers
 You may use these binding handlers with any HTML element. Shockout will render the apporpriate content whether it's a static element such as a DIV, SPAN, etc. or an input field: INPUT, SELECT, and TEXTAREA.
 	
-####spHtml
+####data-sp-html
 ```
-<textarea data-bind="value: Comments, spHtml: ''"></textarea>
+<textarea data-bind="value: Comments" data-sp-html></textarea>
 ``` 
 
 ####spPerson
