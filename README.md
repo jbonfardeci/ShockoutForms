@@ -373,15 +373,7 @@ jQuery 1.72+, jQuery UI<any>
 
                     It's recommended to set a workflow or an alert on this list to notify you as soon as an error is logged.
 
-                ##Navigation Menu
-                If Shockout finds at least one element with the class `nav-section` with an H4 first-child, it will prepend a navigation menu and a back-to-top button to the bottom of your form.
-                For example:
-                ```
-                <section class="nav-section">
-                    <h4>My Section Title</h4>
-                    <!-- section content here -->
-                </section>
-                ```
+                
 
                 ##Browser Compatibility
                 Shockout SPForms has been successfully tested with IE 9-11 and the latest versions of Chrome and FireFox.
