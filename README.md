@@ -56,6 +56,7 @@ If you've spent any time implementing rules in InfoPath, you have probably becom
 
 <!-- Setup your form - this goes at the bottom of your form's page -->
 <script type="text/javascript">
+(function(){
 	var spForm = new Shockout.SPForm(
 		/*listName:*/ 'My SharePoint List Name', 
 		/*formId:*/ 'my-form-ID', 
@@ -80,6 +81,8 @@ If you've spent any time implementing rules in InfoPath, you have probably becom
 			siteUrl: '', // default       
 			workflowHistoryListName: 'Workflow History' // the default
 		});
+
+})();
 </script>
 ```
 
