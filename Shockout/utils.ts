@@ -123,7 +123,7 @@
   
             // Clone each property.
             for (var prop in objectToBeCloned) {
-                objectClone[prop] = this.clone(objectToBeCloned[prop]);
+                objectClone[prop] = Utils.clone(objectToBeCloned[prop]);
             }
 
             return objectClone;
