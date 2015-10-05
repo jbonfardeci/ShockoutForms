@@ -1357,6 +1357,11 @@ module Shockout {
             });
         }
 
+        /**
+        * Add a navigation menu to the form based on parent elements with class `nav-section`
+        * @param salef: SPForm
+        * @return void
+        */
         setupNavigation(self: SPForm): void {
 
             // Set up a navigation menu at the top of the form if there are elements with the class `nav-section`.
@@ -1431,6 +1436,12 @@ module Shockout {
 
         }
 
+        /**
+        * Get the form's attachments
+        * @param self: SFForm
+        * @param callback: Function (optional)
+        * @return void
+        */
         getAttachments(self: SPForm = undefined, callback: Function = undefined): void {
             self = self || this;
 
@@ -1507,8 +1518,6 @@ module Shockout {
                 setTimeout(function () { self.$dialog.dialog('close'); }, timeout);
             }
         }
-
-        
 
         /**
         * Validate the View Model's required fields
