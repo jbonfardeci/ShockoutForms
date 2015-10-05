@@ -46,68 +46,87 @@
             <!--Item List-->
             <section class="nav-section">
 			    <h4>Item List</h4>
-			    <table>
-				    <thead>				
-					    <tr data-author-only="">
-						    <td colspan="6" class="right">
-							    <button data-bind="click: toggle_edit" class="btn btn-primary"><span data-bind="visible: !edit()">Edit</span><span data-bind="visible: edit()">Stop Editing</span></button>&nbsp;
-							    <button data-bind="click: additem" class="btn btn-success"><span>+ Add Item</span></button>
-						    </td>
-					    </tr>					
-					    <tr>
-						    <th>Specific Item(s) Requested</th>
-						    <th>Product/Code</th>
-						    <th>Quantity</th>
-						    <th>Per Unit Cost</th>
-						    <th>Item Total</th>
-						    <th>&nbsp;</th>
-					    </tr>
-				    </thead>
-				    <tbody data-bind="foreach: items">
-					    <tr>
-						    <td><input type="text" data-bind="value: item, visible: $root.edit()" class="long" /><span data-bind="text: item, visible: !$root.edit()"></span></td>
-						    <td><input type="text" data-bind="value: code, visible: $root.edit()" class="short" /><span data-bind="text: code, visible: !$root.edit()"></span></td>
-						    <td class="number"><input type="text" data-bind="spNumber: quantity, visible: $root.edit()" /><span data-bind="spNumber: quantity, visible: !$root.edit()"></span></td>
-						    <td class="number"><input type="text" data-bind="spMoney: cost, visible: $root.edit()" /><span data-bind="spMoney: cost, visible: !$root.edit()"></span></td>
-						    <td data-bind="spMoney: (quantity() * cost())" class="number"></td>
-						    <td><button class="btn btn-danger" data-bind="click: $root._delitem, visible: $root.edit()"><span class="glyphicon glyphicon-trash"></span></button></td>
-					    </tr>
-				    </tbody>
-				    <tfoot>
-					    <tr>
-						    <td colspan="4" class="right">Subtotal</td>
-						    <td class="number" ><span data-bind="spMoney: subtotal"></span></td>
-						    <td>&nbsp;</td>
-					    </tr>
-					    <tr>
-						    <td colspan="4" class="right">Shipping Charge</td>
-						    <td class="number"><input type="text" data-bind="spMoney: shipping, visible: edit()" class="number" /><span data-bind="spMoney: shipping, visible: !edit()"></span></td>
-						    <td>&nbsp;</td>
-					    </tr>
-					    <tr>
-						    <td colspan="4" class="right">Tax &ndash; Percentage: <strong>8.125%</strong> OR Flat Amount: <strong>#.##</strong></td>
-						    <td class="number" ><input type="text" data-bind="value: tax, visible: edit()" class="number" /><span data-bind="text: tax, visible: !edit()"></span></td>
-						    <td>&nbsp;</td>
-					    </tr>
-					    <tr>
-						    <td colspan="4" class="right">Total Tax</td>
-						    <td class="number" ><span data-bind="spMoney: total_tax"></span></td>
-						    <td>&nbsp;</td>
-					    </tr>
-					    <tr>
-						    <td colspan="4" class="right bold">Total</td>
-						    <td class="bold total number"><span data-bind="spMoney: total"></span></td>
-						    <td>&nbsp;</td>
-					    </tr>
+
+                <div>
+
+                    <div class="right" data-author-only="">
+                        <button data-bind="click: toggle_edit" class="btn btn-primary"><span data-bind="visible: !edit()">Edit</span><span data-bind="visible: edit()">Stop Editing</span></button>&nbsp;
+					    <button data-bind="click: add_item" class="btn btn-success"><span>+ Add Item</span></button>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-3 col-xs-3"><strong>Specific Item(s) Requested</strong></div>
+					    <div class="col-md-2 col-xs-2"><strong>Product/Code</strong></div>
+					    <div class="col-md-2 col-xs-2"><strong>Quantity</strong></div>
+					    <div class="col-md-2 col-xs-2"><strong>Per Unit Cost</strong></div>
+					    <div class="col-md-2 col-xs-2"><strong>Item Total</strong></div>
+					    <div class="col-md-1 col-xs-1">&nbsp;</div>
+                    </div>
+
+                    <!-- ko foreach: items -->
+                    <div class="row item" data-bind="css: {'even': $index() % 2 != 0}">
+                        <div class="col-md-3 col-xs-3">
+                            <input type="text" data-bind="value: item, visible: $root.edit()" class="form-control" />
+                            <span data-bind="text: item, visible: !$root.edit()"></span>
+                        </div>
+					    <div class="col-md-2 col-xs-2">
+                            <input type="text" data-bind="value: code, visible: $root.edit()" class="form-control short" />
+                            <span data-bind="text: code, visible: !$root.edit()"></span>
+					    </div>
+					    <div class="col-md-2 col-xs-2 right">
+                            <input type="text" data-bind="spNumber: quantity, visible: $root.edit()" class="form-control short" />
+                            <span data-bind="spNumber: quantity, visible: !$root.edit()"></span>
+					    </div>
+					    <div class="col-md-2 col-xs-2 right">
+                            <input type="text" data-bind="spMoney: cost, visible: $root.edit()" class="form-control short" />
+                            <span data-bind="spMoney: cost, visible: !$root.edit()"></span>
+					    </div>
+					    <div class="col-md-2 col-xs-2 right" data-bind="spMoney: (quantity() * cost())"></div>
+					    <div class="col-md-1 col-xs-1 right">
+                            <button class="btn btn-sm btn-danger" data-bind="click: $root.del_item, visible: $root.edit()" data-author-only=""><span class="glyphicon glyphicon-trash"></span></button>
+					    </div>
+                    </div>
+                    <!-- /ko -->
+
+				    <div class="row">
+					    <div class="col-md-9 col-xs-9 right">Subtotal</div>
+					    <div class="col-md-2 col-xs-2 right"><span data-bind="spMoney: subtotal"></span></div>
+					    <div class="col-md-1 col-xs-1">&nbsp;</div>
+				    </div>
+				    <div class="row">
+					    <div class="col-md-9 col-xs-9 right">Shipping Charge</div>
+					    <div class="col-md-2 col-xs-2 right">
+                            <input type="text" data-bind="spMoney: shipping, visible: edit()" class="form-control short" />
+                            <span data-bind="spMoney: shipping, visible: !edit()"></span>
+					    </div>
+					    <div class="col-md-1 col-xs-1">&nbsp;</div>
+				    </div>
+				    <div class="row">
+					    <div class="col-md-9 col-xs-9 right">Tax &ndash; Percentage: <strong>8.125%</strong> OR Flat Amount: <strong>#.##</strong></div>
+					    <div class="col-md-2 col-xs-2 right">
+                            <input type="text" data-bind="value: tax, visible: edit()" class="form-control short" />
+                            <span data-bind="text: tax, visible: !edit()"></span>
+					    </div>
+					    <div class="col-md-1 col-xs-1">&nbsp;</div>
+				    </div>
+				    <div class="row">
+					    <div class="col-md-9 col-xs-9 right">Total Tax</div>
+					    <div class="col-md-2 col-xs-2 right"><span data-bind="spMoney: total_tax"></span></div>
+					    <div class="col-md-1 col-xs-1">&nbsp;</div>
+				    </div>
+				    <div class="row">
+					    <div class="col-md-9 col-xs-9 right"><strong>Total</strong></div>
+					    <div class="col-md-2 col-xs-2 right"><strong data-bind="spMoney: total"></strong></div>
+					    <div class="col-md-1 col-xs-1">&nbsp;</div>
+				    </div>
 					
-					    <tr data-author-only="">
-						    <td colspan="6" class="right">
-							    <button data-bind="click: toggle_edit" class="btn btn-primary"><span data-bind="visible: !edit()">Edit</span><span data-bind="visible: edit()">Stop Editing</span></button>&nbsp;
-							    <button data-bind="click: additem" class="btn btn-success"><span>+ Add Item</span></button>
-						    </td>					
-					    </tr>		
-				    </tfoot>
-			    </table>
+				    <div class="right" data-author-only="">
+					    <button data-bind="click: toggle_edit" class="btn btn-primary"><span data-bind="visible: !edit()">Edit</span><span data-bind="visible: edit()">Stop Editing</span></button>&nbsp;
+					    <button data-bind="click: add_item" class="btn btn-success"><span>+ Add Item</span></button>				
+				    </div>		
+
+                </div>
+		
 		    </section>
 
             <section class="nav-section">
