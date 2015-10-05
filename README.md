@@ -144,45 +144,45 @@ The Knockout framework features a `with` directive which makes it very convenien
 
 ###Displaying a SharePoint Checkbox Field (Boolean)
 ```
-<div class="form-group" data-bind="with: MySpFieldName._metadata">
+<div class="form-group">
 	<label class="checkbox">
-        <input type="checkbox" data-bind="checked: $parent" />
-        <span data-bind="text: displayName"></span>
+        <input type="checkbox" data-bind="checked: MySpFieldName" />
+        <span data-bind="text: MySpFieldName._displayName"></span>
     </label>
 
 	<!-- optional Field Description -->
-	<p data-bind="text: description"></p>
+	<p data-bind="text: MySpFieldName._description"></p>
 </div>
 ```
 
 ###Displaying SharePoint Choice Fields - Select Menu
 How to display the choices from a SharePoint Choice Field in a select menu.
 ```
-<div class="form-group" data-bind="with: MySpFieldName._metadata">
-	<label data-bind="text: displayName, attr:{'for': name}" class="control-label"></label>
+<div class="form-group">
+	<label data-bind="text: MySpFieldName._displayName" class="control-label" for="MySpFieldName"></label>
 	
-	<select data-bind="value: $parent, attr:{'placeholder': displayName, 'id': name}, options: choices, optionsValue: 'value', optionsCaption: '--SELECT--'" class="form-control"></select>
+	<select data-bind="value: MySpFieldName, attr:{'placeholder': MySpFieldName._displayName}, options: MySpFieldName._choices, optionsValue: 'value', optionsCaption: '--SELECT--'" id="MySpFieldName" class="form-control"></select>
 
 	<!-- optional Field Description -->
-	<p data-bind="text: description"></p>
+	<p data-bind="text: MySpFieldName._description"></p>
 </div>
 ```
 
 ###Displaying SharePoint MultiChoice Fields - Checkboxes
 How to display the choices from a SharePoint MultiChoice Field with checkboxes.
 ```
-<div class="form-group" data-bind="with: MySpFieldName._metadata">
-	<label data-bind="text: displayName" class="control-label"></label>
+<div class="form-group">
+	<label data-bind="text: MySpFieldName._displayName" class="control-label"></label>
 				
-	<!-- ko foreach: choices -->
+	<!-- ko foreach: MySpFieldName._choices -->
 	<label class="radio">
-		<input type="checkbox" data-bind="checked: $parent.$parent, attr: { value: $data.value }" />
+		<input type="checkbox" data-bind="checked: $root.MySpFieldName, attr: { value: $data.value }" />
 		<span data-bind="text: $data.value"></span>
 	</label>
 	<!-- /ko -->   
 					
 	<!-- optional Field Description -->
-	<p data-bind="text: description"></p>          
+	<p data-bind="text: MySpFieldName._description"></p>          
 </div>
 
 ```
@@ -190,18 +190,18 @@ How to display the choices from a SharePoint MultiChoice Field with checkboxes.
 ###Displaying SharePoint MultiChoice Fields - Radio Buttons
 How to display the choices from a SharePoint MultiChoice Field with radio buttons.
 ```
-<div class="form-group" data-bind="with: MySpFieldName._metadata">
-	<label data-bind="text: displayName" class="control-label"></label>
+<div class="form-group">
+	<label data-bind="text: MySpFieldName._displayName" class="control-label"></label>
 				
-	<!-- ko foreach: choices -->
+	<!-- ko foreach: MySpFieldName._choices -->
 	<label class="radio">
-		<input type="radio" data-bind="checked: $parent.$parent, attr: { value: $data.value, 'name': $parent.name }" />
+		<input type="radio" data-bind="checked: $root.MySpFieldName, attr: {value: $data.value}" name="MySpFieldName" />
 		<span data-bind="text: $data.value"></span>
 	</label>
 	<!-- /ko -->   
 					
 	<!-- optional Field Description -->
-	<p data-bind="text: description"></p>          
+	<p data-bind="text: MySpFieldName._description"></p>          
 </div>
 
 ```
