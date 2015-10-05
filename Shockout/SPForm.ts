@@ -383,6 +383,7 @@ module Shockout {
                     }
                     self.nextAsync(true);
                 }
+                , self.setupNavigation
             ];
 
             //start CAFE
@@ -1227,27 +1228,6 @@ module Shockout {
                     fields.push([ViewModel.isSubmittedKey, (isSubmit ? 1 : 0)]);
                 }
 
-                // build the `fields` array 
-                //$(self.editableFields).each(function (i:number, key: any) {
-                //    var val = vm[key]();
-                //    if (typeof (val) == "undefined" || key == Shockout.ViewModel.isSubmittedKey) {
-                //        return;
-                //    }
-                //    if (val != null && val.constructor === Array) {
-                //        if (val.length > 0) {
-                //            val = ';#' + val.join(';#') + ';#';
-                //        }
-                //    }
-                //    else if (val != null && val.constructor == Date) {
-                //        val = Utils.parseDate(val).toISOString();
-                //    }
-                //    else if (val != null && vm[key]._type == 'Note') {
-                //        val = '<![CDATA[' + $('<div>').html(val).html() + ']]>';
-                //    }
-                //    val = val == null ? '' : val;
-                //    fields.push([vm[key]._name, val]);
-                //});
-
                 $(self.editableFields).each(function (i: number, key: any): void {
                     if (!('_metadata' in vm[key])) { return; }
 
@@ -1375,6 +1355,59 @@ module Shockout {
                 self.nextAsync(true);
                 return;
             });
+        }
+
+        setupNavigation(self: SPForm): void {
+
+            // Set up a navigation menu at the top of the form if there are elements with the class `nav-section`.
+            var $navSections = self.$form.find('.nav-section');
+
+            if ($navSections.length == 0) {
+                self.nextAsync(true);
+                return;
+            }
+
+            // add navigation section to top of form
+            self.$form.prepend('<section class="no-print" id="TOP">' +
+                '<h4>Navigation</h4>' +
+                '<div class="navigation-buttons"></div>' +
+                '</section>');
+
+            // include the workflow history section
+            self.$form.find('#workflowHistory').addClass('nav-section');
+
+            // add navigation buttons
+            self.$form.find(".nav-section:visible").each(function (i, el) {
+                var $el = $(el);
+                var $header = $el.find("> h4");
+                if ($header.length == 0) {
+                    return;
+                }
+                var title = $header.text();
+                var anchorName = Utils.toCamelCase(title) + 'Nav';
+                $el.before('<div style="height:1px;" id="' + anchorName + '">&nbsp;</div>');
+                self.$form.find(".navigation-buttons").append('<a href="#' + anchorName + '" class="btn btn-sm btn-info">' + title + '</a>');
+            });
+
+            // add a back-to-top button
+            self.$form.append('<a href="#TOP" class="back-to-top"><span class="glyphicon glyphicon-chevron-up"></span></a>');
+
+            // add smooth scrolling to for anchors - animates page navigation
+            $('body').delegate('a[href*=#]:not([href=#])', 'click', function () {
+                if (window.location.pathname.replace(/^\//, '') == this.pathname.replace(/^\//, '') && location.hostname == this.hostname) {
+                    var target = $(this.hash);
+                    target = target.length ? target : $('[name=' + this.hash.slice(1) + ']');
+                    if (target.length) {
+                        $('html,body').animate({
+                            scrollTop: target.offset().top - 50
+                        }, 1000);
+
+                        return false;
+                    }
+                }
+            });
+
+            self.nextAsync(true);          
         }
 
         /**
