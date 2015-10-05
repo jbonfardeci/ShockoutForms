@@ -118,15 +118,15 @@ Choose the GET radio option and enter `Accept: application/json;odata=verbose` i
 Now that you know the variable names, you're ready to create your Shockout form.
 
 ###SP Field Metadata
-* Shockout assigns metadata properties to all of your list fields within the object property `_metadata`.
-    * _metadata
-      * `koName` - (String) - the Knockout variable name
-      * `name` - (String) the internal name of the SP field
-      * `choices` - (Array) if the field is a choice or multichoice field, the field's choices 
-      * `description` (String) the decription of the SP field
-      * `required` (Boolean) if the field is required or not
-      * `readOnly` (Boolean) if the field is read-only or not
-      * `format` (String) the standard name of the type of SP field: Text, Choice, Note, Computed, etc.
+* Shockout assigns metadata properties to all of your list fields.
+
+    * `_koName` - (String) - the Knockout variable name
+    * `_name` - (String) the internal name of the SP field
+    * `_choices` - (Array) if the field is a choice or multichoice field, the field's choices 
+    * `_description` (String) the decription of the SP field
+    * `_required` (Boolean) if the field is required or not
+    * `_readOnly` (Boolean) if the field is read-only or not
+    * `_format` (String) the standard name of the type of SP field: Text, Choice, Note, Computed, etc.
 
 The Knockout framework features a `with` directive which makes it very convenient to reference a field's metadata properties by wrapping child elements with a parent element having the attribute `data-bind="with: MySpFieldName._metadata"`. See the code samples below.
 
