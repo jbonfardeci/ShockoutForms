@@ -132,13 +132,13 @@ The Knockout framework features a `with` directive which makes it very convenien
 
 ###Displaying a SharePoint Text Field
 ```
-<div class="form-group" data-bind="with: MySpFieldName._metadata">
-	<label data-bind="text: displayName, attr:{'for': name}" class="control-label"></label>
+<div class="form-group">
+	<label data-bind="text: MySpFieldName._displayName" class="control-label" for="MySpFieldName"></label>
 	
-	<input type="text" data-bind="value: $parent, attr:{'placeholder': displayName, 'id': name}" maxlength="255" class="form-control" />
+	<input type="text" data-bind="value: MySpFieldName, attr:{'placeholder': MySpFieldName._displayName}" maxlength="255" id="MySpFieldName" class="form-control" />
 	
 	<!-- optional Field Description -->
-	<p data-bind="text: description"></p>
+	<p data-bind="text: MySpFieldName._description"></p>
 </div>
 ```
 
