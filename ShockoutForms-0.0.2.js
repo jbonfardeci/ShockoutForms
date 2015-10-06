@@ -1185,6 +1185,11 @@ var Shockout;
                 return;
             });
         };
+        /**
+        * Add a navigation menu to the form based on parent elements with class `nav-section`
+        * @param salef: SPForm
+        * @return void
+        */
         SPForm.prototype.setupNavigation = function (self) {
             // Set up a navigation menu at the top of the form if there are elements with the class `nav-section`.
             var $navSections = self.$form.find('.nav-section');
@@ -1246,6 +1251,12 @@ var Shockout;
                 attachments.remove(att);
             });
         };
+        /**
+        * Get the form's attachments
+        * @param self: SFForm
+        * @param callback: Function (optional)
+        * @return void
+        */
         SPForm.prototype.getAttachments = function (self, callback) {
             if (self === void 0) { self = undefined; }
             if (callback === void 0) { callback = undefined; }
@@ -2967,9 +2978,12 @@ var Shockout;
                     if (!!date) {
                         var dateTimeStr = Shockout.Utils.toDateTimeLocaleString(date); // convert from UTC to locale
                         // add time zone
-                        dateTimeStr += /\b\s\(\w+\s\w+\s\w+\)/i.exec(date.toString())[0];
+                        var timeZone = /\b\s\(\w+\s\w+\s\w+\)/i.exec(date.toString());
+                        if (!!timeZone) {
+                            dateTimeStr += timeZone[0];
+                        }
                         if (element.tagName.toLowerCase() == 'input') {
-                            element.value = (date.getUTCMonth() + 1) + '/' + date.getUTCDate() + '/' + date.getUTCFullYear();
+                            $(element).val((date.getUTCMonth() + 1) + '/' + date.getUTCDate() + '/' + date.getUTCFullYear());
                             var hrs = date.getUTCHours(); // converts UTC hours to locale hours
                             var min = date.getUTCMinutes();
                             // set TT based on military hours
@@ -2992,7 +3006,7 @@ var Shockout;
                             element.$display.html(dateTimeStr);
                         }
                         else {
-                            element.innerHTML = dateTimeStr;
+                            $(element).text(dateTimeStr);
                         }
                     }
                 }
@@ -3680,7 +3694,7 @@ var Shockout;
             }
             // Clone each property.
             for (var prop in objectToBeCloned) {
-                objectClone[prop] = this.clone(objectToBeCloned[prop]);
+                objectClone[prop] = Utils.clone(objectToBeCloned[prop]);
             }
             return objectClone;
         };
