@@ -464,10 +464,13 @@
                     if (!!date) {
                         var dateTimeStr: string = Utils.toDateTimeLocaleString(date); // convert from UTC to locale
                         // add time zone
-                        dateTimeStr += /\b\s\(\w+\s\w+\s\w+\)/i.exec(date.toString())[0];
+                        var timeZone = /\b\s\(\w+\s\w+\s\w+\)/i.exec(date.toString());
+                        if (!!timeZone) {
+                            dateTimeStr += timeZone[0];
+                        }
                         
                         if (element.tagName.toLowerCase() == 'input') {
-                            element.value = (date.getUTCMonth()+1) + '/' + date.getUTCDate() + '/' + date.getUTCFullYear();
+                            $(element).val( (date.getUTCMonth()+1) + '/' + date.getUTCDate() + '/' + date.getUTCFullYear() );
                             var hrs: number = date.getUTCHours(); // converts UTC hours to locale hours
                             var min: number = date.getUTCMinutes(); 
 
@@ -492,7 +495,7 @@
                             element.$display.html(dateTimeStr);
                         }
                         else {
-                            element.innerHTML = dateTimeStr;
+                            $(element).text(dateTimeStr);
                         }
                     }
                 }
