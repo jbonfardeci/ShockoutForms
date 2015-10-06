@@ -41,11 +41,11 @@
     <TypeScriptCompile Include="typings\knockout.d.ts" />
   </ItemGroup>
   <ItemGroup>
-    <Content Include="FormSample.aspx" />
+    <Content Include="example\PurchaseRequisition.aspx" />
   </ItemGroup>
   <ItemGroup>
     <None Include="content\shockout.spform.scss" />
-    <Content Include="Shockout.SpForms.master" />
+    <Content Include="example\Shockout.SpForms.master" />
     <Content Include="README.md" />
     <Content Include="_layouts\SPFormFileHandler.ashx" />
   </ItemGroup>
