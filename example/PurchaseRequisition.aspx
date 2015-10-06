@@ -12,6 +12,8 @@
 		<div class="panel-body" id="ShockoutSpForm">
 		
 			<input type="hidden" data-bind="value: IsSubmitted" />
+			<input type="hidden" data-bind="value: ItemData" />
+			<input type="hidden" data-bind="value: TotalCost" />
 		
 			<section class="created-info" data-edit-only=""></section>
 			
@@ -132,10 +134,10 @@
             <section class="nav-section">
                 <h4>Routing</h4>
                 <div class="form-group">
-				    <label data-bind="text: Supervisor._displayName" for="Supervisor" class="control-label"></label>
-					<input type="text" data-bind="spPerson: Supervisor" maxlength="255" id="Supervisor" class="form-control" />s
+				    <label for="Supervisor" class="control-label">Your Supervisor</label>
+					<input type="text" data-bind="spPerson: YourSupervisor" maxlength="255" id="YourSupervisor" class="form-control" />
 					<!-- optional Field Description -->
-					<p data-bind="text: Supervisor._description"></p>
+					<p data-bind="text: YourSupervisor._description"></p>
 				</div>
             </section>
 			
@@ -188,12 +190,9 @@ var spForm = new Shockout.SPForm(
         preRender: function (spForm) {
 
             try{
-                // tell Shockout that we can update this field on the server sin'ce it isn't an input field on the form.
-                spForm.pushEditableFieldName('ItemData'); 
-                spForm.pushEditableFieldName('TotalCost');
-
-                var vm = spForm.viewModel;
-
+            
+            	var vm = spForm.viewModel;
+            	
                 // set up the KO variables and methods for updating the Item list table
                 vm.edit = ko.observable(false);
                 vm.shipping = ko.observable(0);
@@ -257,6 +256,7 @@ var spForm = new Shockout.SPForm(
         postRender: function (spForm) {
 
             try{
+            	var vm = spForm.viewModel;
                 //convert Line Item JSON data to KO Observable Array to display on form	    		
                 if (vm.ItemData() != null) {
                     var json = JSON.parse(vm.ItemData());
@@ -277,10 +277,9 @@ var spForm = new Shockout.SPForm(
         }, // default undefined
         preSave: function (spForm) {
 
-            var vm = spForm.viewModel;
-
             /* save JSON string to SP list item field just before Save */
             try {
+            	var vm = spForm.viewModel;
                 var json = {
                     items: [],
                     tax: vm.tax(),
@@ -296,9 +295,8 @@ var spForm = new Shockout.SPForm(
                 });
 
                 vm.ItemData(JSON.stringify(json));
-
                 vm.TotalCost(vm.total());
-
+                
             }
             catch (e) {
                 spForm.logError(e);

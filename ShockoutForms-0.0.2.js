@@ -3585,6 +3585,7 @@ var Shockout;
         }
         Utils.toCamelCase = function (str) {
             return str.toString()
+                .replace(/\'s/, 'S')
                 .replace(/[^A-Za-z0-9\s]/g, '')
                 .replace(/\s[A-Za-z]/g, function (x) {
                 return x[1].toUpperCase();
@@ -3817,7 +3818,11 @@ var Shockout;
             if (val == '') {
                 return null;
             }
-            var rxSlash = /\d{1,2}\/\d{1,2}\/\d{2,4}/, rxHyphen = /\d{1,2}-\d{1,2}-\d{2,4}/, rxIsoDate = /\d{4}-\d{1,2}-\d{1,2}/, rxTicks = /(\/|)\d{13}(\/|)/, rxIsoDateTime = /\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z/, tmp, m, d, y, date = null;
+            var rxSlash = /\d{1,2}\/\d{1,2}\/\d{2,4}/, // "09/29/2015" 
+            rxHyphen = /\d{1,2}-\d{1,2}-\d{2,4}/, // "09-29-2015"
+            rxIsoDate = /\d{4}-\d{1,2}-\d{1,2}/, // "2015-09-29"
+            rxTicks = /(\/|)\d{13}(\/|)/, // "/1442769001000/"
+            rxIsoDateTime = /\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z/, tmp, m, d, y, date = null;
             if (rxSlash.test(val) || rxHyphen.test(val)) {
                 tmp = rxSlash.test(val) ? val.split('/') : val.split('-');
                 m = parseInt(tmp[0]) - 1;
@@ -3858,7 +3863,8 @@ var Shockout;
             if (symbol === void 0) { symbol = '$'; }
             if (precision === void 0) { precision = 2; }
             // Clean up number:
-            var num = Utils.unformatNumber(value), format = '%s%v', neg = format.replace('%v', '-%v'), useFormat = num > 0 ? format : num < 0 ? neg : format, numFormat = Utils.formatNumber(Math.abs(num), Utils.checkPrecision(precision));
+            var num = Utils.unformatNumber(value), format = '%s%v', neg = format.replace('%v', '-%v'), useFormat = num > 0 ? format : num < 0 ? neg : format, // Choose which format to use for this value:
+            numFormat = Utils.formatNumber(Math.abs(num), Utils.checkPrecision(precision));
             // Return with currency symbol added:
             return useFormat
                 .replace('%s', symbol)

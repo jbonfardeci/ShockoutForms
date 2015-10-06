@@ -47,7 +47,9 @@
     <None Include="content\shockout.spform.scss" />
     <Content Include="example\Shockout.SpForms.master" />
     <Content Include="README.md" />
+    <Content Include="ShockoutForms-0.0.2.js" />
     <Content Include="_layouts\SPFormFileHandler.ashx" />
+    <Content Include="ShockoutForms-0.0.2.js.map" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="Microsoft.SharePoint, Version=15.0.0.0, Culture=neutral, PublicKeyToken=71e9bce111e9429c, processorArchitecture=MSIL" />
