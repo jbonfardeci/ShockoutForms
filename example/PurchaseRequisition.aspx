@@ -187,12 +187,10 @@ var spForm = new Shockout.SPForm(
         debug: false, 
         siteUrl: '/', 
         confirmationUrl: '/SitePages/Confirmation.aspx',
-        preRender: function (spForm) {
+        preRender: function (spForm, vm) {
 
             try{
             
-            	var vm = spForm.viewModel;
-            	
                 // set up the KO variables and methods for updating the Item list table
                 vm.edit = ko.observable(false);
                 vm.shipping = ko.observable(0);
@@ -253,10 +251,9 @@ var spForm = new Shockout.SPForm(
             }
 
         }, // default undefined
-        postRender: function (spForm) {
+        postRender: function (spForm, vm) {
 
             try{
-            	var vm = spForm.viewModel;
                 //convert Line Item JSON data to KO Observable Array to display on form	    		
                 if (vm.ItemData() != null) {
                     var json = JSON.parse(vm.ItemData());
@@ -275,11 +272,10 @@ var spForm = new Shockout.SPForm(
             }
 
         }, // default undefined
-        preSave: function (spForm) {
+        preSave: function (spForm, vm) {
 
             /* save JSON string to SP list item field just before Save */
             try {
-            	var vm = spForm.viewModel;
                 var json = {
                     items: [],
                     tax: vm.tax(),

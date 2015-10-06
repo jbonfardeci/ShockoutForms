@@ -360,7 +360,7 @@ module Shockout {
                 self.getCurrentUserAsync
                 , function (self: SPForm) {
                     if (self.preRender) {
-                        self.preRender(self);
+                        self.preRender(self, self.viewModel);
                     }
                     self.nextAsync(true);
                 }  
@@ -379,7 +379,7 @@ module Shockout {
                 , self.getHistoryAsync
                 , function (self: SPForm) {
                     if (self.postRender) {
-                        self.postRender(self);
+                        self.postRender(self, self.viewModel);
                     }
                     self.nextAsync(true);
                 }
@@ -1210,7 +1210,7 @@ module Shockout {
 
                 //run presave action and stop if the presave action returns false
                 if (self.preSave) {
-                    var retVal = self.preSave(self);
+                    var retVal = self.preSave(self, self.viewModel);
                     if (typeof (retVal) != 'undefined' && !!!retVal) {
                         return;
                     }
