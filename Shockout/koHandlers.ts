@@ -52,12 +52,14 @@
                     //create wrapper for control
                     var $parent = $(element).parent();
 
-                    var $spError = $('<div>', { 'class': 'sp-validation person' }).appendTo($parent);
+                    var $spError = $('<div>', { 'class': 'sp-validation person' });
+                    $element.after($spError);
 
                     var $desc = $('<div>', {
                         'class': 'no-print'
                         , 'html': '<em>Enter the employee name. The auto-suggest menu will appear below the field. Select the account name.</em>'
-                    }).appendTo($parent);
+                    });
+                    $spError.after($desc);
 
                     //controls
                     var $spValidate = $('<button>', {

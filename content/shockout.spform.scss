@@ -11,6 +11,7 @@ $yellow: #FAD42E;
 $black: #000;
 $pink: #FF7171;
 $lt-pink: #FF9797;
+$aliceblue: aliceblue;
 
 @media screen {
 
@@ -61,8 +62,8 @@ $lt-pink: #FF9797;
 			    padding:5px;
 			    text-align:left;
 		    }
-		    tr.even{background-color:$lt-grey;}
-            tr:nth-child(even){background-color: $lt-grey;}
+		    tr.even{background-color:$aliceblue;}
+            tr:nth-child(even){background-color: $aliceblue;}
 		}
 		
         input.form-control{
@@ -336,6 +337,8 @@ $lt-pink: #FF9797;
         .navigation-buttons{
             .btn{margin-right:1em; margin-bottom:1em;}
         }
+
+        .even{background-color:$aliceblue;}
 
         /*boostrap overrides*/
 
