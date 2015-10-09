@@ -594,7 +594,9 @@ module Shockout {
                         defaultValue = val;
                     });
 
-                    var koObj: any = !!spType && spType == 'MultiChoice' ? ko.observableArray([]) : ko.observable(!!defaultValue ? defaultValue : spType == 'Boolean' ? false : null);
+                    var koObj: any = !!spType && /^multi/i.test(spType)
+                        ? ko.observableArray([])
+                        : ko.observable(!!defaultValue ? defaultValue : spType == 'Boolean' ? false : null);
                     
                     // add metadata to the KO object
                     koObj._metadata = {
@@ -1127,7 +1129,7 @@ module Shockout {
                     vm[key](item[key+'Value']);
                 });
 
-                // query values for `MultiChoice` types
+                // query values for MultiChoice types
                 $(self.fieldNames).filter(function (i: number, key: any): boolean {
                     return !!self.viewModel[key] && self.viewModel[key]._type == 'MultiChoice' && '__deferred' in item[key];
                 }).each(function (i: number, key: any) {
@@ -1135,7 +1137,7 @@ module Shockout {
                     SpApi.executeRestRequest(item[key].__deferred.uri, function (data: ISpCollectionWrapper<ISpMultichoiceValue>, status: string, jqXhr: any) {
 
                         if (self.debug) {
-                            console.info('Retrieved multichoice data for ' + key + '...');
+                            console.info('Retrieved MultiChoice data for ' + key + '...');
                             console.info(data);
                         }
 
@@ -1146,6 +1148,28 @@ module Shockout {
                         vm[key](values);
                     });
                 });
+
+                // query values for UserMulti types
+                $(self.fieldNames).filter(function (i: number, key: any): boolean {
+                    return !!self.viewModel[key] && self.viewModel[key]._type == 'UserMulti' && '__deferred' in item[key];
+                }).each(function (i: number, key: any) {
+
+                    SpApi.executeRestRequest(item[key].__deferred.uri, function (data: ISpCollectionWrapper<ISpPerson>, status: string, jqXhr: any) {
+
+                        if (self.debug) {
+                            console.info('Retrieved UserMulti data for ' + key + '...');
+                            console.info(data);
+                        }
+
+                        var values: Array<any> = [];
+                        $.each(data.d.results, function (i: number, p: ISpPerson) {
+                            values.push(p.Id + ';#' + p.Account);
+                        });
+                        vm[key](values);
+                    });
+                });
+
+
             }
             catch (e) {
                 self.logError('Failed to bind form values. ' + JSON.stringify(e));
