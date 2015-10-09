@@ -210,6 +210,59 @@ How to display the choices from a SharePoint MultiChoice Field with radio button
 ```
      
 
+
+###Multiple Persons (UserMulti)
+####A Control with Multiple User accounts
+
+```
+<!-- in markup -->
+<div class="row">
+	<div class="col-md-6 col-xs-6">
+		<input type="text" data-bind="spPerson: person" />
+		<button class="btn btn-success" data-bind="click: addPerson, attr: {'disabled': person() == null}"><span>Add</span></button> 		
+	</div>	
+</div>
+
+<!-- ko foreach: People -->
+<div class="row">
+	<div class="col-md-10 col-xs-10" data-bind="spPerson: $data"></div>
+	<div class="col-md-2 col-xs-2">
+		<button class="btn btn-xs btn-danger" data-bind="click: $root.removePerson"><span class="glyphicon glyphicon-trash"></span></button>
+	</div>
+</div>
+<!-- /ko -->
+```
+
+```
+// in preRender
+...
+preRender(spForm, vm){
+
+	vm.person = ko.observable(null);
+	
+	// add a person to KO object People
+	vm.addPerson = function(model, ctrl){
+		if(vm.People() == null){
+			vm.People([]);
+		}
+		
+		vm.People().push(vm.person());
+		vm.People.valueHasMutated();
+		
+		vm.person(null);
+		return false;
+	};
+	
+	// remove a person from KO object People
+	vm.removePerson = function(person, event){
+		vm.People.remove(person);
+		return false;
+	}
+
+}
+...
+```
+
 ##Required Field Validation
 Simply add the `required="required"` attribute to required fields. Shockout will do the rest!
 
