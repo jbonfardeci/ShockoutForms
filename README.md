@@ -131,8 +131,6 @@ Now that you know the variable names, you're ready to create your Shockout form.
     * `_readOnly` (Boolean) if the field is read-only or not
     * `_format` (String) the standard name of the type of SP field: Text, Choice, Note, Computed, etc.
 
-The Knockout framework features a `with` directive which makes it very convenient to reference a field's metadata properties by wrapping child elements with a parent element having the attribute `data-bind="with: MySpFieldName._metadata"`. See the code samples below.
-
 ###Displaying a SharePoint Text Field
 ```
 <div class="form-group">
