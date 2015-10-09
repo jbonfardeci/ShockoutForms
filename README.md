@@ -212,7 +212,7 @@ How to display the choices from a SharePoint MultiChoice Field with radio button
 
 
 ###Multiple Persons (UserMulti)
-####A Control with Multiple User accounts
+####A Control with Multiple User Accounts
 
 ```
 <!-- in markup -->
@@ -233,11 +233,15 @@ How to display the choices from a SharePoint MultiChoice Field with radio button
 <!-- /ko -->
 ```
 
+If `People` is a field in your SharePoint list, then:
+
 ```
 // in preRender
 ...
 preRender(spForm, vm){
 
+    // This is a temporary local variable to hold a person object.
+    // You will push this to the People observable array.
 	vm.person = ko.observable(null);
 	
 	// add a person to KO object People
