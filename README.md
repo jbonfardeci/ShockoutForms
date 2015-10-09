@@ -403,7 +403,6 @@ and leave their forms open so long their sessions used to time out.
 To enable this feature, you must: 
   * Have a field of type `boolean` named "IsSubmitted" in your form's list. 
   * Shockout will detect this field and render a 'Save' button next to the 'Submit' button.
-  * Set all required fields in your SP list to `No`. If not the server will return an error if required fields aren't filled in yet. No need to control validation in your SP list; Shockout will handle the validation for you.
   * To prevent your approval workflows from triggering until the user presses the Submit button, include in the beginning of your workflows: 
 		```
 		Wait on 'IsSubmitted' to equal 'Yes'
