@@ -266,7 +266,7 @@ preRender(spForm, vm){
 ```
 
 ##Required Field Validation
-Simply add the `required="required"` attribute to required fields. Shockout will do the rest!
+Simply add the `required` attribute to required fields. Shockout will do the rest!
 
 ##Knockout SharePoint Field Binding Handlers
 You may use these binding handlers with any HTML element. Shockout will render the apporpriate content whether it's a static element such as a DIV, SPAN, etc. or an input field: INPUT, SELECT, and TEXTAREA.
