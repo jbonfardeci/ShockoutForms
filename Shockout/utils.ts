@@ -256,9 +256,6 @@
 
             if (typeof val == 'object' && val.constructor == Date) { return val; }
 
-            val = (val + '').replace(/[^0-9\/\-]/g, '');
-            if (val == '') { return null; }
-
             var rxSlash: RegExp = /\d{1,2}\/\d{1,2}\/\d{2,4}/, // "09/29/2015" 
                 rxHyphen: RegExp = /\d{1,2}-\d{1,2}-\d{2,4}/, // "09-29-2015"
                 rxIsoDate: RegExp = /\d{4}-\d{1,2}-\d{1,2}/, // "2015-09-29"
@@ -269,6 +266,9 @@
                 d: number,
                 y: number,
                 date: Date = null;
+
+            val = rxIsoDate.test(val) ? val : (val + '').replace(/[^0-9\/\-]/g, '');
+            if (val == '') { return null; }
 
             if (rxSlash.test(val) || rxHyphen.test(val)) {
                 tmp = rxSlash.test(val) ? val.split('/') : val.split('-');
