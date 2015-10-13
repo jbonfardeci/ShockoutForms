@@ -92,7 +92,12 @@
         }
 
         public static getListItems(siteUrl: string, listName: string, viewFields: string, query: string, callback: Function, rowLimit: number = 25): void {
-            siteUrl = siteUrl == '' ? '/' : siteUrl;
+
+            siteUrl = Utils.formatSubsiteUrl(siteUrl);
+
+            if (!!!listName) {
+                Utils.logError("Parameter `listName` is null or undefined in method SpSoap.getListItems()", SPForm.errorLogListName, SPForm.errorLogSiteUrl);
+            }
 
             var packet = '<?xml version="1.0" encoding="utf-8"?>' +
                 '<soap:Envelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">' +
@@ -129,13 +134,13 @@
 
         public static getList(siteUrl: string, listName: string, callback: Function): void {
 
-            siteUrl = siteUrl == '/' ? '' : siteUrl;
+            siteUrl = Utils.formatSubsiteUrl(siteUrl);
 
             var packet = '<?xml version="1.0" encoding="utf-8"?><soap:Envelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/"><soap:Body><GetList xmlns="http://schemas.microsoft.com/sharepoint/soap/"><listName>{0}</listName></GetList></soap:Body></soap:Envelope>'
                 .replace('{0}', listName);
 
             var $jqXhr = $.ajax({
-                url: siteUrl + '/_vti_bin/lists.asmx',
+                url: siteUrl + '_vti_bin/lists.asmx',
                 type: 'POST',
                 cache: false,
                 dataType: "xml",
@@ -183,10 +188,10 @@
         */
         public static executeSoapRequest = function (action: string, packet: string, params: Array<any>, siteUrl: string = '/', callback: Function = undefined): void {
 
-            siteUrl = siteUrl == '/' ? '' : siteUrl;
+            siteUrl = Utils.formatSubsiteUrl(siteUrl);
 
             try {
-                var serviceUrl: string = siteUrl + '/_vti_bin/lists.asmx';
+                var serviceUrl: string = siteUrl + '_vti_bin/lists.asmx';
 
                 if (params != null) {
                     for (var i = 0; i < params.length; i++) {

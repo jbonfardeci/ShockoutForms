@@ -81,10 +81,10 @@
         * @param always?: JQueryPromiseCallback<any> = undefined
         * @return void 
         */
-        public static getListItem(listName: string, itemId: number, callback: Function, siteUrl: string = '', cache: boolean = false): void {
+        public static getListItem(listName: string, itemId: number, callback: Function, siteUrl: string = '/', cache: boolean = false): void {
 
-            siteUrl = siteUrl == '/' ? '' : siteUrl;
-            var url: string = siteUrl + '/_vti_bin/listdata.svc/' + Utils.toCamelCase(listName) + '(' + itemId + ')';
+            siteUrl = Utils.formatSubsiteUrl(siteUrl);
+            var url: string = siteUrl + '_vti_bin/listdata.svc/' + Utils.toCamelCase(listName) + '(' + itemId + ')';
 
             SpApi.executeRestRequest(url, fn, cache, 'GET');
 
@@ -113,11 +113,11 @@
         * @param always?: JQueryPromiseCallback<any> = undefined
         * @return void 
         */
-        public static getListItems(listName: string, callback: Function, siteUrl: string = '', filter: string = null, select: string = null, orderby: string = null, top: number = 10, cache: boolean = false): void {
+        public static getListItems(listName: string, callback: Function, siteUrl: string = '/', filter: string = null, select: string = null, orderby: string = null, top: number = 10, cache: boolean = false): void {
 
-            siteUrl = siteUrl == '/' ? '' : siteUrl;
+            siteUrl = Utils.formatSubsiteUrl(siteUrl);
 
-            var url: Array<string> = [siteUrl + '/_vti_bin/listdata.svc/' + Utils.toCamelCase(listName)];
+            var url: Array<string> = [siteUrl + '_vti_bin/listdata.svc/' + Utils.toCamelCase(listName)];
 
             if (!!filter) { url.push('$filter='+filter); }
 

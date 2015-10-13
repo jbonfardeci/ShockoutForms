@@ -8,13 +8,17 @@
     
     export class Utils {
     
+        public static formatSubsiteUrl(url): string {
+            return !!!url ? '/' : !/\/$/.test(url) ? url + '/' : url;
+        }
+
         public static toCamelCase(str: string): string {
             return str.toString()
+                .replace(/\s*\b\w/g, function (x) {
+                    return (x[1] || x[0]).toUpperCase();
+                }).replace(/\s/g, '')
                 .replace(/\'s/, 'S')
-                .replace(/[^A-Za-z0-9\s]/g, '')
-                .replace(/\s[A-Za-z]/g, function (x) {
-                    return x[1].toUpperCase();
-                }).replace(/\s/g, '');
+                .replace(/[^A-Za-z0-9\s]/g, '');
         }
 
         /**
@@ -46,27 +50,66 @@
         }
 
         /**
-        * Extract the Knockout observable name from a field with `data-bind` attribute
+        * Extract the Knockout observable name from a field with `data-bind` attribute.
+        * If the KO name is `$data`, the method will recursively search for the closest parent element or comment with the `foreach:` binding.
         * @param control: HTMLElement
         * @return string
         */
-        public static observableNameFromControl(control: any): string {
-            var attr: string = $(control).attr('data-bind');
+        public static observableNameFromControl(control): string {
+            var attr = control.getAttribute('data-bind');
             if (!!!attr) { return null; }
-            attr = attr.replace(/\$/g, '');
-            var rx: RegExp = /(\b:(\s+|)|\$root.)\w*\b/;
-            var exec: Array<string> = rx.exec(attr);
-            var result: string = !!exec ? exec[0]
-                .replace(/:(\s+|)/gi, '')
+
+            var rx = /(\b:\s*|\$root.|\$data)\w*\b/;
+            var exec = rx.exec(attr);
+            var result = !!exec ? exec[0]
+                .replace(/:(\s+|)/g, '')
                 .replace(/\$root\./, '')
-                .replace(/\._metadata/, '')
                 .replace(/\s/g, '') : null;
-            if (result == 'parent') {
-                return Utils.observableNameFromControl( $(control).parent() );
+    
+            // if within a KO `foreach:`, name will be `$data` and get the KO name from the parent element
+            if (/\$data/.test(result)) {
+
+                var parent = (function getParent(o, num) {
+                    for (var i = 0; i < num; i++) {
+                        if (!!!o) { continue; }
+                        o = o.parentNode;
+                    }
+                    return o;
+                })(control, 1);
+
+                //First, look for `<!-- ko foreach: MyVar -->` comment syntax, then try closest parent element.
+                var fe: any = /<!--\s*ko\s+foreach:\s*(\$root\.|)\w*\s*(-->|)/.exec(parent.innerHTML);
+                fe = !!fe ? fe[0]
+                    .replace(/<!--\s*ko\s*foreach\s*:\s*(\$root\.|)/, '')
+                    .replace(/\s*-->/, '') : null;
+
+                return !!fe ? fe : Utils.observableNameFromControl(parent);
             }
+
             return result;
         }
 
+        // previous version
+        //public static observableNameFromControl(control: any): string {
+        //    var attr: string = $(control).attr('data-bind');
+        //    if (!!!attr) { return null; }
+        //    attr = attr.replace(/\$/g, '');
+        //    var rx: RegExp = /(\b:(\s+|)|\$root.)\w*\b/;
+        //    var exec: Array<string> = rx.exec(attr);
+        //    var result: string = !!exec ? exec[0]
+        //        .replace(/:(\s+|)/gi, '')
+        //        .replace(/\$root\./, '')
+        //        .replace(/\._metadata/, '')
+        //        .replace(/\s/g, '') : null;
+        //    if (result == 'parent') {
+        //        return Utils.observableNameFromControl( $(control).parent() );
+        //    }
+        //    return result;
+        //}
+
+        /**
+        * Alias for observableNameFromControl()
+        */
         public static koNameFromControl = Utils.observableNameFromControl;
 
         public static parseJsonDate(d: any): Date {
@@ -130,30 +173,30 @@
             return objectClone;
         }
 
-        public static logError(msg: string, errorLogListName: string, siteUrl: string = '', debug: boolean = false): void {
-            if (debug) {
+        public static logError(msg: string, errorLogListName: string, siteUrl: string = '/', debug: boolean = false): void {
+
+            if (debug || !SPForm.enableErrorLog) {
                 console.warn(msg);
                 return;
             }
 
+            siteUrl = Utils.formatSubsiteUrl(siteUrl);
             var loc = window.location.href;
             var errorMsg = '<p>An error occurred at <a href="' + loc + '" target="_blank">' + loc + '</a></p><p>Message: ' + msg + '</p>';
 
-            $.ajax({
-                url: siteUrl + "/_vti_bin/listdata.svc/" + errorLogListName.replace(/\s/g, ''),
+            var $jqXhr: JQueryXHR = $.ajax({
+                url: siteUrl + "_vti_bin/listdata.svc/" + errorLogListName.replace(/\s/g, ''),
                 type: "POST",
                 processData: false,
                 contentType: "application/json;odata=verbose",
                 data: JSON.stringify({ "Title": "Web Form Error", "Error": errorMsg }),
                 headers: {
                     "Accept": "application/json;odata=verbose"
-                },
-                success: function () {
-                    
-                },
-                error: function (data) {
-                    throw data.responseJSON.error;
                 }
+            });
+            
+            $jqXhr.fail(function (data) {
+                throw data.responseJSON.error;
             });
         }
 

@@ -56,6 +56,8 @@ module Shockout {
         // Public Static Properties
         ////////////////////////////
         public static errorLogListName: string;
+        public static errorLogSiteUrl: string;
+        public static enableErrorLog: boolean;
 
         /////////////////////////
         // Public jQuery Objects
@@ -119,6 +121,7 @@ module Shockout {
 
         // The name of the SP List to log errors to
         public errorLogListName: string = 'Error Log';
+        public errorLogSiteUrl: string = '/';
 
         public fieldNames: Array<string> = [];
 
@@ -334,8 +337,10 @@ module Shockout {
                 Utils.setIdHash(this.itemId);
             }           
 
-            // setup static error log list name
+            // setup static error log list name and site uri
             SPForm.errorLogListName = this.errorLogListName;
+            SPForm.errorLogSiteUrl = this.errorLogSiteUrl;
+            SPForm.enableErrorLog = this.enableErrorLog;
 
             // initialize custom Knockout handlers
             KoHandlers.bindKoHandlers();
@@ -729,13 +734,23 @@ module Shockout {
                         template: Templates.getFileUploadTemplate()
                     }
 
-                    //setup attachments module
+                    // Setup attachments module.
                     self.$form.find(".attachments").each(function (i: number, att: HTMLElement) {
                         var id = 'fileuploader_' + i;
                         $(att).append(Templates.getAttachmentsTemplate(id));
                         self.fileUploaderSettings.element = document.getElementById(id);
                         self.fileUploader = new Shockout.qq.FileUploader(self.fileUploaderSettings);
                     });
+
+                    // If error logging is enabled, ensure the list exists and has required columns. Disable if 404.
+                    if (self.enableErrorLog) {
+                        // Send a test query
+                        SpApi.getListItems(self.errorLogListName, function (data, error) {
+                            if (!!error) {
+                                self.enableErrorLog = SPForm.enableErrorLog = false;
+                            }
+                        }, self.errorLogSiteUrl, null, 'Title,Error', 'Modified', 1, false);
+                    }
 
                     if (self.debug) {
                         console.info('initFormAsync: Attachments are enabled.');
