@@ -46,10 +46,8 @@
     <Content Include="example\SP2010\PurchaseRequisition.aspx" />
     <Content Include="example\SP2013\PurchaseRequisition.aspx" />
     <Content Include="README.md" />
-    <Content Include="ShockoutForms-0.0.2.js" />
     <Content Include="test.html" />
     <Content Include="_layouts\SPFormFileHandler.ashx" />
-    <Content Include="ShockoutForms-0.0.2.js.map" />
     <Content Include="example\SP2010\PurchaseRequisitions.stp" />
     <Content Include="example\SP2010\Shockout.SpForms.master" />
     <Content Include="example\SP2013\PurchaseRequisitionList.stp" />
@@ -99,7 +97,7 @@
   <PropertyGroup Condition="'$(Configuration)' == 'Debug'">
     <TypeScriptRemoveComments>false</TypeScriptRemoveComments>
     <TypeScriptSourceMap>true</TypeScriptSourceMap>
-    <TypeScriptOutFile>ShockoutForms-0.0.x.js</TypeScriptOutFile>
+    <TypeScriptOutFile>ShockoutForms-1.0.0.js</TypeScriptOutFile>
     <TypeScriptTarget>ES5</TypeScriptTarget>
     <TypeScriptCompileOnSaveEnabled>True</TypeScriptCompileOnSaveEnabled>
     <TypeScriptNoImplicitAny>False</TypeScriptNoImplicitAny>

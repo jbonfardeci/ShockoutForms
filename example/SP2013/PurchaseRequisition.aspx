@@ -22,27 +22,12 @@
 			<section class="nav-section">
 				<h4>Vendor Information</h4>
 				
-				<div class="form-group">
-				    <label data-bind="text: Title._displayName" for="Title" class="control-label"></label>
-					<input type="text" data-bind="value: Title, attr:{'placeholder': Title._displayName}" maxlength="255" id="Title" class="form-control" />
-					<!-- optional Field Description -->
-					<p data-bind="text: Title._description"></p>
-				</div>
+                <so-text-field params="val: Title"></so-text-field>
+
+                <so-text-field params="val: VendorName, required: true"></so-text-field>
 				
-				<div class="form-group">
-				    <label data-bind="text: VendorName._displayName" for="VendorName" class="control-label"></label>
-					<input type="text" data-bind="value: VendorName, attr: { 'placeholder': VendorName._displayName }" maxlength="255" id="VendorName" class="form-control" />
-					<!-- optional Field Description -->
-					<p data-bind="text: VendorName._description"></p>
-				</div>
-				
-				<div class="form-group">
-				    <label data-bind="text: VendorAddress._displayName" class="control-label"></label>
-					<textarea data-bind="value: VendorAddress" data-sp-html=""></textarea>
-					<!-- optional Field Description -->
-					<p data-bind="text: VendorAddress._description"></p>
-				</div>
-				
+                <so-html-field params="val: VendorAddress"></so-html-field>
+								
 			</section>
 
             <!--Item List-->
@@ -133,40 +118,14 @@
 
             <section class="nav-section">
                 <h4>Routing</h4>
-                <div class="form-group">
-				    <label for="Supervisor" class="control-label">Your Supervisor</label>
-					<input type="text" data-bind="spPerson: YourSupervisor" maxlength="255" id="YourSupervisor" class="form-control" />
-					<!-- optional Field Description -->
-					<p data-bind="text: YourSupervisor._description"></p>
-				</div>
+                <so-person-field params="val: YourSupervisor, required: true"></so-person-field>
             </section>
 			
-            <input type="hidden" data-bind="value: SupervisorApproval" />
-			<section data-edit-only="" data-bind="visible: isSupervisor()">
-				<h4>Supervisor Approval Section</h4>
-				<div class="form-group">
-				    <label data-bind="text: SupervisorApproval._displayName" class="control-label"></label>
-				
-				    <!-- ko foreach: SupervisorApproval._choices -->
-				    <label class="radio">
-				        <input type="radio" data-bind="checked: $root.SupervisorApproval, attr: { value: $data.value }" name="SupervisorApproval" />
-				        <span data-bind="text: $data.value"></span>
-				    </label>
-				    <!-- /ko -->   
-					
-					<!-- optional Field Description -->
-					<p data-bind="text: SupervisorApproval._description"></p>          
-				</div>
-			</section>
-			
-			<section>
-				<h4>Approvals</h4>
-				<div>
-					<label class="control-label">Supervisor</label>
-					<span data-bind="text: SupervisorApproval"></span>
-				</div>
-			</section>
-		
+            <section data-edit-only="">
+                <h4>Supervisor Approval Section</h4>
+                <so-radio-group params="val: SupervisorApproval, readOnly: !isSupervisor()"></so-radio-group>
+            </section>
+
 		</div>
 	
 	</div>
@@ -178,7 +137,7 @@
 </asp:Content>
 
 <asp:Content runat="server" ID="scripts1" ContentPlaceHolderID="scripts">
-
+<script src="/Forms/ShockoutForms-1.0.0.min.js" type="text/javascript"></script>
 <script type="text/javascript">
 (function(){
 var spForm = new Shockout.SPForm(
@@ -186,7 +145,7 @@ var spForm = new Shockout.SPForm(
     /*formId:*/ 'ShockoutSpForm', 
     /*options:*/ {
         debug: false, 
-        siteUrl: '/', 
+        siteUrl: '/media', 
         confirmationUrl: '/SitePages/Confirmation.aspx',
         preRender: function (spForm, vm) {
 
