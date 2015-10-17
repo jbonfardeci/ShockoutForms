@@ -156,7 +156,7 @@
             var a = [];
             var rxExcludeInputTypes = /(button|submit|cancel|reset)/;
 
-            $(parent).find(':input.so-editable').each(function (i, el) {
+            $(parent).find('.so-editable').each(function (i, el) {
                 var n = $(el).attr('ko-name');
                 if (a.indexOf(n) < 0) {
                     a.push(n);

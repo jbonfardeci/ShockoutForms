@@ -239,7 +239,7 @@
             '<!-- /ko -->' +
 
             // Boostrap visual feedback for required fields
-            '<!-- ko if: required && !readOnly -->' +
+            '<!-- ko if: required -->' +
             '<span class="glyphicon glyphicon-ok form-control-feedback" aria-hidden="true"></span>'+
             '<!-- /ko -->' +
 
@@ -267,7 +267,7 @@
             '<!-- /ko -->' +
 
             // Boostrap visual feedback for required fields
-            '<!-- ko if: required && !readOnly -->' +
+            '<!-- ko if: required -->' +
             '<span class="glyphicon glyphicon-ok form-control-feedback" aria-hidden="true"></span>' +
             '<!-- /ko -->' +
 
@@ -319,7 +319,7 @@
             '<!-- /ko -->' +
 
             // Boostrap visual feedback for required fields
-            '<!-- ko if: required && !readOnly -->' +
+            '<!-- ko if: required -->' +
             '<span class="glyphicon glyphicon-ok form-control-feedback" aria-hidden="true"></span>' +
             '<!-- /ko -->' +
 

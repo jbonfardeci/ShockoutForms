@@ -222,6 +222,7 @@ $aliceblue: aliceblue;
             .form-group{
                 padding:.4em;
                 margin-bottom:.2em;
+                position:relative;
             }
 
             > *:nth-child(odd) > .form-group,
@@ -306,7 +307,7 @@ $aliceblue: aliceblue;
         }/*.user-profile-card*/
 
          /* Boostrap overrides */
-        .form-control-feedback{right:1.5em;}
+        .form-control-feedback{right:1.5em; top:2em;}
 
         /*Valum's QQ File Uploader*/
 	    .qq-uploader { position:relative; width: 100%;}	

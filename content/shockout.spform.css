@@ -162,7 +162,8 @@
         color: #069; }
       .sp-form section .form-group {
         padding: .4em;
-        margin-bottom: .2em; }
+        margin-bottom: .2em;
+        position: relative; }
       .sp-form section > *:nth-child(odd) > .form-group,
       .sp-form section > .form-group:nth-child(odd) {
         background-color: aliceblue;
@@ -227,7 +228,8 @@
         color: #777;
         margin-right: .8em; }
     .sp-form .form-control-feedback {
-      right: 1.5em; }
+      right: 1.5em;
+      top: 2em; }
     .sp-form .qq-uploader {
       position: relative;
       width: 100%; }

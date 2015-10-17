@@ -352,7 +352,7 @@ module Shockout {
             self.$formStatus = $('<div>', { 'class': 'form-status' }).appendTo(self.$form);
 
             // set the element to display created/modified by info
-            self.$createdInfo = self.$form.find(".created-info");
+            self.$createdInfo = self.$form.find(".created-info, [data-sp-created-info]");
 
             // create jQuery Dialog for displaying feedback to user
             self.$dialog = $('<div>', { 'id': 'formdialog' })
@@ -379,7 +379,6 @@ module Shockout {
                 }            
                 , self.getListItemAsync
                 , self.getUsersGroupsAsync
-                , self.implementPermissionsAsync
                 , self.getAttachmentsAsync
                 , self.getHistoryAsync
                 , function (self: SPForm) {
@@ -388,16 +387,8 @@ module Shockout {
                     }
                     self.nextAsync(true);
                 }
-                , self.setupNavigation
-                , function applyJqueryUI(self: SPForm) {
-                    // apply jQueryUI datepickers after all KO bindings have taken place to prevent error: 
-                    // `Uncaught Missing instance data for this datepicker`
-                    var $datepickers: Array<JQuery> = self.$form.find('input.datepicker').datepicker();
-                    if (self.debug) {
-                        console.info('Bound ' + $datepickers.length + ' jQueryUI datepickers.');
-                    }
-                    self.nextAsync(true);
-                }
+                , self.implementPermissionsAsync
+                , self.finalize
             ];
 
             //start CAFE
@@ -770,6 +761,7 @@ module Shockout {
                 }
 
                 // set up HTML editors in the form
+                // This isn't necessary for the Shockout KO Components fields, but included for when a developer creates their own fields.
                 self.$form.find(".rte, [data-bind*='spHtml'], [data-sp-html]").each(function (i: number, el: HTMLElement) {
                     var $el = $(el);
                     var koName = Utils.observableNameFromControl(el, self.viewModel);
@@ -822,23 +814,24 @@ module Shockout {
                     }
                 }
                
+                // OBSOLETE - now included in KO Component templates
                 // add control validation to Bootstrap form elements
                 // http://getbootstrap.com/css/#forms-control-validation 
-                self.$form.find('[required], .required').each(function (i: number, el: HTMLElement) {
-                    var koName = Utils.observableNameFromControl(el, self.viewModel);
-                    var $parent = $(el).closest('.form-group');
-                    var css = "css: { 'has-error': !!!" + koName + "(), 'has-success has-feedback': !!" + koName + "()}";
+                //self.$form.find('[required], .required').each(function (i: number, el: HTMLElement) {
+                //    var koName = Utils.observableNameFromControl(el, self.viewModel);
+                //    var $parent = $(el).closest('.form-group');
+                //    var css = "css: { 'has-error': !!!" + koName + "(), 'has-success has-feedback': !!" + koName + "()}";
 
-                    // If the parent already has a data-bind attribute, append the css.
-                    if (!!$parent.attr('data-bind')) {
-                        var dataBind = $parent.attr("data-bind");
-                        $parent.attr("data-bind", dataBind + ", " + css);
-                    } else {
-                        $parent.attr("data-bind", css);
-                    }
+                //    // If the parent already has a data-bind attribute, append the css.
+                //    if (!!$parent.attr('data-bind')) {
+                //        var dataBind = $parent.attr("data-bind");
+                //        $parent.attr("data-bind", dataBind + ", " + css);
+                //    } else {
+                //        $parent.attr("data-bind", css);
+                //    }
 
-                    $parent.append('<span class="glyphicon glyphicon-ok form-control-feedback" aria-hidden="true"></span>');
-                });
+                //    $parent.append('<span class="glyphicon glyphicon-ok form-control-feedback" aria-hidden="true"></span>');
+                //});
 
                 if (self.debug) {
                     console.info('initFormAsync: Required elements are initialized.');
@@ -985,28 +978,15 @@ module Shockout {
                     });
                 }             
 
-                // Build array of SP field names for the input fields remaning on the form.
-                // These are the field names to be saved and current user is allowed to edit these.
-                var editable = Utils.getEditableKoNames(self.$form);
-                $(editable).each(function (i, key: any) {
-                    self.pushEditableFieldName(key);
-                });
-
-                self.editableFields.sort();
-
-                if (self.debug) {
-                    console.info('Editable fields...');
-                    console.info(self.editableFields);
-                }
-
                 self.nextAsync(true, "Retrieved your permissions.");
             }
             catch (e) {
                 if (self.debug) {
-                    console.warn('Error in implementPermissionsAsync:');
+                    console.warn('Error in SPForm.implementPermissionsAsync()');
                     console.warn(e);
+                } else {
+                    self.logError("SPForm.implementPermissionsAsync() " + JSON.stringify(e));
                 }
-                self.logError("implementPermissionsAsync: " + e);
                 self.nextAsync(true, "Failed to retrieve your permissions.");
             }
         }
@@ -1241,6 +1221,21 @@ module Shockout {
                 ;
 
             try {
+
+                // Build array of SP field names for the input fields remaning on the form.
+                // These are the field names to be saved and current user is allowed to edit these.
+                var editable = Utils.getEditableKoNames(self.$form);
+                $(editable).each(function (i, key: any) {
+                    self.pushEditableFieldName(key);
+                });
+
+                self.editableFields.sort();
+
+                if (self.debug) {
+                    console.info('Editable fields...');
+                    console.info(self.editableFields);
+                }
+
                 //override form validation for clicking "Save" as opposed to "Submit" button
                 isSubmit = typeof (isSubmit) == "undefined" ? true : isSubmit;
 
@@ -1398,57 +1393,72 @@ module Shockout {
         * @param salef: SPForm
         * @return void
         */
-        setupNavigation(self: SPForm): void {
+        finalize(self: SPForm): void {
 
-            // Set up a navigation menu at the top of the form if there are elements with the class `nav-section`.
-            var $navSections = self.$form.find('.nav-section');
+            try {
+                // Set up a navigation menu at the top of the form if there are elements with the class `nav-section`.
+                var $navSections = self.$form.find('.nav-section');
+                if ($navSections.length > 0) {
 
-            if ($navSections.length == 0) {
-                self.nextAsync(true);
-                return;
+                    // add navigation section to top of form
+                    self.$form.prepend('<section class="no-print" id="TOP">' +
+                        '<h4>Navigation</h4>' +
+                        '<div class="navigation-buttons"></div>' +
+                        '</section>');
+
+                    // include the workflow history section
+                    self.$form.find('#workflowHistory, [data-workflow-history]').addClass('nav-section');
+
+                    // add navigation buttons
+                    self.$form.find(".nav-section:visible").each(function (i, el) {
+                        var $el = $(el);
+                        var $header = $el.find("> h4");
+                        if ($header.length == 0) {
+                            return;
+                        }
+                        var title = $header.text();
+                        var anchorName = Utils.toCamelCase(title) + 'Nav';
+                        $el.before('<div style="height:1px;" id="' + anchorName + '">&nbsp;</div>');
+                        self.$form.find(".navigation-buttons").append('<a href="#' + anchorName + '" class="btn btn-sm btn-info">' + title + '</a>');
+                    });
+
+                    // add a back-to-top button
+                    self.$form.append('<a href="#TOP" class="back-to-top"><span class="glyphicon glyphicon-chevron-up"></span></a>');
+
+                    // add smooth scrolling to for anchors - animates page navigation
+                    $('body').delegate('a[href*=#]:not([href=#])', 'click', function () {
+                        if (window.location.pathname.replace(/^\//, '') == this.pathname.replace(/^\//, '') && location.hostname == this.hostname) {
+                            var target = $(this.hash);
+                            target = target.length ? target : $('[name=' + this.hash.slice(1) + ']');
+                            if (target.length) {
+                                $('html,body').animate({
+                                    scrollTop: target.offset().top - 50
+                                }, 1000);
+
+                                return false;
+                            }
+                        }
+                    });
+                }
+
+                // apply jQueryUI datepickers after all KO bindings have taken place to prevent error: 
+                // `Uncaught Missing instance data for this datepicker`
+                var $datepickers: Array<JQuery> = self.$form.find('input.datepicker').datepicker();
+                if (self.debug) {
+                    console.info('Bound ' + $datepickers.length + ' jQueryUI datepickers.');
+                }
+
+                self.nextAsync(true, 'Finalized form controls.');
             }
-
-            // add navigation section to top of form
-            self.$form.prepend('<section class="no-print" id="TOP">' +
-                '<h4>Navigation</h4>' +
-                '<div class="navigation-buttons"></div>' +
-                '</section>');
-
-            // include the workflow history section
-            self.$form.find('#workflowHistory').addClass('nav-section');
-
-            // add navigation buttons
-            self.$form.find(".nav-section:visible").each(function (i, el) {
-                var $el = $(el);
-                var $header = $el.find("> h4");
-                if ($header.length == 0) {
-                    return;
+            catch (e) {
+                if (self.debug) {
+                    console.warn(e);
                 }
-                var title = $header.text();
-                var anchorName = Utils.toCamelCase(title) + 'Nav';
-                $el.before('<div style="height:1px;" id="' + anchorName + '">&nbsp;</div>');
-                self.$form.find(".navigation-buttons").append('<a href="#' + anchorName + '" class="btn btn-sm btn-info">' + title + '</a>');
-            });
-
-            // add a back-to-top button
-            self.$form.append('<a href="#TOP" class="back-to-top"><span class="glyphicon glyphicon-chevron-up"></span></a>');
-
-            // add smooth scrolling to for anchors - animates page navigation
-            $('body').delegate('a[href*=#]:not([href=#])', 'click', function () {
-                if (window.location.pathname.replace(/^\//, '') == this.pathname.replace(/^\//, '') && location.hostname == this.hostname) {
-                    var target = $(this.hash);
-                    target = target.length ? target : $('[name=' + this.hash.slice(1) + ']');
-                    if (target.length) {
-                        $('html,body').animate({
-                            scrollTop: target.offset().top - 50
-                        }, 1000);
-
-                        return false;
-                    }
+                else {
+                    self.logError('Error in SpForm.finalize(): ' + JSON.stringify(e));
                 }
-            });
-
-            self.nextAsync(true);          
+                self.nextAsync(false, 'Failed to finalize form controls.');
+            }       
         }
 
         /**
