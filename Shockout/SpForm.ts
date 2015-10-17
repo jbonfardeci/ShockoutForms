@@ -389,6 +389,15 @@ module Shockout {
                     self.nextAsync(true);
                 }
                 , self.setupNavigation
+                , function applyJqueryUI(self: SPForm) {
+                    // apply jQueryUI datepickers after all KO bindings have taken place to prevent error: 
+                    // `Uncaught Missing instance data for this datepicker`
+                    var $datepickers: Array<JQuery> = self.$form.find('input.datepicker').datepicker();
+                    if (self.debug) {
+                        console.info('Bound ' + $datepickers.length + ' jQueryUI datepickers.');
+                    }
+                    self.nextAsync(true);
+                }
             ];
 
             //start CAFE
@@ -518,11 +527,6 @@ module Shockout {
                     self.defaultViewUrl = $list.attr('DefaultViewUrl');
                     self.defailtMobileViewUrl = $list.attr('MobileDefaultViewUrl');
 
-                    // Build the Knockout view model
-                    //$(xmlDoc).find('Field').filter(function (i: number, el: any) {
-                    //    return !!!($(el).attr('Hidden')) && !!($(el).attr('DisplayName')) && !rxExcludeNames.test($(el).attr('Name')) && !rxExcludeNames.test($(el).attr('DisplayName'));
-                    //}).each(setupKoVar);
-
                     $(xmlDoc).find('Field').filter(function (i: number, el: any) {
                         return !!($(el).attr('DisplayName')) && $(el).attr('Hidden') != 'TRUE' && !rxExcludeNames.test($(el).attr('Name'));
                     }).each(setupKoVar);
@@ -591,9 +595,10 @@ module Shockout {
                                     if (val == '[today]') { val = new Date(); }
                                     break;
                                 default:
-                                    //val = (val+'').length == 0 ? null : val;
                                     break;
                             }
+
+                            // TODO: Parse simple SP formulas such as `[me]` etc.
 
                         }
                         defaultValue = val;
@@ -603,7 +608,8 @@ module Shockout {
                         ? ko.observableArray([])
                         : ko.observable(!!defaultValue ? defaultValue : spType == 'Boolean' ? false : null);
                     
-                    // add metadata to the KO object
+                    // Add SP metadata to the KO object.
+                    // e.g. <div data-bind="with: koObj._metadata">
                     koObj._metadata = {
                         'koName': koName,
                         'displayName': displayName || null,
@@ -615,32 +621,36 @@ module Shockout {
                         'type': spType
                     };
 
-                    koObj._koName = koName;
-                    koObj._displayName = displayName;
-                    koObj._name = spName;
-                    koObj._format = spFormat;
-                    koObj._required = spRequired;
-                    koObj._readOnly = spReadOnly;
-                    koObj._description = spDesc;
-                    koObj._type = spType;
+                    // Also expose these SP metadata properties with an underscore prefix at the first level for convenience in special cases.
+                    // e.g. <label data-bind="text: koObj._displayName"></label>
+                    for (var p in koObj._metadata) {
+                        koObj['_' + p] = koObj._metadata[p];
+                    }
 
+                    // Add choices defined in the SP list.
                     if (rxIsChoice.test(spType)) {
                         var isFillIn = $el.attr('FillInChoice');
 
                         koObj._isFillInChoice = !!isFillIn && isFillIn == 'True'; // allow fill-in choices
                         var choices = [];
+                        var options = [];
 
                         $el.find('CHOICE').each(function (j: number, choice: any) {
-                            choices.push({ 'value': $(choice).text(), 'selected': false });
+                            var txt = $(choice).text();
+                            choices.push({ 'value': $(choice).text(), 'selected': false }); // for backward compatibility
+                            options.push(txt); // new preferred array to reference in KO foreach binding contexts
                         });
 
                         koObj._choices = choices;
+                        koObj._options = options;
                         koObj._multiChoice = !!spType && spType == 'MultiChoice';
 
                         koObj._metadata.choices = choices;
+                        koObj._metadata.options = options;
                         koObj._metadata.multichoice = koObj._multiChoice;
                     }
 
+                    // Make it convenient to reference the parent KO object from within a KO binding context such as `with` or `foreach`.
                     koObj._metadata.$parent = koObj;
                     vm[koName] = koObj;
 
@@ -671,6 +681,8 @@ module Shockout {
 
                 var vm: IViewModel = self.viewModel;
                 var rx: RegExp = /submitted/i;
+
+                KoComponents.registerKoComponents();
 
                 // find out of this list allows saving before submitting and triggering workflow approval
                 // must have a field with `submitted` in the name and it must be of type `Boolean`
@@ -735,7 +747,7 @@ module Shockout {
                     }
 
                     // Setup attachments module.
-                    self.$form.find(".attachments").each(function (i: number, att: HTMLElement) {
+                    self.$form.find(".attachments, [data-sp-attachments]").each(function (i: number, att: HTMLElement) {
                         var id = 'fileuploader_' + i;
                         $(att).append(Templates.getAttachmentsTemplate(id));
                         self.fileUploaderSettings.element = document.getElementById(id);
@@ -760,7 +772,7 @@ module Shockout {
                 // set up HTML editors in the form
                 self.$form.find(".rte, [data-bind*='spHtml'], [data-sp-html]").each(function (i: number, el: HTMLElement) {
                     var $el = $(el);
-                    var koName = Utils.observableNameFromControl(el);
+                    var koName = Utils.observableNameFromControl(el, self.viewModel);
 
                     var $rte = $('<div>', {
                         'data-bind': 'spHtmlEditor: ' + koName,
@@ -783,8 +795,9 @@ module Shockout {
                     }
                 });
 
-                //append Created/Modified info to predefined section or append to form
+                //append Created/Modified, Workflow History info to predefined section or append to form
                 if (!!self.itemId) {
+
                     self.$createdInfo.html(Templates.getCreatedModifiedHtml());
 
                     //append Workflow history section
@@ -792,9 +805,10 @@ module Shockout {
                         self.$form.append(Templates.getHistoryTemplate());
                     }
 
-                    if (self.debug) {
-                        console.info('initFormAsync: show created/mod info.');
-                    }
+                    // remove elements with attribute `data-new-only` from the DOM if not a new form - an edit form where `itemId != null`
+                    self.$form.find('[data-new-only]').each(function () {
+                        $(this).remove();
+                    });
                 }
 
                 // remove elements with attribute `data-edit-only` from the DOM if not editing an existing form - a new form where `itemId == null || undefined`
@@ -807,24 +821,11 @@ module Shockout {
                         console.info('initFormAsync: setup elements with `data-edit-only` attribute.');
                     }
                 }
-
-                // remove elements with attribute `data-new-only` from the DOM if not a new form - an edit form where `itemId != null`
-                if (!!self.itemId) {
-                    self.$form.find('[data-new-only]').each(function () {
-                        $(this).remove();
-                    });
-
-                    if (self.debug) {
-                        console.info('initFormAsync: setup elements with `data-new-only` attribute.');
-                    }
-                }
                
-                // data-submitted, data-not-submitted
-
                 // add control validation to Bootstrap form elements
                 // http://getbootstrap.com/css/#forms-control-validation 
                 self.$form.find('[required], .required').each(function (i: number, el: HTMLElement) {
-                    var koName = Utils.observableNameFromControl(el);
+                    var koName = Utils.observableNameFromControl(el, self.viewModel);
                     var $parent = $(el).closest('.form-group');
                     var css = "css: { 'has-error': !!!" + koName + "(), 'has-success has-feedback': !!" + koName + "()}";
 
@@ -985,14 +986,10 @@ module Shockout {
                 }             
 
                 // Build array of SP field names for the input fields remaning on the form.
-                // These are the field names to be saved and current user is allows to edit these.
-                var rxExcludeInputTypes: RegExp = /(button|submit|cancel|reset)/;
-                var rxIncludeInputTags: RegExp = /(input|select|textarea)/i;
-                self.$form.find('[data-bind]').each(function (i: number, e: HTMLElement) {                 
-                    if (rxIncludeInputTags.test(e.tagName) && !rxExcludeInputTypes.test($(e).attr('type')) || $(e).attr('contenteditable') == 'true') {
-                        var key = Utils.observableNameFromControl(e);
-                        self.pushEditableFieldName(key);
-                    }
+                // These are the field names to be saved and current user is allowed to edit these.
+                var editable = Utils.getEditableKoNames(self.$form);
+                $(editable).each(function (i, key: any) {
+                    self.pushEditableFieldName(key);
                 });
 
                 self.editableFields.sort();
@@ -1575,7 +1572,7 @@ module Shockout {
             try {
 
                 self.$form.find('.required, [required]').each(function checkRequired(i: number, n: any): void {
-                    var p = Utils.observableNameFromControl(n);
+                    var p = Utils.observableNameFromControl(n, self.viewModel);
                     if (!!p && model[p]) {
                         var val = model[p]();
                         if (val == null || $.trim(val+'').length == 0) {

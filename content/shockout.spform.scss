@@ -224,7 +224,8 @@ $aliceblue: aliceblue;
                 margin-bottom:.2em;
             }
 
-            > .form-group:nth-child(even){
+            > *:nth-child(odd) > .form-group,
+            > .form-group:nth-child(odd){
                 background-color: aliceblue;
                 input, input.form-control{
                     background-color:$white;

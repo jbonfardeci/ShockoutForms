@@ -36,7 +36,8 @@
         ko.bindingHandlers['spPerson'] = {
             init: function (element, valueAccessor, allBindings, bindingContext) {
                 try {
-                    if (element.tagName.toLowerCase() != 'input' || $(element).attr('type') == 'hidden') { return; }/*stop if not an editable field */
+                    // stop if not an editable field 
+                    if (element.tagName.toLowerCase() != 'input' || $(element).attr('type') == 'hidden') { return; }
 
                     // This will be called when the binding is first applied to an element
                     // Set up any initial state, event handlers, etc. here
@@ -45,9 +46,9 @@
                         , person = ko.unwrap(modelValue)
                         ;
 
-                    var $element = $(element);
-                    $element.addClass('people-picker-control');
-                    $element.attr('placeholder', 'Employee Account Name'); //.addClass('people-picker-control');
+                    var $element = $(element)
+                        .addClass('people-picker-control')
+                        .attr('placeholder', 'Employee Account Name');
 
                     //create wrapper for control
                     var $parent = $(element).parent();
@@ -166,40 +167,6 @@
             }
         };
 
-        ko.bindingHandlers['spDate'] = {
-            init: function (element, valueAccessor, allBindings, viewModel: IViewModel, bindingContext) {
-                var modelValue: KnockoutObservable<Date> = valueAccessor();
-
-                if (element.tagName.toLowerCase() != 'input' || $(element).attr('type') == 'hidden') { return; }// stop if not an editable field
-
-                $(element)
-                    .datepicker()
-                    .addClass('datepicker med')
-                    .attr('placeholder', 'MM/DD/YYYY')
-                    .on('blur', onDateChange)
-                    .on('change', onDateChange);
-
-                function onDateChange() {
-                    modelValue(Utils.parseDate(this.value));
-                };
-            },
-            update: function (element, valueAccessor, allBindings, viewModel: IViewModel, bindingContext) {
-                var modelValue: KnockoutObservable<Date> = valueAccessor();
-                var date: Date = Utils.parseDate( ko.unwrap(modelValue) );
-                var dateStr = '';
-
-                if (!!date && date != null) {
-                    dateStr = Utils.dateToLocaleString(date);
-                }
-
-                if ('value' in element) {
-                    $(element).val(dateStr);
-                } else {
-                    $(element).text(dateStr);
-                }
-            }
-        };
-
         ko.bindingHandlers['spMoney'] = {
             'init': function (element, valueAccessor, allBindings, viewModel: IViewModel, bindingContext) {
 
@@ -314,6 +281,40 @@
             }
         };
 
+        ko.bindingHandlers['spDate'] = {
+            //after: ['id'],
+            init: function (element, valueAccessor, allBindings, viewModel: IViewModel, bindingContext) {
+                var modelValue: KnockoutObservable<Date> = valueAccessor();
+
+                if (element.tagName.toLowerCase() != 'input' || $(element).attr('type') == 'hidden') { return; }// stop if not an editable field
+
+                $(element)
+                    .addClass('datepicker med')
+                    .attr('placeholder', 'MM/DD/YYYY')
+                    .on('blur', onDateChange)
+                    .on('change', onDateChange);
+
+                function onDateChange() {
+                    modelValue(Utils.parseDate(this.value));
+                };
+            },
+            update: function (element, valueAccessor, allBindings, viewModel: IViewModel, bindingContext) {
+                var modelValue: KnockoutObservable<Date> = valueAccessor();
+                var date: Date = Utils.parseDate(ko.unwrap(modelValue));
+                var dateStr = '';
+
+                if (!!date && date != null) {
+                    dateStr = Utils.dateToLocaleString(date);
+                }
+
+                if ('value' in element) {
+                    $(element).val(dateStr);
+                } else {
+                    $(element).text(dateStr);
+                }
+            }
+        };
+
         // 1. REST returns UTC
         // 2. getUTCHours converts UTC to Locale
         ko.bindingHandlers['spDateTime'] = {
@@ -349,7 +350,7 @@
                         'placeholder': 'MM/DD/YYYY',
                         'maxlength': 10,
                         'class': 'datepicker med form-control'
-                    }).css('display', 'inline-block').datepicker().on('change', function () {
+                    }).css('display', 'inline-block').on('change', function () {
                         try {
                             $error.hide();
                             var date: Date = Utils.parseDate(this.value);

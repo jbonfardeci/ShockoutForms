@@ -2,49 +2,49 @@
 
     export class Templates {
 
-        public static attachmentsTemplate = '<h4>Attachments (<span data-bind="text: attachments().length"></span>)</h4>' +
-            '<div id="{0}"></div>' +
-            '<div data-bind="foreach: attachments">' +
-            '<div>' +
-            '<a href="" data-bind="attr: {href: __metadata.media_src}"><span class="glyphicon glyphicon-paperclip"></span> <span data-bind="text: Name"></span></a>&nbsp;' +
-            '<button data-bind="event: {click: $root.deleteAttachment}" class="btn btn-sm btn-danger" title="Delete Attachment" data-author-only><span class="glyphicon glyphicon-remove"></span></button>' +
-            '</div>' +
-            '</div>';
+        public static attachmentsTemplate = '<h4>Attachments (<span data-bind="text: attachments().length"></span>)</h4>\
+            <div id="{0}"></div>\
+            <div data-bind="foreach: attachments">\
+            <div>\
+            <a href="" data-bind="attr: {href: __metadata.media_src}"><span class="glyphicon glyphicon-paperclip"></span> <span data-bind="text: Name"></span></a>&nbsp;\
+            <button data-bind="event: {click: $root.deleteAttachment}" class="btn btn-sm btn-danger" title="Delete Attachment" data-author-only><span class="glyphicon glyphicon-remove"></span></button>\
+            </div>\
+            </div>';
 
-        public static fileuploadTemplate: string = '<div class="qq-uploader" data-author-only>' +
-            '<div class="qq-upload-drop-area"><span>Drop files here to upload</span></div>' +
-            '<div class="btn btn-primary qq-upload-button"><span class="glyphicon glyphicon-paperclip"></span> Attach File</div>' +
-            '<ul class="qq-upload-list"></ul></div>';
+        public static fileuploadTemplate: string = '<div class="qq-uploader" data-author-only>\
+            <div class="qq-upload-drop-area"><span>Drop files here to upload</span></div>\
+            <div class="btn btn-primary qq-upload-button"><span class="glyphicon glyphicon-paperclip"></span> Attach File</div>\
+            <ul class="qq-upload-list"></ul></div>';
 
-        public static createdModifiedTemplate: string = '<div class="create-mod-info no-print hidden-xs"></div>' +
-            '<div class="row">' +
-            '<div class="col-md-3"><label>Created By</label> <a data-bind="text: {0}, attr:{href: \'mailto:\'+{1}()}" class="email" > </a></div>' +
-            '<div class="col-md-3"><label>Created</label> <span data-bind="spDateTime: {2}"></span></div>' +
-            '<div class="col-md-3"><label>Modified By</label> <a data-bind="text: {3}, attr:{href: \'mailto:\'+{4}()}" class="email"></a></div>' +
-            '<div class="col-md-3"><label>Modified</label> <span data-bind="spDateTime: {5}"></span></div>' +
-            '</div>';
+        public static createdModifiedTemplate: string = '<div class="create-mod-info no-print hidden-xs"></div>\
+            <div class="row">\
+            <div class="col-md-3"><label>Created By</label> <a data-bind="text: {0}, attr:{href: \'mailto:\'+{1}()}" class="email" > </a></div>\
+            <div class="col-md-3"><label>Created</label> <span data-bind="spDateTime: {2}"></span></div>\
+            <div class="col-md-3"><label>Modified By</label> <a data-bind="text: {3}, attr:{href: \'mailto:\'+{4}()}" class="email"></a></div>\
+            <div class="col-md-3"><label>Modified</label> <span data-bind="spDateTime: {5}"></span></div>\
+            </div>';
         
-        public static historyTemplate: string = '<h4>Workflow History</h4>' +
-            '<div class="row">' +
-            '<div class="col-md-6 col-xs-6"><strong>Description</strong></div>' +
-            '<div class="col-md-6 col-xs-6"><strong>Date</strong></div>' +
-            '</div>' +
-            '<div data-bind="foreach: historyItems">' + 
-            '<div class="row">' +
-            '<div class="col-md-6 col-xs-6"><span data-bind="text: _description"></span></div>' +
-            '<div class="col-md-6 col-xs-6"><span data-bind="spDateTime: _dateOccurred"></span></div>' +
-            '</div></div>';
+        public static historyTemplate: string = '<h4>Workflow History</h4>\
+            <div class="row">\
+            <div class="col-md-6 col-xs-6"><strong>Description</strong></div>\
+            <div class="col-md-6 col-xs-6"><strong>Date</strong></div>\
+            </div>\
+            <div data-bind="foreach: historyItems">\
+            <div class="row">\
+            <div class="col-md-6 col-xs-6"><span data-bind="text: _description"></span></div>\
+            <div class="col-md-6 col-xs-6"><span data-bind="spDateTime: _dateOccurred"></span></div>\
+            </div></div>';
 
-        public static userProfileTemplate = '<h4>{header}</h4>' +
-            '<img src="{pictureurl}" alt="{name}" />' +
-            '<ul>' +
-            '<li><label>Name</label>{name}<li>' +
-            '<li><label>Title</label>{jobtitle}</li>' +
-            '<li><label>Department</label>{department}</li>' +
-            '<li><label>Email</label><a href="mailto:{workemail}">{workemail}</a></li>' +
-            '<li><label>Phone</label>{workphone}</li>' +
-            '<li><label>Office</label>{office}</li>' +
-            '</ul>';
+        public static userProfileTemplate = '<h4>{header}</h4>\
+            <img src="{pictureurl}" alt="{name}" />\
+            <ul>\
+            <li><label>Name</label>{name}<li>\
+            <li><label>Title</label>{jobtitle}</li>\
+            <li><label>Department</label>{department}</li>\
+            <li><label>Email</label><a href="mailto:{workemail}">{workemail}</a></li>\
+            <li><label>Phone</label>{workphone}</li>\
+            <li><label>Office</label>{office}</li>\
+            </ul>';
 
         public static getFileUploadTemplate(): string {
             var $div = $('<div>').html(Templates.fileuploadTemplate);

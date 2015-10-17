@@ -10,6 +10,7 @@
         _description: string;
         _type: string;
         _choices: Array<any>;
+        _options: Array<any>;
         _isFillInChoice: boolean;
         _multiChoice: boolean;
     }
@@ -151,7 +152,8 @@
 
         constructor(rootUrl: string, siteUrl: string, listName: string, itemId: number, fileName: string) {
             var entitySet: string = listName.replace(/\s/g, '');
-            var uri = rootUrl + siteUrl + "/_vti_bin/listdata.svc/Attachments(EntitySet='{0}',ItemId={1},Name='{2}')";
+            siteUrl = Utils.formatSubsiteUrl(siteUrl);
+            var uri = rootUrl + siteUrl + "_vti_bin/listdata.svc/Attachments(EntitySet='{0}',ItemId={1},Name='{2}')";
             uri = uri.replace(/\{0\}/, entitySet).replace(/\{1\}/, itemId + '').replace(/\{2\}/, fileName);
 
             this.__metadata = {

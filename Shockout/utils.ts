@@ -49,63 +49,169 @@
             }
         }
 
+        public static getParent(o, num: number = 1) {
+            for (var i = 0; i < num; i++) {
+                if (!!!o) { continue; }
+                o = o.parentNode;
+            }
+            return o;
+        }
+
+        public static getPrevKOComment(o){
+            do {
+                o = o.previousSibling;
+            } while (o && o.nodeType != 8 && !/^\s*ko/.test(o.textContent)); // a KO comment is node type 8 and starts with 'ko'
+            return o;
+        }
+
+        public static getKoComments(parent) {
+            var koNames = [];
+
+            parent = parent || $('body');
+
+            $(parent).contents().filter(function (i, e) {
+                return e.nodeType == 8 && /^\s*ko/.test(e.nodeValue);
+            }).each(function (i, e) {
+                koNames.push(e.nodeValue.replace(/\s*ko\s*foreach\s*:\s*(\$root\.|)/, '').replace(/\s/g, ''));
+            });
+
+            return koNames;
+        }
+
+        public static getKoContainerlessControls(parent) {
+            var a = [];
+            parent = parent || document.body;
+            // need jQuery as it does a great job at selecting comment elements
+            $(parent).contents().filter(function (i, e) {
+                return e.nodeType == 8 && /^\s*ko\s*foreach:/.test(e.nodeValue);
+            }).each(function (i, e) {
+                a.push(e);
+            });
+            return a;
+        }
+
+        public static getEditableKoContainerlessControls(parent) {
+            parent = parent || document.body;
+            var comments = Utils.getKoContainerlessControls(parent);
+            var a = [];
+            var rxNotTypes = /(^button|submit|cancel|reset)/i;
+            var rxTagNames = /(input|textarea)/i;
+            var rxIsContext = /\$data/;
+
+            for (var i = 0; i < comments.length; i++) {
+                var next = Utils.getNextSibling(comments[i]);
+
+                // when next sibling is the input
+                var db = next.getAttribute('data-bind');
+                if (!!db && rxTagNames.test(next.tagName) && rxIsContext.test(db) && rxNotTypes.test(next.getAttribute('type'))) {
+                    a.push(comments[i]);
+                    continue;
+                } 
+                        
+                //otherwise the input control is a child of the next sibling
+                var bindings = next.querySelectorAll("input[data-bind*='$data']:enabled, textarea[data-bind*='$data']:enabled");
+                if (bindings.length > 0) {
+                    a.push(comments[i]);
+                }
+            }
+
+            return a;
+        }
+
+        public static getEditableKoControlNames(parent) {
+
+            var a = [];
+            var rxNotTypes = /(button|submit|cancel|reset)/;
+            var rx = /\s*:\s*(\$root.|)\w*\b/;
+            var replace = //;
+
+                $(parent).find('[data-bind]').filter(':input').filter(function (i, e) {
+                    return !rxNotTypes.test($(e).attr('type'));
+                }).each(clean);
+
+            $(parent).find('[data-bind][contenteditable="true"]').each(clean);
+
+            function clean(i, e) {
+                var exec = rx.exec($(e).attr('data-bind'));
+                var koName = !!exec ? exec[0]
+                    .replace(/:(\s+|)/g, '')
+                    .replace(/\$root\./, '')
+                    .replace(/\s/g, '') : null;
+
+                if (koName != null) {
+                    a.push(koName);
+                }
+            }
+
+            return a;
+        }
+
+        /**
+        * Get the KO names of the edit input controls on a form.
+        * @parem parent: HTMLElement
+        * @return Array<string>
+        */
+        public static getEditableKoNames(parent) {
+            parent = parent || document.body;
+            var a = [];
+            var rxExcludeInputTypes = /(button|submit|cancel|reset)/;
+
+            $(parent).find(':input.so-editable').each(function (i, el) {
+                var n = $(el).attr('ko-name');
+                if (a.indexOf(n) < 0) {
+                    a.push(n);
+                }
+            });
+
+            // get KO containerless control names
+            var comments = Utils.getEditableKoContainerlessControls(parent);
+            for (var i = 0; i < comments.length; i++) {
+                var n = comments[i].nodeValue
+                    .replace(/\s*ko\s*foreach\s*:\s*(\$root\.|)/, '')
+                    .replace(/\s/g, '');
+                if (a.indexOf(n) < 0) {
+                    a.push(n);
+                }
+            }
+                     
+            // get KO input controls
+            var koNames = Utils.getEditableKoControlNames(parent);
+            for (var i = 0; i < koNames.length; i++) {
+                var n = koNames[i];
+                if (a.indexOf(n) < 0) {
+                    a.push(n);
+                }
+            }
+
+            return a;
+        }
+
+        public static getNextSibling(el) {
+            do {
+                el = el.nextSibling;
+            } while (el.nodeType != 1);
+            return el;
+        }
+
         /**
         * Extract the Knockout observable name from a field with `data-bind` attribute.
         * If the KO name is `$data`, the method will recursively search for the closest parent element or comment with the `foreach:` binding.
         * @param control: HTMLElement
         * @return string
         */
-        public static observableNameFromControl(control): string {
-            var attr = control.getAttribute('data-bind');
-            if (!!!attr) { return null; }
+        public static observableNameFromControl(control, vm: IViewModel = undefined): string {
+            var db = control.getAttribute('data-bind');
+            if (!!!db) { return null; }
 
-            var rx = /(\b:\s*|\$root.|\$data)\w*\b/;
-            var exec = rx.exec(attr);
-            var result = !!exec ? exec[0]
+            var rx = /(\b:\s*|\$root\.)\w*\b/;
+            var exec = rx.exec(db);
+            var koName = !!exec ? exec[0]
                 .replace(/:(\s+|)/g, '')
                 .replace(/\$root\./, '')
                 .replace(/\s/g, '') : null;
-    
-            // if within a KO `foreach:`, name will be `$data` and get the KO name from the parent element
-            if (/\$data/.test(result)) {
 
-                var parent = (function getParent(o, num) {
-                    for (var i = 0; i < num; i++) {
-                        if (!!!o) { continue; }
-                        o = o.parentNode;
-                    }
-                    return o;
-                })(control, 1);
-
-                //First, look for `<!-- ko foreach: MyVar -->` comment syntax, then try closest parent element.
-                var fe: any = /<!--\s*ko\s+foreach:\s*(\$root\.|)\w*\s*(-->|)/.exec(parent.innerHTML);
-                fe = !!fe ? fe[0]
-                    .replace(/<!--\s*ko\s*foreach\s*:\s*(\$root\.|)/, '')
-                    .replace(/\s*-->/, '') : null;
-
-                return !!fe ? fe : Utils.observableNameFromControl(parent);
-            }
-
-            return result;
+            return koName;
         }
-
-        // previous version
-        //public static observableNameFromControl(control: any): string {
-        //    var attr: string = $(control).attr('data-bind');
-        //    if (!!!attr) { return null; }
-        //    attr = attr.replace(/\$/g, '');
-        //    var rx: RegExp = /(\b:(\s+|)|\$root.)\w*\b/;
-        //    var exec: Array<string> = rx.exec(attr);
-        //    var result: string = !!exec ? exec[0]
-        //        .replace(/:(\s+|)/gi, '')
-        //        .replace(/\$root\./, '')
-        //        .replace(/\._metadata/, '')
-        //        .replace(/\s/g, '') : null;
-        //    if (result == 'parent') {
-        //        return Utils.observableNameFromControl( $(control).parent() );
-        //    }
-        //    return result;
-        //}
 
         /**
         * Alias for observableNameFromControl()

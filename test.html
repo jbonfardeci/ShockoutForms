@@ -1,0 +1,311 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+    <title></title>
+	<meta charset="utf-8" />
+</head>
+<body>
+
+    <div id="koform">
+
+        <div class="form-group">
+            <label data-bind="text: MySpFieldName._displayName" class="control-label" for="MySpFieldName"></label>
+
+            <select data-bind="value: MySpFieldName, attr:{'placeholder': MySpFieldName._displayName}, options: MySpFieldName._choices, optionsValue: 'value', optionsCaption: '--SELECT--'" id="MySpFieldName" class="form-control"></select>
+
+            <!-- optional Field Description -->
+            <p data-bind="text: MySpFieldName._description"></p>
+        </div>
+
+        <div class="form-group">
+            <label data-bind="text: MySpFieldName._displayName" class="control-label"></label>
+
+            <!-- ko foreach: MySpFieldName._choices -->
+            <label class="radio">
+                <input type="checkbox" data-bind="checked: $root.MySpFieldName, attr: { value: $data.value }" />
+                <span data-bind="text: $data.value"></span>
+            </label>
+            <!-- /ko -->
+            <!-- optional Field Description -->
+            <p data-bind="text: MySpFieldName._description"></p>
+        </div>
+
+        <div class="form-group">
+            <label data-bind="text: MySpFieldName._displayName" class="control-label" for="MySpFieldName"></label>
+
+            <select data-bind="value: MySpFieldName, attr:{'placeholder': MySpFieldName._displayName}, options: MySpFieldName._choices, optionsValue: 'value', optionsCaption: '--SELECT--'" id="MySpFieldName" class="form-control"></select>
+
+            <!-- optional Field Description -->
+            <p data-bind="text: MySpFieldName._description"></p>
+        </div>
+
+        <div class="form-group">
+            <label data-bind="text: MySpFieldName._displayName" class="control-label" for="MySpFieldName"></label>
+
+            <input type="text" data-bind="value: MySpFieldName, attr:{'placeholder': MySpFieldName._displayName}" maxlength="255" id="MySpFieldName" class="form-control" />
+
+            <!-- optional Field Description -->
+            <p data-bind="text: MySpFieldName._description"></p>
+        </div>
+
+        <div>
+            <input data-bind="value: MyTextField" />
+        </div>
+
+        <div>
+            <input value="MyNonKoTextField" />
+        </div>
+
+        <div>
+            <input type="checkbox" data-bind="checked: MyChkField" />
+        </div>
+
+        <div>
+            <select data-bind="value: MySelectField"></select>
+        </div>
+
+        <div>
+            <textarea data-bind="value: $root.MyTextAreaField"></textarea>
+        </div>
+
+        <div>
+            <div data-bind="value: MyRTE" contenteditable="true"></div>
+        </div>
+
+        <!-- ko foreach: Employees -->
+        <div>
+            <input data-bind="spPerson: $data" />
+        </div>
+        <!-- /ko -->
+
+        <!-- ko foreach: Cats -->
+        <input data-bind="value: $data" />
+        <!-- /ko -->
+
+        <!-- ko foreach: Dogs -->
+        <div>
+            <input data-bind="value: $root.DogSitter" />
+        </div>
+        <!-- /ko -->
+
+        <!-- ko foreach: Sloths -->
+        <div>
+            <div>
+                <input data-bind="value: $data" />
+            </div>
+        </div>
+        <!-- /ko -->
+
+        <div data-bind="foreach: People" title="person">
+            <input type="text" data-bind="value: $data" title="person" />
+        </div>
+
+        <div data-bind="foreach: Wookie" title="wookie">
+            <input type="text" data-bind="value: $data" title="person" />
+        </div>
+
+        <!-- ko foreach: Wookies -->
+        <div>
+            <label>Wookie</label>
+            <input type="text" data-bind="value: $data" title="wookie" />
+        </div>
+        <!-- /ko -->
+
+        
+        <div>
+            <label>Wookie</label>
+            <!-- ko foreach: Wookies -->
+            <input type="text" data-bind="value: $data" title="wookie" />
+            <!-- /ko -->
+        </div>
+        
+
+    </div>
+
+    <script src="http://code.jquery.com/jquery-1.11.3.min.js" type="text/javascript"></script>
+    <script>
+
+        $(function () {
+
+            var Utils = {
+
+                getEditableKoBindingContextControls: function (parent) {
+                    parent = parent || document.body;
+                    var a = [];
+                    var rxNotTypes = /(^button|submit|cancel|reset)/i;
+                    var elems = parent.querySelectorAll("input[data-bind*='$data']:enabled, textarea[data-bind*='$data']:enabled");
+                    
+                    for (var i = 0; i < elems.length; i++) {
+                        
+                        //console.info(elems[i]);
+                        var n;
+
+                        var $parent = $(elems[i]).closest("*[data-bind*='foreach']");
+                        if ($parent.length != 0) {
+                            n = Utils.observableNameFromControl($parent);
+                            if (!!n && a.indexOf(n) < 0) {
+                                a.push(n);
+                            }
+                            continue;
+                        }
+
+                        var comment = Utils.getPrevKoContainerlessControls(elems[i]);
+                        if (!!comment) {
+                            //console.warn(comment);
+                            n = comment.nodeValue.replace(/\s*ko\s*foreach\s*:\s*(\$root\.|)/, '')
+                                .replace(/\s/g, '');
+                            if (!!n && a.indexOf(n) < 0) {
+                                a.push(n);
+                            }
+                        }
+
+                    }
+
+                    return a;
+                },
+
+                getPrevKoContainerlessControls: function (o) {
+                    do{
+                        o = o.previousSibling;
+
+                        
+
+                    } while (o && o.nodeType != 8 && !/^\s*ko\s*foreach:/.test(o.nodeValue));
+                    return o;
+                },
+
+                observableNameFromControl: function(control, vm) {
+                    var db = $(control).attr('data-bind');
+                    if (!!!db) { return null; }
+
+                    var rx = /(\b:\s*|\$root\.)\w*\b/;
+                    var exec = rx.exec(db);
+                    var koName = !!exec ? exec[0]
+                        .replace(/:(\s+|)/g, '')
+                        .replace(/\$root\./, '')
+                        .replace(/\s/g, '') : null;
+
+                    return koName;
+                },
+
+                getKoContainerlessControls: function (parent) {
+                    var a = [];
+                    parent = parent || document.body;
+                    // need jQuery as it does a great job at selecting comment elements
+                    $(parent).contents().filter(function (i, e) {
+                        return e.nodeType == 8 && /^\s*ko\s*foreach:/.test(e.nodeValue);
+                    }).each(function (i, e) {
+                        a.push(e);
+                    });
+                    return a;
+                },
+
+                getEditableKoContainerlessControls: function (parent) {
+                    parent = parent || document.body;
+                    var comments = Utils.getKoContainerlessControls(parent);
+                    var a = [];
+                    var rxNotTypes = /(^button|submit|cancel|reset)/i;
+                    var rxTagNames = /(input|textarea)/i;
+                    var rxIsContext = /\$data/;
+
+                    for (var i = 0; i < comments.length; i++) {
+                        var next = Utils.getNextSibling(comments[i]);
+
+                        // when next sibling is the input
+                        var db = next.getAttribute('data-bind');
+                        if (!!db && rxTagNames.test(next.tagName) && rxIsContext.test(db) && rxNotTypes.test(next.getAttribute('type'))) {
+                            a.push(comments[i]);
+                            continue;
+                        } 
+                        
+                        //otherwise the input control is a child of the next sibling
+                        var bindings = next.querySelectorAll("input[data-bind*='$data']:enabled, textarea[data-bind*='$data']:enabled");
+                        if (bindings.length > 0) {
+                            a.push(comments[i]);
+                        }
+                    }
+
+                    return a;
+                },
+
+                getEditableKoControlNames: function (parent) {
+
+                    var a = [];
+                    var rxNotTypes = /(button|submit|cancel|reset)/;
+                    var rx = /\s*:\s*(\$root.|)\w*\b/;
+                    var replace = //;
+
+                    $(parent).find('[data-bind]').filter(':input').filter(function (i, e) {
+                        return !rxNotTypes.test($(e).attr('type'));
+                    }).each(clean);
+
+                    $(parent).find('[data-bind][contenteditable="true"]').each(clean);
+
+                    function clean(i, e) {
+                        var exec = rx.exec($(e).attr('data-bind'));
+                        var koName = !!exec ? exec[0]
+                            .replace(/:(\s+|)/g, '')
+                            .replace(/\$root\./, '')
+                            .replace(/\s/g, '') : null;
+
+                        if (koName != null) {
+                            a.push(koName);
+                        }
+                    }
+
+                    return a;
+                },
+
+                getEditableKoNames: function (parent) {
+                    parent = parent || document.body;
+                    var a = [];
+                    var rxExcludeInputTypes = /(button|submit|cancel|reset)/;
+
+                    // get KO containerless control names
+                    var comments = Utils.getEditableKoContainerlessControls(parent);
+                    for (var i = 0; i < comments.length; i++) {
+                        var n = comments[i].nodeValue
+                                .replace(/\s*ko\s*foreach\s*:\s*(\$root\.|)/, '')
+                                .replace(/\s/g, '');
+                        if (a.indexOf(n) < 0) {
+                            a.push(n);
+                        }
+                    }
+                     
+                    // get KO input controls
+                    var koNames = Utils.getEditableKoControlNames(parent);
+                    for (var i = 0; i < koNames.length; i++) {
+                        var n = koNames[i];
+                        if (a.indexOf(n) < 0) {
+                            a.push(n);
+                        }
+                    }
+
+                    return a;
+                },
+
+                getNextSibling: function(el){
+                    do{
+                        el = el.nextSibling;
+                    } while(el.nodeType != 1);
+                    return el;
+                }
+            };
+
+            var koform = document.getElementById('koform');
+            //var x = /<!--\s*ko\s+foreach\s*:\s*\w+\s*-->\w*<!-- \/ko -->/gi.exec(koform.innerHTML);
+            //console.log(x);
+
+            var x = Utils.getEditableKoBindingContextControls(koform);
+            console.log(x);
+            
+            //var koNames = Utils.getEditableKoNames(document.getElementById('koform'));
+            //console.log(koNames);
+            
+
+        });
+
+    </script>
+
+</body>
+</html>

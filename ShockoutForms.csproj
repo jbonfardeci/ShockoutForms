@@ -23,6 +23,7 @@
     <Service Include="{4A0DDDB5-7A95-4FBF-97CC-616D07737A77}" />
   </ItemGroup>
   <ItemGroup>
+    <TypeScriptCompile Include="Shockout\Components.ts" />
     <TypeScriptCompile Include="Shockout\datatypes15.ts" />
     <TypeScriptCompile Include="Shockout\SpApi15.ts" />
     <TypeScriptCompile Include="Shockout\SpForm.ts" />
@@ -46,6 +47,7 @@
     <Content Include="example\SP2013\PurchaseRequisition.aspx" />
     <Content Include="README.md" />
     <Content Include="ShockoutForms-0.0.2.js" />
+    <Content Include="test.html" />
     <Content Include="_layouts\SPFormFileHandler.ashx" />
     <Content Include="ShockoutForms-0.0.2.js.map" />
     <Content Include="example\SP2010\PurchaseRequisitions.stp" />
@@ -97,7 +99,7 @@
   <PropertyGroup Condition="'$(Configuration)' == 'Debug'">
     <TypeScriptRemoveComments>false</TypeScriptRemoveComments>
     <TypeScriptSourceMap>true</TypeScriptSourceMap>
-    <TypeScriptOutFile>ShockoutForms-0.0.2.js</TypeScriptOutFile>
+    <TypeScriptOutFile>ShockoutForms-0.0.x.js</TypeScriptOutFile>
     <TypeScriptTarget>ES5</TypeScriptTarget>
     <TypeScriptCompileOnSaveEnabled>True</TypeScriptCompileOnSaveEnabled>
     <TypeScriptNoImplicitAny>False</TypeScriptNoImplicitAny>

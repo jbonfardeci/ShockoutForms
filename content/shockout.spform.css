@@ -1,211 +1,475 @@
-@media screen { @media -sass-debug-info{filename{font-family:file\:\/\/C\:\/Users\/jbonfardeci\/Source\/Repos\/ShockoutForms\/content\/shockout\.spform\.scss}line{font-family:\0000318}}
-  .company-branding { text-align: center; margin-top: 30px; }
-@media -sass-debug-info{filename{font-family:file\:\/\/C\:\/Users\/jbonfardeci\/Source\/Repos\/ShockoutForms\/content\/shockout\.spform\.scss}line{font-family:\0000323}}
-  .container, .container-fluid { padding-top: 3em; }
-@media -sass-debug-info{filename{font-family:file\:\/\/C\:\/Users\/jbonfardeci\/Source\/Repos\/ShockoutForms\/content\/shockout\.spform\.scss}line{font-family:\0000326}}
-  .container a.back-to-top, .container-fluid a.back-to-top { display: block; font-size: 1.4em; background-color: #a94442; padding: .5em .7em; position: fixed; bottom: 2em; right: 1em; border-radius: 7px; cursor: pointer; color: #fff; text-align: center; box-shadow: rgba(0, 0, 0, 0.4) 5px 5px 10px; }
-@media -sass-debug-info{filename{font-family:file\:\/\/C\:\/Users\/jbonfardeci\/Source\/Repos\/ShockoutForms\/content\/shockout\.spform\.scss}line{font-family:\0000340}}
-  .container a.back-to-top:visited, .container-fluid a.back-to-top:visited { color: #fff; }
-@media -sass-debug-info{filename{font-family:file\:\/\/C\:\/Users\/jbonfardeci\/Source\/Repos\/ShockoutForms\/content\/shockout\.spform\.scss}line{font-family:\0000345}}
-  .sp-form { /*.user-profile-card*/ /* Boostrap overrides */ /*Valum's QQ File Uploader*/ /*boostrap overrides*/ }
-@media -sass-debug-info{filename{font-family:file\:\/\/C\:\/Users\/jbonfardeci\/Source\/Repos\/ShockoutForms\/content\/shockout\.spform\.scss}line{font-family:\0000347}}
-  .sp-form .req { color: #a94442; padding: 0 5px; font-size: 1.2em; }
-@media -sass-debug-info{filename{font-family:file\:\/\/C\:\/Users\/jbonfardeci\/Source\/Repos\/ShockoutForms\/content\/shockout\.spform\.scss}line{font-family:\0000353}}
-  .sp-form table { width: 90%; background-color: #fff; border: 1px solid #ccc; border-collapse: collapse; margin: 10px auto; }
-@media -sass-debug-info{filename{font-family:file\:\/\/C\:\/Users\/jbonfardeci\/Source\/Repos\/ShockoutForms\/content\/shockout\.spform\.scss}line{font-family:\0000359}}
-  .sp-form table td, .sp-form table th { border: 0 solid #ccc; border-width: 0 0 1px 0; padding: 5px; text-align: left; }
-@media -sass-debug-info{filename{font-family:file\:\/\/C\:\/Users\/jbonfardeci\/Source\/Repos\/ShockoutForms\/content\/shockout\.spform\.scss}line{font-family:\0000365}}
-  .sp-form table tr.even { background-color: aliceblue; }
-@media -sass-debug-info{filename{font-family:file\:\/\/C\:\/Users\/jbonfardeci\/Source\/Repos\/ShockoutForms\/content\/shockout\.spform\.scss}line{font-family:\0000366}}
-  .sp-form table tr:nth-child(even) { background-color: aliceblue; }
-@media -sass-debug-info{filename{font-family:file\:\/\/C\:\/Users\/jbonfardeci\/Source\/Repos\/ShockoutForms\/content\/shockout\.spform\.scss}line{font-family:\0000369}}
-  .sp-form input.form-control { background-color: transparent; }
-@media -sass-debug-info{filename{font-family:file\:\/\/C\:\/Users\/jbonfardeci\/Source\/Repos\/ShockoutForms\/content\/shockout\.spform\.scss}line{font-family:\0000373}}
-  .sp-form input.long { width: 300px; }
-@media -sass-debug-info{filename{font-family:file\:\/\/C\:\/Users\/jbonfardeci\/Source\/Repos\/ShockoutForms\/content\/shockout\.spform\.scss}line{font-family:\0000377}}
-  .sp-form input.med { width: 140px; }
-@media -sass-debug-info{filename{font-family:file\:\/\/C\:\/Users\/jbonfardeci\/Source\/Repos\/ShockoutForms\/content\/shockout\.spform\.scss}line{font-family:\0000381}}
-  .sp-form input.short { width: 70px; }
-@media -sass-debug-info{filename{font-family:file\:\/\/C\:\/Users\/jbonfardeci\/Source\/Repos\/ShockoutForms\/content\/shockout\.spform\.scss}line{font-family:\0000385}}
-  .sp-form input.abbr { width: 2em; }
-@media -sass-debug-info{filename{font-family:file\:\/\/C\:\/Users\/jbonfardeci\/Source\/Repos\/ShockoutForms\/content\/shockout\.spform\.scss}line{font-family:\0000389}}
-  .sp-form .checkbox input[type=checkbox], .sp-form .checkbox-inline input[type=checkbox], .sp-form .radio input[type=radio], .sp-form .radio-inline input[type=radio] { position: static; margin-left: 0; }
-@media -sass-debug-info{filename{font-family:file\:\/\/C\:\/Users\/jbonfardeci\/Source\/Repos\/ShockoutForms\/content\/shockout\.spform\.scss}line{font-family:\0000398}}
-  .sp-form input[type=radio] { width: 1.5em; height: 1.2em; cursor: pointer; }
-@media -sass-debug-info{filename{font-family:file\:\/\/C\:\/Users\/jbonfardeci\/Source\/Repos\/ShockoutForms\/content\/shockout\.spform\.scss}line{font-family:\00003104}}
-  .sp-form .form-action { position: fixed; top: 0; left: 0; width: 100%; height: auto; background-color: #fff; border-bottom: 1px solid #ccc; z-index: 10; padding: 2px 5px; text-align: right; box-shadow: rgba(0, 0, 0, 0.4) 5px 5px 10px; }
-@media -sass-debug-info{filename{font-family:file\:\/\/C\:\/Users\/jbonfardeci\/Source\/Repos\/ShockoutForms\/content\/shockout\.spform\.scss}line{font-family:\00003116}}
-  .sp-form .form-action .btn { margin: 0 .2em; }
-@media -sass-debug-info{filename{font-family:file\:\/\/C\:\/Users\/jbonfardeci\/Source\/Repos\/ShockoutForms\/content\/shockout\.spform\.scss}line{font-family:\00003119}}
-  .sp-form .content-editable { min-height: 120px; max-height: 300px; overflow: auto; height: auto; display: block; width: 100%; padding: 6px 12px; font-size: 14px; color: #333; background-color: #fff; background-image: none; border: 1px solid #ccc; border-radius: 4px; box-shadow: 0 1px 1px rgba(0, 0, 0, 0.075) inset; transition: border-color 0.15s ease-in-out 0s, box-shadow 0.15s ease-in-out 0s; }
-@media -sass-debug-info{filename{font-family:file\:\/\/C\:\/Users\/jbonfardeci\/Source\/Repos\/ShockoutForms\/content\/shockout\.spform\.scss}line{font-family:\00003137}}
-  .sp-form .content-editable:focus { border-color: #66AFE9; outline: 0 none; box-shadow: 0 1px 1px rgba(0, 0, 0, 0.075) inset, 0 0 8px rgba(102, 175, 233, 0.6); }
-@media -sass-debug-info{filename{font-family:file\:\/\/C\:\/Users\/jbonfardeci\/Source\/Repos\/ShockoutForms\/content\/shockout\.spform\.scss}line{font-family:\00003143}}
-  .sp-form .breadcrumbs { padding: 10px 0 0 10px; float: left; }
-@media -sass-debug-info{filename{font-family:file\:\/\/C\:\/Users\/jbonfardeci\/Source\/Repos\/ShockoutForms\/content\/shockout\.spform\.scss}line{font-family:\00003148}}
-  .sp-form .form-status { color: #fff; position: fixed; text-align: right; right: 0; bottom: 0; z-index: 10; background-color: #333; padding: 5px 80px 35px 0; width: 100%; box-shadow: rgba(0, 0, 0, 0.5) -10px 0 10px; }
-@media -sass-debug-info{filename{font-family:file\:\/\/C\:\/Users\/jbonfardeci\/Source\/Repos\/ShockoutForms\/content\/shockout\.spform\.scss}line{font-family:\00003161}}
-  .sp-form input.people-picker-control { min-width: 120px; max-width: 240px; display: inline-block; }
-@media -sass-debug-info{filename{font-family:file\:\/\/C\:\/Users\/jbonfardeci\/Source\/Repos\/ShockoutForms\/content\/shockout\.spform\.scss}line{font-family:\00003167}}
-  .sp-form input.people-picker-control.valid { text-decoration: underline; font-style: oblique; color: #000; }
-@media -sass-debug-info{filename{font-family:file\:\/\/C\:\/Users\/jbonfardeci\/Source\/Repos\/ShockoutForms\/content\/shockout\.spform\.scss}line{font-family:\00003173}}
-  .sp-form input.people-picker-control.invalid { color: #a94442; }
-@media -sass-debug-info{filename{font-family:file\:\/\/C\:\/Users\/jbonfardeci\/Source\/Repos\/ShockoutForms\/content\/shockout\.spform\.scss}line{font-family:\00003177}}
-  .sp-form .sp-validation { color: green; }
-@media -sass-debug-info{filename{font-family:file\:\/\/C\:\/Users\/jbonfardeci\/Source\/Repos\/ShockoutForms\/content\/shockout\.spform\.scss}line{font-family:\00003181}}
-  .sp-form .sp-validation.error { color: #a94442; }
-@media -sass-debug-info{filename{font-family:file\:\/\/C\:\/Users\/jbonfardeci\/Source\/Repos\/ShockoutForms\/content\/shockout\.spform\.scss}line{font-family:\00003185}}
-  .sp-form section { margin: 20px auto; border: 1px solid #ccc; padding: 2em 1em 1em 1em; position: relative; border-radius: 5px; }
-@media -sass-debug-info{filename{font-family:file\:\/\/C\:\/Users\/jbonfardeci\/Source\/Repos\/ShockoutForms\/content\/shockout\.spform\.scss}line{font-family:\00003192}}
-  .sp-form section > h4 { font-size: 1em; font-weight: bold; color: #069; width: auto; padding: 5px; margin: 0; background-color: #fff; position: absolute; left: 10px; top: -14px; /*border:1px solid $grey;*/ border-radius: 3px; }
-@media -sass-debug-info{filename{font-family:file\:\/\/C\:\/Users\/jbonfardeci\/Source\/Repos\/ShockoutForms\/content\/shockout\.spform\.scss}line{font-family:\00003207}}
-  .sp-form section > ul, .sp-form section > ul li { margin: 0; padding: 0; list-style-type: none; display: block; height: auto; }
-@media -sass-debug-info{filename{font-family:file\:\/\/C\:\/Users\/jbonfardeci\/Source\/Repos\/ShockoutForms\/content\/shockout\.spform\.scss}line{font-family:\00003216}}
-  .sp-form section > ul li { padding: 5px; }
-@media -sass-debug-info{filename{font-family:file\:\/\/C\:\/Users\/jbonfardeci\/Source\/Repos\/ShockoutForms\/content\/shockout\.spform\.scss}line{font-family:\00003220}}
-  .sp-form section em { font-weight: bold; font-size: .7em; font-style: oblique; color: #069; }
-@media -sass-debug-info{filename{font-family:file\:\/\/C\:\/Users\/jbonfardeci\/Source\/Repos\/ShockoutForms\/content\/shockout\.spform\.scss}line{font-family:\00003222}}
-  .sp-form section .form-group { padding: .4em; margin-bottom: .2em; }
-@media -sass-debug-info{filename{font-family:file\:\/\/C\:\/Users\/jbonfardeci\/Source\/Repos\/ShockoutForms\/content\/shockout\.spform\.scss}line{font-family:\00003227}}
-  .sp-form section > .form-group:nth-child(even) { background-color: aliceblue; border-radius: 4px; }
-@media -sass-debug-info{filename{font-family:file\:\/\/C\:\/Users\/jbonfardeci\/Source\/Repos\/ShockoutForms\/content\/shockout\.spform\.scss}line{font-family:\00003229}}
-  .sp-form section > .form-group:nth-child(even) input, .sp-form section > .form-group:nth-child(even) input.form-control { background-color: #fff; color: #333; }
-@media -sass-debug-info{filename{font-family:file\:\/\/C\:\/Users\/jbonfardeci\/Source\/Repos\/ShockoutForms\/content\/shockout\.spform\.scss}line{font-family:\00003236}}
-  .sp-form section .form-group.has-feedback label ~ .form-control-feedback { top: 2.2em; }
-@media -sass-debug-info{filename{font-family:file\:\/\/C\:\/Users\/jbonfardeci\/Source\/Repos\/ShockoutForms\/content\/shockout\.spform\.scss}line{font-family:\00003241}}
-  .sp-form label { font-size: .9em; margin-right: .4em; }
-@media -sass-debug-info{filename{font-family:file\:\/\/C\:\/Users\/jbonfardeci\/Source\/Repos\/ShockoutForms\/content\/shockout\.spform\.scss}line{font-family:\00003243}}
-  .sp-form label.control-label::after { content: ': '; }
-@media -sass-debug-info{filename{font-family:file\:\/\/C\:\/Users\/jbonfardeci\/Source\/Repos\/ShockoutForms\/content\/shockout\.spform\.scss}line{font-family:\00003247}}
-  .sp-form .user-profile-card { position: relative; padding: 1em; border: 1px solid #777; margin: 1em; display: inline-block; font-size: .9em; border-radius: 5px; background-color: #fff; color: #333; }
-@media -sass-debug-info{filename{font-family:file\:\/\/C\:\/Users\/jbonfardeci\/Source\/Repos\/ShockoutForms\/content\/shockout\.spform\.scss}line{font-family:\00003258}}
-  .sp-form .user-profile-card h4 { color: #333; font-size: .8em; margin: 0; padding: 2px 2px 0 2px; width: auto; max-width: 50%; position: absolute; right: 25px; top: -26px; background-color: #fff; border: 0 solid #777; border-width: 1px 1px 0 1px; border-radius: 5px 5px 0 0; font-size: 14px; padding: 5px 10px; }
-@media -sass-debug-info{filename{font-family:file\:\/\/C\:\/Users\/jbonfardeci\/Source\/Repos\/ShockoutForms\/content\/shockout\.spform\.scss}line{font-family:\00003276}}
-  .sp-form .user-profile-card img { display: inline-block; position: absolute; }
-@media -sass-debug-info{filename{font-family:file\:\/\/C\:\/Users\/jbonfardeci\/Source\/Repos\/ShockoutForms\/content\/shockout\.spform\.scss}line{font-family:\00003281}}
-  .sp-form .user-profile-card ul { display: inline-block; height: auto; margin: 0 0 0 100px; list-style-type: none !important; padding: 0; }
-@media -sass-debug-info{filename{font-family:file\:\/\/C\:\/Users\/jbonfardeci\/Source\/Repos\/ShockoutForms\/content\/shockout\.spform\.scss}line{font-family:\00003289}}
-  .sp-form .user-profile-card li { color: #333; margin: 0; padding: 0; display: list-item; list-style-type: none !important; background-color: #fff !important; }
-@media -sass-debug-info{filename{font-family:file\:\/\/C\:\/Users\/jbonfardeci\/Source\/Repos\/ShockoutForms\/content\/shockout\.spform\.scss}line{font-family:\00003298}}
-  .sp-form .user-profile-card label { display: inline; font-weight: bold; color: #777; margin-right: .8em; }
-@media -sass-debug-info{filename{font-family:file\:\/\/C\:\/Users\/jbonfardeci\/Source\/Repos\/ShockoutForms\/content\/shockout\.spform\.scss}line{font-family:\00003308}}
-  .sp-form .form-control-feedback { right: 1.5em; }
-@media -sass-debug-info{filename{font-family:file\:\/\/C\:\/Users\/jbonfardeci\/Source\/Repos\/ShockoutForms\/content\/shockout\.spform\.scss}line{font-family:\00003311}}
-  .sp-form .qq-uploader { position: relative; width: 100%; }
-@media -sass-debug-info{filename{font-family:file\:\/\/C\:\/Users\/jbonfardeci\/Source\/Repos\/ShockoutForms\/content\/shockout\.spform\.scss}line{font-family:\00003313}}
-  .sp-form .qq-upload-button-hover { background: #FAD42E; }
-@media -sass-debug-info{filename{font-family:file\:\/\/C\:\/Users\/jbonfardeci\/Source\/Repos\/ShockoutForms\/content\/shockout\.spform\.scss}line{font-family:\00003314}}
-  .sp-form .qq-upload-button-focus { outline: 1px dotted #000; }
-@media -sass-debug-info{filename{font-family:file\:\/\/C\:\/Users\/jbonfardeci\/Source\/Repos\/ShockoutForms\/content\/shockout\.spform\.scss}line{font-family:\00003316}}
-  .sp-form .qq-upload-drop-area { position: absolute; top: 0; left: 0; width: 100%; height: 100%; min-height: 70px; z-index: 2; background: #FF9797; text-align: center; }
-@media -sass-debug-info{filename{font-family:file\:\/\/C\:\/Users\/jbonfardeci\/Source\/Repos\/ShockoutForms\/content\/shockout\.spform\.scss}line{font-family:\00003320}}
-  .sp-form .qq-upload-drop-area span { display: block; position: absolute; top: 50%; width: 100%; margin-top: -8px; font-size: 16px; }
-@media -sass-debug-info{filename{font-family:file\:\/\/C\:\/Users\/jbonfardeci\/Source\/Repos\/ShockoutForms\/content\/shockout\.spform\.scss}line{font-family:\00003323}}
-  .sp-form .qq-upload-drop-area-active { background: #FF7171; }
-@media -sass-debug-info{filename{font-family:file\:\/\/C\:\/Users\/jbonfardeci\/Source\/Repos\/ShockoutForms\/content\/shockout\.spform\.scss}line{font-family:\00003325}}
-  .sp-form .qq-upload-list { margin: 15px 35px; padding: 0; list-style: disc; }
-@media -sass-debug-info{filename{font-family:file\:\/\/C\:\/Users\/jbonfardeci\/Source\/Repos\/ShockoutForms\/content\/shockout\.spform\.scss}line{font-family:\00003327}}
-  .sp-form .qq-upload-list li { margin: 0; padding: 0; line-height: 15px; font-size: 12px; }
-@media -sass-debug-info{filename{font-family:file\:\/\/C\:\/Users\/jbonfardeci\/Source\/Repos\/ShockoutForms\/content\/shockout\.spform\.scss}line{font-family:\00003330}}
-  .sp-form .qq-upload-file, .sp-form .qq-upload-spinner, .sp-form .qq-upload-size, .sp-form .qq-upload-cancel, .sp-form .qq-upload-failed-text { margin-right: 7px; }
-@media -sass-debug-info{filename{font-family:file\:\/\/C\:\/Users\/jbonfardeci\/Source\/Repos\/ShockoutForms\/content\/shockout\.spform\.scss}line{font-family:\00003331}}
-  .sp-form .qq-upload-spinner { display: inline-block; background: url("/StyleLibrary/images/loading.gif"); width: 15px; height: 15px; vertical-align: text-bottom; }
-@media -sass-debug-info{filename{font-family:file\:\/\/C\:\/Users\/jbonfardeci\/Source\/Repos\/ShockoutForms\/content\/shockout\.spform\.scss}line{font-family:\00003332}}
-  .sp-form .qq-upload-size, .sp-form .qq-upload-cancel { font-size: 11px; }
-@media -sass-debug-info{filename{font-family:file\:\/\/C\:\/Users\/jbonfardeci\/Source\/Repos\/ShockoutForms\/content\/shockout\.spform\.scss}line{font-family:\00003334}}
-  .sp-form .qq-upload-failed-text { display: none; }
-@media -sass-debug-info{filename{font-family:file\:\/\/C\:\/Users\/jbonfardeci\/Source\/Repos\/ShockoutForms\/content\/shockout\.spform\.scss}line{font-family:\00003335}}
-  .sp-form .qq-upload-fail .qq-upload-failed-text { display: inline; }
-@media -sass-debug-info{filename{font-family:file\:\/\/C\:\/Users\/jbonfardeci\/Source\/Repos\/ShockoutForms\/content\/shockout\.spform\.scss}line{font-family:\00003338}}
-  .sp-form .navigation-buttons .btn { margin-right: 1em; margin-bottom: 1em; }
-@media -sass-debug-info{filename{font-family:file\:\/\/C\:\/Users\/jbonfardeci\/Source\/Repos\/ShockoutForms\/content\/shockout\.spform\.scss}line{font-family:\00003341}}
-  .sp-form .even { background-color: aliceblue; }
-@media -sass-debug-info{filename{font-family:file\:\/\/C\:\/Users\/jbonfardeci\/Source\/Repos\/ShockoutForms\/content\/shockout\.spform\.scss}line{font-family:\00003345}}
-  .sp-form .highlight { background-color: #ff9 !important; padding: .5em; color: #333; }
-@media -sass-debug-info{filename{font-family:file\:\/\/C\:\/Users\/jbonfardeci\/Source\/Repos\/ShockoutForms\/content\/shockout\.spform\.scss}line{font-family:\00003349}}
-  .sp-form .highlight label, .sp-form .highlight label.control-label { color: #333; }
-@media -sass-debug-info{filename{font-family:file\:\/\/C\:\/Users\/jbonfardeci\/Source\/Repos\/ShockoutForms\/content\/shockout\.spform\.scss}line{font-family:\00003352}}
-  .sp-form .highlight input, .sp-form .highlight input.form-control, .sp-form .highlight textarea { background-color: #fff; }
-@media -sass-debug-info{filename{font-family:file\:\/\/C\:\/Users\/jbonfardeci\/Source\/Repos\/ShockoutForms\/content\/shockout\.spform\.scss}line{font-family:\00003358}}
-  .sp-form .has-error .required, .sp-form .has-error *[required] { border-color: #a94442; }
-@media -sass-debug-info{filename{font-family:file\:\/\/C\:\/Users\/jbonfardeci\/Source\/Repos\/ShockoutForms\/content\/shockout\.spform\.scss}line{font-family:\00003363}}
-  .sp-form .has-feedback select.form-control { padding: 0; }
-@media -sass-debug-info{filename{font-family:file\:\/\/C\:\/Users\/jbonfardeci\/Source\/Repos\/ShockoutForms\/content\/shockout\.spform\.scss}line{font-family:\00003368}}
-  .sp-form .has-success .form-control { border-color: #069; }
-@media -sass-debug-info{filename{font-family:file\:\/\/C\:\/Users\/jbonfardeci\/Source\/Repos\/ShockoutForms\/content\/shockout\.spform\.scss}line{font-family:\00003371}}
-  .sp-form .has-success .control-label { color: #333; }
-@media -sass-debug-info{filename{font-family:file\:\/\/C\:\/Users\/jbonfardeci\/Source\/Repos\/ShockoutForms\/content\/shockout\.spform\.scss}line{font-family:\00003376}}
-  .sp-form .row { margin-left: 0; }
-@media -sass-debug-info{filename{font-family:file\:\/\/C\:\/Users\/jbonfardeci\/Source\/Repos\/ShockoutForms\/content\/shockout\.spform\.scss}line{font-family:\00003380}}
-  .sp-form .right { text-align: right !important; }
+@media screen {
+  .company-branding {
+    text-align: center;
+    margin-top: 30px; }
+
+  .container, .container-fluid {
+    padding-top: 3em; }
+    .container a.back-to-top, .container-fluid a.back-to-top {
+      display: block;
+      font-size: 1.4em;
+      background-color: #a94442;
+      padding: .5em .7em;
+      position: fixed;
+      bottom: 2em;
+      right: 1em;
+      border-radius: 7px;
+      cursor: pointer;
+      color: #fff;
+      text-align: center;
+      box-shadow: rgba(0, 0, 0, 0.4) 5px 5px 10px; }
+    .container a.back-to-top:visited, .container-fluid a.back-to-top:visited {
+      color: #fff; }
+
+  .sp-form {
+    /*.user-profile-card*/
+    /* Boostrap overrides */
+    /*Valum's QQ File Uploader*/
+    /*boostrap overrides*/ }
+    .sp-form .req {
+      color: #a94442;
+      padding: 0 5px;
+      font-size: 1.2em; }
+    .sp-form table {
+      width: 90%;
+      background-color: #fff;
+      border: 1px solid #ccc;
+      border-collapse: collapse;
+      margin: 10px auto; }
+      .sp-form table td, .sp-form table th {
+        border: 0 solid #ccc;
+        border-width: 0 0 1px 0;
+        padding: 5px;
+        text-align: left; }
+      .sp-form table tr.even {
+        background-color: aliceblue; }
+      .sp-form table tr:nth-child(even) {
+        background-color: aliceblue; }
+    .sp-form input.form-control {
+      background-color: transparent; }
+    .sp-form input.long {
+      width: 300px; }
+    .sp-form input.med {
+      width: 140px; }
+    .sp-form input.short {
+      width: 70px; }
+    .sp-form input.abbr {
+      width: 2em; }
+    .sp-form .checkbox input[type=checkbox],
+    .sp-form .checkbox-inline input[type=checkbox],
+    .sp-form .radio input[type=radio],
+    .sp-form .radio-inline input[type=radio] {
+      position: static;
+      margin-left: 0; }
+    .sp-form input[type=radio] {
+      width: 1.5em;
+      height: 1.2em;
+      cursor: pointer; }
+    .sp-form .form-action {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: auto;
+      background-color: #fff;
+      border-bottom: 1px solid #ccc;
+      z-index: 10;
+      padding: 2px 5px;
+      text-align: right;
+      box-shadow: rgba(0, 0, 0, 0.4) 5px 5px 10px; }
+      .sp-form .form-action .btn {
+        margin: 0 .2em; }
+    .sp-form .content-editable {
+      min-height: 120px;
+      max-height: 300px;
+      overflow: auto;
+      height: auto;
+      display: block;
+      width: 100%;
+      padding: 6px 12px;
+      font-size: 14px;
+      color: #333;
+      background-color: #fff;
+      background-image: none;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      box-shadow: 0 1px 1px rgba(0, 0, 0, 0.075) inset;
+      transition: border-color 0.15s ease-in-out 0s, box-shadow 0.15s ease-in-out 0s; }
+    .sp-form .content-editable:focus {
+      border-color: #66AFE9;
+      outline: 0 none;
+      box-shadow: 0 1px 1px rgba(0, 0, 0, 0.075) inset, 0 0 8px rgba(102, 175, 233, 0.6); }
+    .sp-form .breadcrumbs {
+      padding: 10px 0 0 10px;
+      float: left; }
+    .sp-form .form-status {
+      color: #fff;
+      position: fixed;
+      text-align: right;
+      right: 0;
+      bottom: 0;
+      z-index: 10;
+      background-color: #333;
+      padding: 5px 80px 35px 0;
+      width: 100%;
+      box-shadow: rgba(0, 0, 0, 0.5) -10px 0 10px; }
+    .sp-form input.people-picker-control {
+      min-width: 120px;
+      max-width: 240px;
+      display: inline-block; }
+    .sp-form input.people-picker-control.valid {
+      text-decoration: underline;
+      font-style: oblique;
+      color: #000; }
+    .sp-form input.people-picker-control.invalid {
+      color: #a94442; }
+    .sp-form .sp-validation {
+      color: green; }
+    .sp-form .sp-validation.error {
+      color: #a94442; }
+    .sp-form section {
+      margin: 20px auto;
+      border: 1px solid #ccc;
+      padding: 2em 1em 1em 1em;
+      position: relative;
+      border-radius: 5px; }
+      .sp-form section > h4 {
+        font-size: 1em;
+        font-weight: bold;
+        color: #069;
+        width: auto;
+        padding: 5px;
+        margin: 0;
+        background-color: #fff;
+        position: absolute;
+        left: 10px;
+        top: -14px;
+        /*border:1px solid $grey;*/
+        border-radius: 3px; }
+      .sp-form section > ul,
+      .sp-form section > ul li {
+        margin: 0;
+        padding: 0;
+        list-style-type: none;
+        display: block;
+        height: auto; }
+      .sp-form section > ul li {
+        padding: 5px; }
+      .sp-form section em {
+        font-weight: bold;
+        font-size: .7em;
+        font-style: oblique;
+        color: #069; }
+      .sp-form section .form-group {
+        padding: .4em;
+        margin-bottom: .2em; }
+      .sp-form section > *:nth-child(odd) > .form-group,
+      .sp-form section > .form-group:nth-child(odd) {
+        background-color: aliceblue;
+        border-radius: 4px; }
+        .sp-form section > *:nth-child(odd) > .form-group input, .sp-form section > *:nth-child(odd) > .form-group input.form-control,
+        .sp-form section > .form-group:nth-child(odd) input,
+        .sp-form section > .form-group:nth-child(odd) input.form-control {
+          background-color: #fff;
+          color: #333; }
+      .sp-form section .form-group.has-feedback label ~ .form-control-feedback {
+        top: 2.2em; }
+    .sp-form label {
+      font-size: .9em;
+      margin-right: .4em; }
+    .sp-form label.control-label::after {
+      content: ': '; }
+    .sp-form .user-profile-card {
+      position: relative;
+      padding: 1em;
+      border: 1px solid #777;
+      margin: 1em;
+      display: inline-block;
+      font-size: .9em;
+      border-radius: 5px;
+      background-color: #fff;
+      color: #333; }
+      .sp-form .user-profile-card h4 {
+        color: #333;
+        font-size: .8em;
+        margin: 0;
+        padding: 2px 2px 0 2px;
+        width: auto;
+        max-width: 50%;
+        position: absolute;
+        right: 25px;
+        top: -26px;
+        background-color: #fff;
+        border: 0 solid #777;
+        border-width: 1px 1px 0 1px;
+        border-radius: 5px 5px 0 0;
+        font-size: 14px;
+        padding: 5px 10px; }
+      .sp-form .user-profile-card img {
+        display: inline-block;
+        position: absolute; }
+      .sp-form .user-profile-card ul {
+        display: inline-block;
+        height: auto;
+        margin: 0 0 0 100px;
+        list-style-type: none !important;
+        padding: 0; }
+      .sp-form .user-profile-card li {
+        color: #333;
+        margin: 0;
+        padding: 0;
+        display: list-item;
+        list-style-type: none !important;
+        background-color: #fff !important; }
+      .sp-form .user-profile-card label {
+        display: inline;
+        font-weight: bold;
+        color: #777;
+        margin-right: .8em; }
+    .sp-form .form-control-feedback {
+      right: 1.5em; }
+    .sp-form .qq-uploader {
+      position: relative;
+      width: 100%; }
+    .sp-form .qq-upload-button-hover {
+      background: #FAD42E; }
+    .sp-form .qq-upload-button-focus {
+      outline: 1px dotted #000; }
+    .sp-form .qq-upload-drop-area {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      min-height: 70px;
+      z-index: 2;
+      background: #FF9797;
+      text-align: center; }
+    .sp-form .qq-upload-drop-area span {
+      display: block;
+      position: absolute;
+      top: 50%;
+      width: 100%;
+      margin-top: -8px;
+      font-size: 16px; }
+    .sp-form .qq-upload-drop-area-active {
+      background: #FF7171; }
+    .sp-form .qq-upload-list {
+      margin: 15px 35px;
+      padding: 0;
+      list-style: disc; }
+      .sp-form .qq-upload-list li {
+        margin: 0;
+        padding: 0;
+        line-height: 15px;
+        font-size: 12px; }
+    .sp-form .qq-upload-file, .sp-form .qq-upload-spinner, .sp-form .qq-upload-size, .sp-form .qq-upload-cancel, .sp-form .qq-upload-failed-text {
+      margin-right: 7px; }
+    .sp-form .qq-upload-spinner {
+      display: inline-block;
+      background: url("/StyleLibrary/images/loading.gif");
+      width: 15px;
+      height: 15px;
+      vertical-align: text-bottom; }
+    .sp-form .qq-upload-size, .sp-form .qq-upload-cancel {
+      font-size: 11px; }
+    .sp-form .qq-upload-failed-text {
+      display: none; }
+    .sp-form .qq-upload-fail .qq-upload-failed-text {
+      display: inline; }
+    .sp-form .navigation-buttons .btn {
+      margin-right: 1em;
+      margin-bottom: 1em; }
+    .sp-form .even {
+      background-color: aliceblue; }
+    .sp-form .highlight {
+      background-color: #ff9 !important;
+      padding: .5em;
+      color: #333; }
+      .sp-form .highlight label, .sp-form .highlight label.control-label {
+        color: #333; }
+      .sp-form .highlight input, .sp-form .highlight input.form-control, .sp-form .highlight textarea {
+        background-color: #fff; }
+    .sp-form .has-error .required, .sp-form .has-error *[required] {
+      border-color: #a94442; }
+    .sp-form .has-feedback select.form-control {
+      padding: 0; }
+    .sp-form .has-success .form-control {
+      border-color: #069; }
+    .sp-form .has-success .control-label {
+      color: #333; }
+    .sp-form .row {
+      margin-left: 0; }
+    .sp-form .right {
+      text-align: right !important; }
+
   /*.sp-form*/
-@media -sass-debug-info{filename{font-family:file\:\/\/C\:\/Users\/jbonfardeci\/Source\/Repos\/ShockoutForms\/content\/shockout\.spform\.scss}line{font-family:\00003386}}
-  .sp-form .indent { margin-left: 2em; } }
-@media print { @media -sass-debug-info{filename{font-family:file\:\/\/C\:\/Users\/jbonfardeci\/Source\/Repos\/ShockoutForms\/content\/shockout\.spform\.scss}line{font-family:\00003394}}
-  body { background-color: #fff; background: #fff; margin: 2.5em; padding: 0; color: #000; text-align: center; }
-@media -sass-debug-info{filename{font-family:file\:\/\/C\:\/Users\/jbonfardeci\/Source\/Repos\/ShockoutForms\/content\/shockout\.spform\.scss}line{font-family:\00003402}}
-  body * { margin: 0 !important; padding: 0 !important; height: auto; color: #000 !important; border-radius: 0 !important; box-shadow: none !important; font-size: 1em !important; border: none; border-color: transparent; }
-@media -sass-debug-info{filename{font-family:file\:\/\/C\:\/Users\/jbonfardeci\/Source\/Repos\/ShockoutForms\/content\/shockout\.spform\.scss}line{font-family:\00003414}}
-  body #s4-ribbonrow, body .s4-ql, body #v5-page-column-sidebar, body #v5-header, body .no-print, body .sp-form .company-branding, body .sp-form .error, body .sp-form .warning, body .sp-form .req, body .sp-form button, body .sp-form .form-action, body .sp-form .btn, body .sp-form .form-breadcrumbs, body .sp-form .form-status, body .sp-form .form-nav, body #BackToTop, body .sp-form .sp-validate-person, body .sp-form .sp-lookup-person, body .qq-uploader, body .sp-form .rte, body .sp-form .json, body button { display: none !important; }
-@media -sass-debug-info{filename{font-family:file\:\/\/C\:\/Users\/jbonfardeci\/Source\/Repos\/ShockoutForms\/content\/shockout\.spform\.scss}line{font-family:\00003438}}
-  body .print-only { display: block !important; }
-@media -sass-debug-info{filename{font-family:file\:\/\/C\:\/Users\/jbonfardeci\/Source\/Repos\/ShockoutForms\/content\/shockout\.spform\.scss}line{font-family:\00003442}}
-  body .panel { border: none; }
-@media -sass-debug-info{filename{font-family:file\:\/\/C\:\/Users\/jbonfardeci\/Source\/Repos\/ShockoutForms\/content\/shockout\.spform\.scss}line{font-family:\00003446}}
-  body .sp-form { display: block; width: 100%; margin: auto; text-align: left; border: none; font-size: 11pt; }
-@media -sass-debug-info{filename{font-family:file\:\/\/C\:\/Users\/jbonfardeci\/Source\/Repos\/ShockoutForms\/content\/shockout\.spform\.scss}line{font-family:\00003454}}
-  body .sp-form h1, body .sp-form h2, body .sp-form h3, body .sp-form h4 { clear: left; font-weight: normal; color: #000; padding: 1em; margin: 1em 0; }
-@media -sass-debug-info{filename{font-family:file\:\/\/C\:\/Users\/jbonfardeci\/Source\/Repos\/ShockoutForms\/content\/shockout\.spform\.scss}line{font-family:\00003462}}
-  body .sp-form h1 { font-size: 16pt; }
-@media -sass-debug-info{filename{font-family:file\:\/\/C\:\/Users\/jbonfardeci\/Source\/Repos\/ShockoutForms\/content\/shockout\.spform\.scss}line{font-family:\00003466}}
-  body .sp-form h2 { font-size: 14pt; }
-@media -sass-debug-info{filename{font-family:file\:\/\/C\:\/Users\/jbonfardeci\/Source\/Repos\/ShockoutForms\/content\/shockout\.spform\.scss}line{font-family:\00003470}}
-  body .sp-form h3 { font-size: 12pt; }
-@media -sass-debug-info{filename{font-family:file\:\/\/C\:\/Users\/jbonfardeci\/Source\/Repos\/ShockoutForms\/content\/shockout\.spform\.scss}line{font-family:\00003474}}
-  body .sp-form h4 { font-size: 11pt; border-bottom: 1px solid #000; }
-@media -sass-debug-info{filename{font-family:file\:\/\/C\:\/Users\/jbonfardeci\/Source\/Repos\/ShockoutForms\/content\/shockout\.spform\.scss}line{font-family:\00003479}}
-  body .sp-form strong { font-weight: normal; border-bottom: 1px solid #000; }
-@media -sass-debug-info{filename{font-family:file\:\/\/C\:\/Users\/jbonfardeci\/Source\/Repos\/ShockoutForms\/content\/shockout\.spform\.scss}line{font-family:\00003484}}
-  body .sp-form table { width: 90%; background-color: #fff; border: 1px solid #ccc; border-collapse: collapse; margin: 10px auto !important; }
-@media -sass-debug-info{filename{font-family:file\:\/\/C\:\/Users\/jbonfardeci\/Source\/Repos\/ShockoutForms\/content\/shockout\.spform\.scss}line{font-family:\00003491}}
-  body .sp-form table td, body .sp-form table th { border: 0 solid #ccc; border-width: 0 0 1px 0; padding: 5px !important; text-align: left; }
-@media -sass-debug-info{filename{font-family:file\:\/\/C\:\/Users\/jbonfardeci\/Source\/Repos\/ShockoutForms\/content\/shockout\.spform\.scss}line{font-family:\00003500}}
-  body .sp-form ul li { margin: 0; padding: 0; list-style-type: none; display: block; height: auto; padding: 5px; }
-@media -sass-debug-info{filename{font-family:file\:\/\/C\:\/Users\/jbonfardeci\/Source\/Repos\/ShockoutForms\/content\/shockout\.spform\.scss}line{font-family:\00003510}}
-  body .sp-form em { font-weight: bold; font-size: .7em; font-style: oblique; color: #000; }
-@media -sass-debug-info{filename{font-family:file\:\/\/C\:\/Users\/jbonfardeci\/Source\/Repos\/ShockoutForms\/content\/shockout\.spform\.scss}line{font-family:\00003512}}
-  body .sp-form input, body .sp-form textarea { padding: 2px !important; max-width: 70%; border-width: 0; border-color: transparent; border-bottom: 1px solid #000; min-height: 25px; margin: 0 5px !important; }
-@media -sass-debug-info{filename{font-family:file\:\/\/C\:\/Users\/jbonfardeci\/Source\/Repos\/ShockoutForms\/content\/shockout\.spform\.scss}line{font-family:\00003523}}
-  body .sp-form textarea { padding: 5px !important; width: 90%; height: 100px; display: block; }
-@media -sass-debug-info{filename{font-family:file\:\/\/C\:\/Users\/jbonfardeci\/Source\/Repos\/ShockoutForms\/content\/shockout\.spform\.scss}line{font-family:\00003530}}
-  body .sp-form input[type='checkbox'], body .sp-form input[type='radio'], body .sp-form .checkbox, body .sp-form .radio { width: auto; height: auto; min-height: 25px; margin: 0 5px !important; padding: 0; position: relative; border-width: 0; cursor: pointer; }
-@media -sass-debug-info{filename{font-family:file\:\/\/C\:\/Users\/jbonfardeci\/Source\/Repos\/ShockoutForms\/content\/shockout\.spform\.scss}line{font-family:\00003544}}
-  body .sp-form input.long { width: 300px; }
-@media -sass-debug-info{filename{font-family:file\:\/\/C\:\/Users\/jbonfardeci\/Source\/Repos\/ShockoutForms\/content\/shockout\.spform\.scss}line{font-family:\00003548}}
-  body .sp-form input.med { width: 140px; }
-@media -sass-debug-info{filename{font-family:file\:\/\/C\:\/Users\/jbonfardeci\/Source\/Repos\/ShockoutForms\/content\/shockout\.spform\.scss}line{font-family:\00003552}}
-  body .sp-form input.short { width: 70px; }
-@media -sass-debug-info{filename{font-family:file\:\/\/C\:\/Users\/jbonfardeci\/Source\/Repos\/ShockoutForms\/content\/shockout\.spform\.scss}line{font-family:\00003556}}
-  body .sp-form input.abbr { width: 2em; }
-@media -sass-debug-info{filename{font-family:file\:\/\/C\:\/Users\/jbonfardeci\/Source\/Repos\/ShockoutForms\/content\/shockout\.spform\.scss}line{font-family:\00003560}}
-  body .sp-form .date { width: 140px !important; }
-@media -sass-debug-info{filename{font-family:file\:\/\/C\:\/Users\/jbonfardeci\/Source\/Repos\/ShockoutForms\/content\/shockout\.spform\.scss}line{font-family:\00003564}}
-  body .sp-form select { height: 29px; margin: 0 5px !important; border-style: solid; border-width: 1px; }
-@media -sass-debug-info{filename{font-family:file\:\/\/C\:\/Users\/jbonfardeci\/Source\/Repos\/ShockoutForms\/content\/shockout\.spform\.scss}line{font-family:\00003571}}
-  body .sp-form .attachment-form { width: 45%; display: block; float: left; height: auto; }
-@media -sass-debug-info{filename{font-family:file\:\/\/C\:\/Users\/jbonfardeci\/Source\/Repos\/ShockoutForms\/content\/shockout\.spform\.scss}line{font-family:\00003572}}
-  body .sp-form .attachment-form table { width: 100%; }
-@media -sass-debug-info{filename{font-family:file\:\/\/C\:\/Users\/jbonfardeci\/Source\/Repos\/ShockoutForms\/content\/shockout\.spform\.scss}line{font-family:\00003574}}
-  body .sp-form .content-editable { border: 1px solid #777; min-height: 120px; height: auto; padding: 5px !important; }
-@media -sass-debug-info{filename{font-family:file\:\/\/C\:\/Users\/jbonfardeci\/Source\/Repos\/ShockoutForms\/content\/shockout\.spform\.scss}line{font-family:\00003581}}
-  body .sp-form .form-nav ul { margin: 0; padding: 0; list-style-type: none; text-align: center; }
-@media -sass-debug-info{filename{font-family:file\:\/\/C\:\/Users\/jbonfardeci\/Source\/Repos\/ShockoutForms\/content\/shockout\.spform\.scss}line{font-family:\00003587}}
-  body .sp-form .form-nav ul li { margin: 2px !important; padding: 0; list-style-type: none; display: inline-block; height: auto; }
-@media -sass-debug-info{filename{font-family:file\:\/\/C\:\/Users\/jbonfardeci\/Source\/Repos\/ShockoutForms\/content\/shockout\.spform\.scss}line{font-family:\00003596}}
-  body .sp-form label { font-weight: normal; font-size: 9pt; }
-@media -sass-debug-info{filename{font-family:file\:\/\/C\:\/Users\/jbonfardeci\/Source\/Repos\/ShockoutForms\/content\/shockout\.spform\.scss}line{font-family:\00003601}}
-  body .sp-form label::after { content: ': '; }
-@media -sass-debug-info{filename{font-family:file\:\/\/C\:\/Users\/jbonfardeci\/Source\/Repos\/ShockoutForms\/content\/shockout\.spform\.scss}line{font-family:\00003605}}
-  body .sp-form section { padding: 2em; border-radius: 5px; } }
+  .sp-form .indent {
+    margin-left: 2em; } }
+@media print {
+  body {
+    background-color: #fff;
+    background: #fff;
+    margin: 2.5em;
+    padding: 0;
+    color: #000;
+    text-align: center; }
+    body * {
+      margin: 0 !important;
+      padding: 0 !important;
+      height: auto;
+      color: #000 !important;
+      border-radius: 0 !important;
+      box-shadow: none !important;
+      font-size: 1em !important;
+      border: none;
+      border-color: transparent; }
+    body #s4-ribbonrow,
+    body .s4-ql,
+    body #v5-page-column-sidebar,
+    body #v5-header,
+    body .no-print,
+    body .sp-form .company-branding,
+    body .sp-form .error,
+    body .sp-form .warning,
+    body .sp-form .req,
+    body .sp-form button,
+    body .sp-form .form-action,
+    body .sp-form .btn,
+    body .sp-form .form-breadcrumbs,
+    body .sp-form .form-status,
+    body .sp-form .form-nav,
+    body #BackToTop,
+    body .sp-form .sp-validate-person,
+    body .sp-form .sp-lookup-person,
+    body .qq-uploader,
+    body .sp-form .rte,
+    body .sp-form .json,
+    body button {
+      display: none !important; }
+    body .print-only {
+      display: block !important; }
+    body .panel {
+      border: none; }
+    body .sp-form {
+      display: block;
+      width: 100%;
+      margin: auto;
+      text-align: left;
+      border: none;
+      font-size: 11pt; }
+      body .sp-form h1, body .sp-form h2, body .sp-form h3, body .sp-form h4 {
+        clear: left;
+        font-weight: normal;
+        color: #000;
+        padding: 1em;
+        margin: 1em 0; }
+      body .sp-form h1 {
+        font-size: 16pt; }
+      body .sp-form h2 {
+        font-size: 14pt; }
+      body .sp-form h3 {
+        font-size: 12pt; }
+      body .sp-form h4 {
+        font-size: 11pt;
+        border-bottom: 1px solid #000; }
+      body .sp-form strong {
+        font-weight: normal;
+        border-bottom: 1px solid #000; }
+      body .sp-form table {
+        width: 90%;
+        background-color: #fff;
+        border: 1px solid #ccc;
+        border-collapse: collapse;
+        margin: 10px auto !important; }
+        body .sp-form table td, body .sp-form table th {
+          border: 0 solid #ccc;
+          border-width: 0 0 1px 0;
+          padding: 5px !important;
+          text-align: left; }
+      body .sp-form ul li {
+        margin: 0;
+        padding: 0;
+        list-style-type: none;
+        display: block;
+        height: auto;
+        padding: 5px; }
+      body .sp-form em {
+        font-weight: bold;
+        font-size: .7em;
+        font-style: oblique;
+        color: #000; }
+      body .sp-form input,
+      body .sp-form textarea {
+        padding: 2px !important;
+        max-width: 70%;
+        border-width: 0;
+        border-color: transparent;
+        border-bottom: 1px solid #000;
+        min-height: 25px;
+        margin: 0 5px !important; }
+      body .sp-form textarea {
+        padding: 5px !important;
+        width: 90%;
+        height: 100px;
+        display: block; }
+      body .sp-form input[type='checkbox'],
+      body .sp-form input[type='radio'],
+      body .sp-form .checkbox,
+      body .sp-form .radio {
+        width: auto;
+        height: auto;
+        min-height: 25px;
+        margin: 0 5px !important;
+        padding: 0;
+        position: relative;
+        border-width: 0;
+        cursor: pointer; }
+      body .sp-form input.long {
+        width: 300px; }
+      body .sp-form input.med {
+        width: 140px; }
+      body .sp-form input.short {
+        width: 70px; }
+      body .sp-form input.abbr {
+        width: 2em; }
+      body .sp-form .date {
+        width: 140px !important; }
+      body .sp-form select {
+        height: 29px;
+        margin: 0 5px !important;
+        border-style: solid;
+        border-width: 1px; }
+      body .sp-form .attachment-form {
+        width: 45%;
+        display: block;
+        float: left;
+        height: auto; }
+      body .sp-form .attachment-form table {
+        width: 100%; }
+      body .sp-form .content-editable {
+        border: 1px solid #777;
+        min-height: 120px;
+        height: auto;
+        padding: 5px !important; }
+      body .sp-form .form-nav ul {
+        margin: 0;
+        padding: 0;
+        list-style-type: none;
+        text-align: center; }
+        body .sp-form .form-nav ul li {
+          margin: 2px !important;
+          padding: 0;
+          list-style-type: none;
+          display: inline-block;
+          height: auto; }
+      body .sp-form label {
+        font-weight: normal;
+        font-size: 9pt; }
+      body .sp-form label::after {
+        content: ': '; }
+      body .sp-form section {
+        padding: 2em;
+        border-radius: 5px; } }
 
 /*# sourceMappingURL=shockout.spform.css.map */
