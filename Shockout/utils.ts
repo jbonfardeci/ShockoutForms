@@ -8,10 +8,20 @@
     
     export class Utils {
     
+        /**
+        * Ensure site url is or ends with '/'
+        * @param url: string
+        * @return string
+        */
         public static formatSubsiteUrl(url): string {
             return !!!url ? '/' : !/\/$/.test(url) ? url + '/' : url;
         }
 
+        /**
+        * Convert a name to REST camel case format
+        * @param str: string
+        * @return string
+        */
         public static toCamelCase(str: string): string {
             return str.toString()
                 .replace(/\s*\b\w/g, function (x) {
@@ -33,6 +43,10 @@
             return /\d/.test(id) ? parseInt(id) : null;
         }
 
+        /**
+        * Set location.hash to form ID `#/id/<ID>`. 
+        * @return void
+        */
         public static setIdHash(id: number): void {
             window.location.hash = '#/id/' + id;
         }
@@ -156,7 +170,7 @@
             var a = [];
             var rxExcludeInputTypes = /(button|submit|cancel|reset)/;
 
-            $(parent).find('.so-editable').each(function (i, el) {
+            $(parent).find('.so-editable[ko-name]').each(function (i, el) {
                 var n = $(el).attr('ko-name');
                 if (a.indexOf(n) < 0) {
                     a.push(n);
@@ -203,9 +217,15 @@
             var db = control.getAttribute('data-bind');
             if (!!!db) { return null; }
 
+            var koName = $(control).attr('ko-name');
+
+            if (!!koName) {
+                return koName;
+            }
+
             var rx = /(\b:\s*|\$root\.)\w*\b/;
             var exec = rx.exec(db);
-            var koName = !!exec ? exec[0]
+            koName = !!exec ? exec[0]
                 .replace(/:(\s+|)/g, '')
                 .replace(/\$root\./, '')
                 .replace(/\s/g, '') : null;

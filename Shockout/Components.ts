@@ -99,6 +99,33 @@
                 template: KoComponents.soStaticFieldTemplate.replace(/data-bind="text: modelValue/g, 'data-bind="html: modelValue')
             });
 
+            ko.components.register('so-attachments', {
+                viewModel: function (params) {
+
+                    if (!params) {
+                        throw 'params is undefined in so-attachments';
+                        return;
+                    }
+
+                    if (!params.val) {
+                        throw "Parameter `val` for so-attachments is required!";
+                    }
+
+                    this.attachments = params.val; 
+                    this.title = params.title || 'Attachments';
+                    this.id = params.id;
+                },
+                template: '<section>' +
+                    '<h4 data-bind="text: title">Attachments (<span data-bind="text: attachments().length"></span>)</h4>' +
+                    '<div data-bind="attr:{id: id}"></div>'+
+                    '<div data-bind="foreach: attachments">' +
+                        '<div>' +
+                            '<a href="" data-bind="attr: {href: __metadata.media_src}"><span class="glyphicon glyphicon-paperclip"></span> <span data-bind="text: Name"></span></a>&nbsp;' + 
+                        '</div>' +
+                    '</div>' +
+                '</section>'
+            });
+
             function soStaticModel(params) {
                 if (!params) {
                     throw 'params is undefined in so-static-field';
@@ -143,7 +170,7 @@
                 this.editable = !!koObj._koName; // if `_koName` is a prop of our KO var, it's a field we can update in theSharePoint list.
                 this.koName = koObj._koName; // include the name of the KO var in case we need to reference it.
                 this.options = params.options || koObj._options;
-                this.required = params.required;
+                this.required = params.required || koObj._required;
                 this.readOnly = params.readOnly || false;
                 this.inline = params.inline || false;
 
@@ -199,12 +226,17 @@
 
         };
 
+        //&& !!required && !readOnly
+        private static hasErrorCssDiv: string = '<div class="form-group" data-bind="css: {\'has-error\': !!!modelValue() && !!required, \'has-success has-feedback\': !!modelValue() && !!required}">';
+
+        private static requiredFeedbackSpan: string = '<span class="glyphicon glyphicon-ok form-control-feedback" aria-hidden="true"></span>';
+
         public static soStaticFieldTemplate: string =
         '<div class="form-group">' +
             
             // field label
             '<!-- ko if: label -->' +
-            '<label data-bind="html: label"></label>' +
+                '<label data-bind="html: label"></label>' +
             '<!-- /ko -->' +
 
             // field
@@ -212,63 +244,58 @@
 
             // description
             '<!-- ko if: description -->' +
-            '<p data-bind="html: description"></p>' +
+                '<p data-bind="html: description"></p>' +
             '<!-- /ko -->' +
 
         '</div>';
 
-        public static soTextFieldTemplate: string =
-        '<div class="form-group" data-bind="css: {\'has-error\': !!!modelValue() && required && !readOnly, \'has-success has-feedback\': !!modelValue() && !readOnly}">' +
+        public static soTextFieldTemplate: string = KoComponents.hasErrorCssDiv +
 
-            // show static field if readOnly
-            '<!-- ko if: readOnly -->' +
+        // show static field if readOnly
+        '<!-- ko if: readOnly -->' +
             '<label data-bind="html: label"></label>' +
             '<span data-bind="text: modelValue"></span>'+
-            '<!-- /ko -->'+
+        '<!-- /ko -->'+
 
-            // show input field if not readOnly
-            '<!-- ko ifnot: readOnly -->' +
+        // show input field if not readOnly
+        '<!-- ko ifnot: readOnly -->' +
             '<label data-bind="attr:{for: id}, text: label"></label>' +
-            '<input type="text" data-bind="value: modelValue, css: {\'so-editable\': editable}, attr: {id: id, placeholder: placeholder, title: title, required: required, \'ko-name\': koName }, ' +
-            'valueUpdate: valueUpdate" class="form-control" />' +
-            '<!-- /ko -->'+
-
-            // field description
-            '<!-- ko if: description -->' +
-            '<p data-bind="html: description"></p>' +
-            '<!-- /ko -->' +
-
+            '<input type="text" data-bind="value: modelValue, css: {\'so-editable\': editable}, attr: {id: id, placeholder: placeholder, title: title, required: required, \'ko-name\': koName }" class="form-control" />' +
             // Boostrap visual feedback for required fields
-            '<!-- ko if: required -->' +
-            '<span class="glyphicon glyphicon-ok form-control-feedback" aria-hidden="true"></span>'+
+            '<!-- ko if: !!required -->' +
+                KoComponents.requiredFeedbackSpan + 
             '<!-- /ko -->' +
+        '<!-- /ko -->'+
+
+        // field description
+        '<!-- ko if: description -->' +
+            '<p data-bind="html: description"></p>' +
+        '<!-- /ko -->' +
 
         '</div>';
 
-        public static soHtmlFieldTemplate: string =
-        '<div class="form-group" data-bind="css: {\'has-error\': !!!modelValue() && required && !readOnly, \'has-success has-feedback\': !!modelValue() && !readOnly}">' +
-
+        public static soHtmlFieldTemplate: string = KoComponents.hasErrorCssDiv +
+         
             // show static field if readOnly
             '<!-- ko if: readOnly -->' +
-            '<label data-bind="html: label"></label>' +
-            '<div data-bind="html: modelValue"></div>' +
+                '<label data-bind="html: label"></label>' +
+                '<div data-bind="html: modelValue"></div>' +
             '<!-- /ko -->' +
 
             // show input field if not readOnly
             '<!-- ko ifnot: readOnly -->' +
-            '<label data-bind="attr:{for: id}, text: label"></label>' +
-            '<div data-bind="spHtmlEditor: modelValue" contenteditable="true" class="form-control content-editable"></div>'+
-            '<textarea data-bind="value: modelValue, css: {\'so-editable\': editable}, attr: {id: id, required: required, \'ko-name\': koName }" data-sp-html="" style="display:none;"></textarea>' +
+                '<label data-bind="attr:{for: id}, text: label"></label>' +
+                '<div data-bind="spHtmlEditor: modelValue" contenteditable="true" class="form-control content-editable"></div>'+
+                '<textarea data-bind="value: modelValue, css: {\'so-editable\': editable}, attr: {id: id, required: required, \'ko-name\': koName }" data-sp-html="" style="display:none;"></textarea>' +
+                // Boostrap visual feedback for required fields
+                '<!-- ko if: !!required -->' +
+                    KoComponents.requiredFeedbackSpan + 
+                '<!-- /ko -->' +
             '<!-- /ko -->' +
 
             // field description
             '<!-- ko if: description -->' +
-            '<p data-bind="html: description"></p>' +
-            '<!-- /ko -->' +
-
-            // Boostrap visual feedback for required fields
-            '<!-- ko if: required -->' +
-            '<span class="glyphicon glyphicon-ok form-control-feedback" aria-hidden="true"></span>' +
+                '<p data-bind="html: description"></p>' +
             '<!-- /ko -->' +
 
         '</div>';
@@ -278,49 +305,46 @@
 
             // show static field if readOnly
             '<!-- ko if: readOnly -->' +
-            '<label data-bind="html: label"></label>' +
-            '<span data-bind="text: !!modelValue() ? \'Yes\' : \'No\'"></span>' +
+                '<label data-bind="html: label"></label>' +
+                '<span data-bind="text: !!modelValue() ? \'Yes\' : \'No\'"></span>' +
             '<!-- /ko -->' +
 
             // show input field if not readOnly
             '<!-- ko ifnot: readOnly -->' +
-            '<label class="checkbox">' +
-                '<input type="checkbox" data-bind="checked: modelValue, css: {\'so-editable\': editable}, attr: {id: id, \'ko-name\': koName}, valueUpdate: valueUpdate" />' +
-                '<span data-bind="html: label"></span>' +
-            '</label>' +
+                '<label class="checkbox">' +
+                    '<input type="checkbox" data-bind="checked: modelValue, css: {\'so-editable\': editable}, attr: {id: id, \'ko-name\': koName}, valueUpdate: valueUpdate" />' +
+                    '<span data-bind="html: label"></span>' +
+                '</label>' +
             '<!-- /ko -->' +
 
             // field description
             '<!-- ko if: description -->' +
-            '<p data-bind="html: description"></p>' +
+                '<p data-bind="html: description"></p>' +
             '<!-- /ko -->' +
 
         '</div>';
 
-        public static soSelectFieldTemplate: string =
-        '<div class="form-group" data-bind="css: {\'has-error\': !!!modelValue() && required && !readOnly, \'has-success has-feedback\': !!modelValue() && !readOnly}">' +
-
+        public static soSelectFieldTemplate: string = KoComponents.hasErrorCssDiv +
+         
             // show static field if readOnly
             '<!-- ko if: readOnly -->' +
-            '<label data-bind="html: label"></label>' +
-            '<span data-bind="text: modelValue"></span>' +
+                '<label data-bind="html: label"></label>' +
+                '<span data-bind="text: modelValue"></span>' +
             '<!-- /ko -->' +
 
             // show input field if not readOnly
             '<!-- ko ifnot: readOnly -->' +
-            '<label data-bind="attr: {for: id}, text: label"></label>' +
-            '<select data-bind="value: modelValue, options: options, optionsCaption: caption, css: {\'so-editable\': editable}, attr: {id: id, title: title, required: required, \'ko-name\': koName}, ' +
-            'valueUpdate: valueUpdate" class="form-control"></select>' +
+                '<label data-bind="attr: {for: id}, text: label"></label>' +
+                '<select data-bind="value: modelValue, options: options, optionsCaption: caption, css: {\'so-editable\': editable}, attr: {id: id, title: title, required: required, \'ko-name\': koName}" class="form-control"></select>' +
+                // Boostrap visual feedback for required fields
+                '<!-- ko if: !!required -->' +
+                    KoComponents.requiredFeedbackSpan + 
+                '<!-- /ko -->' +
             '<!-- /ko -->' +
 
             // field description
             '<!-- ko if: description -->' +
-            '<p data-bind="html: description"></p>' +
-            '<!-- /ko -->' +
-
-            // Boostrap visual feedback for required fields
-            '<!-- ko if: required -->' +
-            '<span class="glyphicon glyphicon-ok form-control-feedback" aria-hidden="true"></span>' +
+                '<p data-bind="html: description"></p>' +
             '<!-- /ko -->' +
 
         '</div>';
@@ -331,48 +355,53 @@
         // field label
         '<label data-bind="html: label"></label>' +
 
-        // show static unordered list if readOnly and !inline
+        // show static elements if inline
         '<!-- ko if: readOnly -->' +
-        '<ul class="list-group">' +
 
-            '<!-- ko foreach: modelValue -->' +
-            '<li data-bind="text: $data" class="list-group-item"></li>' +
+            // show static unordered list if !inline
+            '<!-- ko ifnot: inline -->'+
+                '<ul class="list-group">' +
+
+                    '<!-- ko foreach: modelValue -->' +
+                        '<li data-bind="text: $data" class="list-group-item"></li>' +
+                    '<!-- /ko -->' +
+
+                    '<!-- ko if: modelValue().length == 0 -->' +
+                        '<li class="list-group-item">--None--</li>'+
+                    '<!-- /ko -->' +
+
+                '</ul>' +
             '<!-- /ko -->' +
 
-            '<!-- ko if: modelValue().length == 0 -->' +
-            '<li class="list-group-item">--None--</li>'+
+            // show static inline elements if inline
+            '<!-- ko if: inline -->' +
+
+                '<!-- ko foreach: modelValue -->' +
+                    '<span data-bind="text: $data"></span>' +
+                    '<!-- ko if: $index() < $parent.modelValue().length-1 -->,&nbsp;<!-- /ko -->' +
+                '<!-- /ko -->' +
+
+                '<!-- ko if: modelValue().length == 0 -->' +
+                '<span>--None--</span>' +
+                '<!-- /ko -->' +
+
             '<!-- /ko -->' +
-
-        '</ul>'+
-        '<!-- /ko -->' +
-
-        // show static inline elements if readOnly and inline
-        '<!-- ko if: readOnly && inline -->' +
-
-        '<!-- ko foreach: modelValue -->' +
-        '<span data-bind="text: $data"></span>' +
-        '<!-- ko if: $index() < $parent.modelValue().length-1 -->,&nbsp;<!-- /ko -->' +
-        '<!-- /ko -->' +
-
-        '<!-- ko if: modelValue().length == 0 -->' +
-        '<span>--None--</span>' +
-        '<!-- /ko -->' +
 
         '<!-- /ko -->' +
 
         // show input field if not readOnly
         '<!-- ko ifnot: readOnly -->' +
-        '<!-- ko foreach: options -->' +
-        '<label data-bind="css:{\'checkbox\': !$parent.inline, \'checkbox-inline\': $parent.inline}">' +
-            '<input type="checkbox" data-bind="checked: $parent.modelValue, css: {\'so-editable\': $parent.editable}, attr: {\'ko-name\': $parent.koName, \'value\': $data}" />' +
-            '<span data-bind="text: $data"></span>' +
-        '</label>' +
-        '<!-- /ko -->' +
+            '<!-- ko foreach: options -->' +
+                '<label data-bind="css:{\'checkbox\': !$parent.inline, \'checkbox-inline\': $parent.inline}">' +
+                    '<input type="checkbox" data-bind="checked: $parent.modelValue, css: {\'so-editable\': $parent.editable}, attr: {\'ko-name\': $parent.koName, \'value\': $data}" />' +
+                    '<span data-bind="text: $data"></span>' +
+                '</label>' +
+            '<!-- /ko -->' +
         '<!-- /ko -->' +
 
         // field description
         '<!-- ko if: description -->' +
-        '<p data-bind="html: description"></p>' +
+            '<p data-bind="html: description"></p>' +
         '<!-- /ko -->' +
 
         '</div>';
@@ -385,22 +414,22 @@
 
             // show static field if readOnly
             '<!-- ko if: readOnly -->' +
-            '<span data-bind="text: modelValue"></span>' +
+                '<span data-bind="text: modelValue"></span>' +
             '<!-- /ko -->' +
 
             // show input field if not readOnly
             '<!-- ko ifnot: readOnly -->' +
-            '<!-- ko foreach: options -->' +  
-            '<label data-bind="css:{\'radio\': !$parent.inline, \'radio-inline\': $parent.inline}">' +
-                '<input type="radio" data-bind="checked: $parent.modelValue, attr:{value: $data, name: $parent.name, \'ko-name\': $parent.koName}, css:{\'so-editable\': $parent.editable}" />' +
-                '<span data-bind="text: $data"></span>' +
-            '</label>' +
-            '<!-- /ko -->' +
+                '<!-- ko foreach: options -->' +  
+                    '<label data-bind="css:{\'radio\': !$parent.inline, \'radio-inline\': $parent.inline}">' +
+                        '<input type="radio" data-bind="checked: $parent.modelValue, attr:{value: $data, name: $parent.name, \'ko-name\': $parent.koName}, css:{\'so-editable\': $parent.editable}" />' +
+                        '<span data-bind="text: $data"></span>' +
+                    '</label>' +
+                '<!-- /ko -->' +
             '<!-- /ko -->' +
 
             // field description
             '<!-- ko if: description -->' +
-            '<p data-bind="html: description"></p>' +
+                '<p data-bind="html: description"></p>' +
             '<!-- /ko -->' +
 
         '</div>';
@@ -410,37 +439,37 @@
 
             // show input field if not readOnly
             '<!-- ko ifnot: readOnly -->' +
-            '<input type="hidden" data-bind="value: modelValue, css: {\'so-editable\': editable}, attr: {id: id, \'ko-name\': koName, required: required}" />' +
-            '<div class="row">' +
-                '<div class="col-md-6 col-xs-6">' +
-                    '<input type="text" data-bind="spPerson: person, attr: {placeholder: placeholder}" />' +
-                    '<button class="btn btn-success" data-bind="click: addPerson, attr: {\'disabled\': person() == null}"><span>Add</span></button>' +
-                '</div>' +
+                '<input type="hidden" data-bind="value: modelValue, css: {\'so-editable\': editable}, attr: {id: id, \'ko-name\': koName, required: required}" />' +
+                '<div class="row">' +
+                    '<div class="col-md-6 col-xs-6">' +
+                        '<input type="text" data-bind="spPerson: person, attr: {placeholder: placeholder}" />' +
+                        '<button class="btn btn-success" data-bind="click: addPerson, attr: {\'disabled\': person() == null}"><span>Add</span></button>' +
+                    '</div>' +
 
-                '<!-- ko if: required && modelValue() == null && !readOnly -->' +
-                '<div class="col-md-6 col-xs-6">' +
-                    '<p class="error">This field is required.</p>' +
-                '</div>' +
-                '<!-- /ko -->' +
+                    '<!-- ko if: required && modelValue() == null && !readOnly -->' +
+                        '<div class="col-md-6 col-xs-6">' +
+                            '<p class="error">This field is required.</p>' +
+                        '</div>' +
+                    '<!-- /ko -->' +
 
-            '</div>' +
+                '</div>' +
             '<!-- /ko -->' +
 
             '<!-- ko foreach: modelValue -->' +
-            '<div class="row">' +
-                '<div class="col-md-10 col-xs-10" data-bind="spPerson: $data"></div>' +
+                '<div class="row">' +
+                    '<div class="col-md-10 col-xs-10" data-bind="spPerson: $data"></div>' +
 
-                '<!-- ko ifnot: readOnly -->'+
-                '<div class="col-md-2 col-xs-2">' +
-                '<button class="btn btn-xs btn-danger" data-bind="click: $parent.removePerson"><span class="glyphicon glyphicon-trash"></span></button>' +
+                    '<!-- ko ifnot: readOnly -->'+
+                        '<div class="col-md-2 col-xs-2">' +
+                            '<button class="btn btn-xs btn-danger" data-bind="click: $parent.removePerson"><span class="glyphicon glyphicon-trash"></span></button>' +
+                        '</div>' +
+                    '<!-- /ko -->'+
+
                 '</div>' +
-                '<!-- /ko -->'+
-
-            '</div>' +
             '<!-- /ko -->' +
 
             '<!-- ko if: description -->' +
-            '<p data-bind="html: description"></p>' +
+                '<p data-bind="html: description"></p>' +
             '<!-- /ko -->' +
 
         '</div>';

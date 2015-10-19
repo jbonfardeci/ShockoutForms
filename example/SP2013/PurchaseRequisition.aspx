@@ -22,7 +22,7 @@
 			<section class="nav-section">
 				<h4>Vendor Information</h4>
 				
-                <so-text-field params="val: Title"></so-text-field>
+                <so-text-field params="val: Title, required: true"></so-text-field>
 
                 <so-text-field params="val: VendorName, required: true"></so-text-field>
 				

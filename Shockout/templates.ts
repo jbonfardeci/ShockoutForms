@@ -7,7 +7,7 @@
             <div data-bind="foreach: attachments">\
             <div>\
             <a href="" data-bind="attr: {href: __metadata.media_src}"><span class="glyphicon glyphicon-paperclip"></span> <span data-bind="text: Name"></span></a>&nbsp;\
-            <button data-bind="event: {click: $root.deleteAttachment}" class="btn btn-sm btn-danger" title="Delete Attachment" data-author-only><span class="glyphicon glyphicon-remove"></span></button>\
+            <button data-bind="event: {click: $root.deleteAttachment}" class="btn btn-sm btn-danger" title="Delete Attachment"><span class="glyphicon glyphicon-remove"></span></button>\
             </div>\
             </div>';
 

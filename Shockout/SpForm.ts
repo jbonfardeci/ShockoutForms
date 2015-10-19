@@ -531,15 +531,13 @@ module Shockout {
                         console.info(self.fieldNames);
                     }
 
-                    self.nextAsync(true);
-                    return;
+                    self.nextAsync(true, 'Initialized list settings.');
                 }
                 catch (e) {
-                    self.nextAsync(false, 'Failed to initialize list settings.');
-                    if (self.debug) {
-                        console.warn(e);
-                    }
-                    return;
+                    if (self.debug) { throw e; }
+                    var error = 'Failed to initialize list settings.';
+                    self.logError(error + ' SPForm.getListAsync.setupList(): ', e);
+                    self.nextAsync(false, error);
                 }
             }
 
@@ -650,12 +648,8 @@ module Shockout {
                     }
                 }
                 catch (e) {
-                    var error = 'Failed to setup KO object at getListAsync.setupKoVar: ';
-                    if (self.debug) {
-                        console.warn(error);
-                        console.warn(e);
-                    }
-                    self.logError(error + JSON.stringify(e));
+                    self.logError('Failed to setup KO object at SPForm.getListAsync.setupKoVar(): ', e);
+                    if (self.debug) { throw e; }
                 }
             };
         }
@@ -673,10 +667,11 @@ module Shockout {
                 var vm: IViewModel = self.viewModel;
                 var rx: RegExp = /submitted/i;
 
+                // Register Shockout's Knockout Components
                 KoComponents.registerKoComponents();
 
-                // find out of this list allows saving before submitting and triggering workflow approval
-                // must have a field with `submitted` in the name and it must be of type `Boolean`
+                // Find out of this list allows saving before submitting and triggering workflow approval.
+                // Must have a field with `submitted` in the name and it must be of type `Boolean`
                 if (self.fieldNames.indexOf('IsSubmitted') > -1) {
                     self.allowSave = true;
                     ViewModel.isSubmittedKey = 'IsSubmitted';
@@ -685,7 +680,7 @@ module Shockout {
                     }
                 }
 
-                // append action buttons
+                // Append action buttons to form.
                 self.$formAction = $(Templates.getFormAction(self.allowSave, self.allowDelete, self.allowPrint)).appendTo(self.$form);
                 if (self.allowSave) {
                     self.$formAction.find('.btn.save').show();
@@ -694,98 +689,22 @@ module Shockout {
                     }
                 }
 
+                // Setup attachments modules.
                 if (self.enableAttachments) {
-                    // set the absolute URI for the file handler 
-                    self.fileHandlerUrl = self.rootUrl + self.siteUrl + self.fileHandlerUrl;
-
-                    // file uploader default settings
-                    self.fileUploaderSettings = {
-                        element: null,
-                        action: self.fileHandlerUrl,
-                        debug: self.debug,
-                        multiple: false,
-                        maxConnections: 3,
-                        allowedExtensions: self.allowedExtensions,
-                        params: {
-                            listId: self.listId,
-                            itemId: self.itemId
-                        },
-                        onSubmit: function (id, fileName) { },
-                        onComplete: function (id, fileName, json) {
-
-                            if (self.debug) {
-                                console.warn(json);
-                            }
-
-                            if (json.error != null && json.error != "") {
-                                self.logError(json.error);
-                                if (self.debug) {
-                                    console.warn(json.error);
-                                }
-                                return;
-                            }
-
-                            if (self.itemId == null && json.itemId != null) {
-                                self.itemId = json.itemId;
-                                self.viewModel.Id(json.itemId);
-                            }
-
-                            // push a new SP attachment instance to the view model's `attachments` collection
-                            self.viewModel.attachments().push(new SpAttachment(self.rootUrl, self.siteUrl, self.listName, self.itemId, fileName));
-                            self.viewModel.attachments.valueHasMutated(); // tell KO the array has been updated
-                        },
-                        template: Templates.getFileUploadTemplate()
-                    }
-
-                    // Setup attachments module.
-                    self.$form.find(".attachments, [data-sp-attachments]").each(function (i: number, att: HTMLElement) {
-                        var id = 'fileuploader_' + i;
-                        $(att).append(Templates.getAttachmentsTemplate(id));
-                        self.fileUploaderSettings.element = document.getElementById(id);
-                        self.fileUploader = new Shockout.qq.FileUploader(self.fileUploaderSettings);
-                    });
-
-                    // If error logging is enabled, ensure the list exists and has required columns. Disable if 404.
-                    if (self.enableErrorLog) {
-                        // Send a test query
-                        SpApi.getListItems(self.errorLogListName, function (data, error) {
-                            if (!!error) {
-                                self.enableErrorLog = SPForm.enableErrorLog = false;
-                            }
-                        }, self.errorLogSiteUrl, null, 'Title,Error', 'Modified', 1, false);
-                    }
-
-                    if (self.debug) {
-                        console.info('initFormAsync: Attachments are enabled.');
-                    }
+                    self.setupAttachments(self);
                 }
 
-                // set up HTML editors in the form
-                // This isn't necessary for the Shockout KO Components fields, but included for when a developer creates their own fields.
-                self.$form.find(".rte, [data-bind*='spHtml'], [data-sp-html]").each(function (i: number, el: HTMLElement) {
-                    var $el = $(el);
-                    var koName = Utils.observableNameFromControl(el, self.viewModel);
+                // If error logging is enabled, ensure the list exists and has required columns. Disable if 404.
+                if (self.enableErrorLog) {
+                    // Send a test query
+                    SpApi.getListItems(self.errorLogListName, function (data, error) {
+                        if (!!error) {
+                            self.enableErrorLog = SPForm.enableErrorLog = false;
+                        }
+                    }, self.errorLogSiteUrl, null, 'Title,Error', 'Modified', 1, false);
+                }
 
-                    var $rte = $('<div>', {
-                        'data-bind': 'spHtmlEditor: ' + koName,
-                        'class': 'form-control content-editable',
-                        'contenteditable': 'true'
-                    });
-
-                    if (!!$el.attr('required') || !!$el.hasClass('required')) {
-                        $rte.attr('required', 'required');
-                        $rte.addClass('required');
-                    }
-
-                    $rte.insertBefore($el);
-                    if (!self.debug) {
-                        $el.hide();
-                    }
-
-                    if (self.debug) {
-                        console.info('initFormAsync: Created spHtml field: ' + koName);
-                    }
-                });
+                
 
                 //append Created/Modified, Workflow History info to predefined section or append to form
                 if (!!self.itemId) {
@@ -813,39 +732,14 @@ module Shockout {
                         console.info('initFormAsync: setup elements with `data-edit-only` attribute.');
                     }
                 }
-               
-                // OBSOLETE - now included in KO Component templates
-                // add control validation to Bootstrap form elements
-                // http://getbootstrap.com/css/#forms-control-validation 
-                //self.$form.find('[required], .required').each(function (i: number, el: HTMLElement) {
-                //    var koName = Utils.observableNameFromControl(el, self.viewModel);
-                //    var $parent = $(el).closest('.form-group');
-                //    var css = "css: { 'has-error': !!!" + koName + "(), 'has-success has-feedback': !!" + koName + "()}";
-
-                //    // If the parent already has a data-bind attribute, append the css.
-                //    if (!!$parent.attr('data-bind')) {
-                //        var dataBind = $parent.attr("data-bind");
-                //        $parent.attr("data-bind", dataBind + ", " + css);
-                //    } else {
-                //        $parent.attr("data-bind", css);
-                //    }
-
-                //    $parent.append('<span class="glyphicon glyphicon-ok form-control-feedback" aria-hidden="true"></span>');
-                //});
-
-                if (self.debug) {
-                    console.info('initFormAsync: Required elements are initialized.');
-                }
 
                 self.nextAsync(true, "Form initialized.");
                 return;
             }
             catch (e) {
-                if (self.debug) {
-                    console.warn(e);
-                }
-                self.logError("initFormAsync: " + e);
-                self.nextAsync(false, "Failed to initialize form. " + e);
+                if (self.debug) { throw e; }
+                self.logError("Error in SPForm.initFormAsync(): ", e);
+                self.nextAsync(false, "Failed to initialize form.");
                 return;
             }
         }
@@ -981,12 +875,8 @@ module Shockout {
                 self.nextAsync(true, "Retrieved your permissions.");
             }
             catch (e) {
-                if (self.debug) {
-                    console.warn('Error in SPForm.implementPermissionsAsync()');
-                    console.warn(e);
-                } else {
-                    self.logError("SPForm.implementPermissionsAsync() " + JSON.stringify(e));
-                }
+                if (self.debug) { throw e; }
+                self.logError("Error in SPForm.implementPermissionsAsync() ", e);
                 self.nextAsync(true, "Failed to retrieve your permissions.");
             }
         }
@@ -1164,10 +1054,8 @@ module Shockout {
 
             }
             catch (e) {
-                self.logError('Failed to bind form values. ' + JSON.stringify(e));
-                if (self.debug) {
-                    console.warn(e);
-                }
+                if (self.debug) { throw e; }
+                self.logError('Failed to bind form values in SPForm.bindListItemValues(): ', e);               
             }
         }
 
@@ -1289,8 +1177,8 @@ module Shockout {
                  
             }
             catch (e) {
-                self.logError(e);
-                if (self.debug) { throw e; }                
+                if (self.debug) { throw e; }  
+                self.logError('Error in SpForm.saveListItem(): ', e);                             
             }
 
             function callback(xmlDoc: any, status: string, jqXhr: any): void {
@@ -1396,67 +1284,21 @@ module Shockout {
         finalize(self: SPForm): void {
 
             try {
-                // Set up a navigation menu at the top of the form if there are elements with the class `nav-section`.
-                var $navSections = self.$form.find('.nav-section');
-                if ($navSections.length > 0) {
+                
+                // Setup form navigation on sections with class '.nav-section'
+                self.setupNavigation(self);
 
-                    // add navigation section to top of form
-                    self.$form.prepend('<section class="no-print" id="TOP">' +
-                        '<h4>Navigation</h4>' +
-                        '<div class="navigation-buttons"></div>' +
-                        '</section>');
+                // Setup Datepickers.
+                self.setupDatePickers(self);
 
-                    // include the workflow history section
-                    self.$form.find('#workflowHistory, [data-workflow-history]').addClass('nav-section');
-
-                    // add navigation buttons
-                    self.$form.find(".nav-section:visible").each(function (i, el) {
-                        var $el = $(el);
-                        var $header = $el.find("> h4");
-                        if ($header.length == 0) {
-                            return;
-                        }
-                        var title = $header.text();
-                        var anchorName = Utils.toCamelCase(title) + 'Nav';
-                        $el.before('<div style="height:1px;" id="' + anchorName + '">&nbsp;</div>');
-                        self.$form.find(".navigation-buttons").append('<a href="#' + anchorName + '" class="btn btn-sm btn-info">' + title + '</a>');
-                    });
-
-                    // add a back-to-top button
-                    self.$form.append('<a href="#TOP" class="back-to-top"><span class="glyphicon glyphicon-chevron-up"></span></a>');
-
-                    // add smooth scrolling to for anchors - animates page navigation
-                    $('body').delegate('a[href*=#]:not([href=#])', 'click', function () {
-                        if (window.location.pathname.replace(/^\//, '') == this.pathname.replace(/^\//, '') && location.hostname == this.hostname) {
-                            var target = $(this.hash);
-                            target = target.length ? target : $('[name=' + this.hash.slice(1) + ']');
-                            if (target.length) {
-                                $('html,body').animate({
-                                    scrollTop: target.offset().top - 50
-                                }, 1000);
-
-                                return false;
-                            }
-                        }
-                    });
-                }
-
-                // apply jQueryUI datepickers after all KO bindings have taken place to prevent error: 
-                // `Uncaught Missing instance data for this datepicker`
-                var $datepickers: Array<JQuery> = self.$form.find('input.datepicker').datepicker();
-                if (self.debug) {
-                    console.info('Bound ' + $datepickers.length + ' jQueryUI datepickers.');
-                }
+                // Setup Bootstrap validation.
+                //self.setupBootstrapValidation(self);
 
                 self.nextAsync(true, 'Finalized form controls.');
             }
             catch (e) {
-                if (self.debug) {
-                    console.warn(e);
-                }
-                else {
-                    self.logError('Error in SpForm.finalize(): ' + JSON.stringify(e));
-                }
+                if (self.debug) { throw e; }
+                self.logError('Error in SpForm.finalize(): ', e);
                 self.nextAsync(false, 'Failed to finalize form controls.');
             }       
         }
@@ -1512,10 +1354,8 @@ module Shockout {
                     }
                 }
                 catch (e) {
-                    self.showDialog("Failed to retrieve attachments: " + JSON.stringify(e));
-                    if (self.debug) {
-                        console.warn(e);
-                    }
+                    if (self.debug) { throw e; }
+                    self.showDialog("Failed to retrieve attachments in SpForm.getAttachments(): ", e);
                 }
             });
         }
@@ -1621,7 +1461,8 @@ module Shockout {
                 return true;
             }
             catch (e) {
-                self.logError("Form validation error at formIsValid(): " + JSON.stringify(e));
+                if (self.debug) { throw e; }
+                self.logError("Form validation error at SPForm.formIsValid(): ", e);
                 return false;
             }
         }
@@ -1677,12 +1518,259 @@ module Shockout {
         * @param self?: SPForm = undefined
         * @return void
         */
-        logError(msg: string, self: SPForm = undefined): void {
+        logError(msg: string, e: any = undefined, self: SPForm = undefined): void {
             self = self || this;
-            self.showDialog('<p>An error has occurred and the web administrator has been notified.</p><p>Error Details: <pre>' + msg + '</pre></p>');
+            var err: any = [msg];
+
+            if (!!e) {
+                e = typeof e == 'object' ? JSON.stringify(e) : e;
+                err.push(e);
+            }
+
+            err = err.length > 0 ? err.join('; ') : err.join('');
+
             if (self.enableErrorLog) {
                 Utils.logError(msg, self.errorLogListName, self.rootUrl, self.debug);
+                self.showDialog('<p>An error has occurred and the web administrator has been notified.</p><pre>' + err + '</pre>');
             }
+        }
+
+        /** 
+        * Setup attachments modules.
+        * @param self: SPForm = undefined
+        * @return number
+        */
+        setupAttachments(self: SPForm = undefined): number {
+            self = self || this;
+            var count: number = 0;
+
+            if (!self.enableAttachments) { return count; }
+
+            try {
+                // set the absolute URI for the file handler 
+                var subsiteUrl = Utils.formatSubsiteUrl(self.siteUrl); // ensure site url is or ends with '/'
+                var fileHandlerUrl = self.fileHandlerUrl.replace(/^\//, '');
+                self.fileHandlerUrl = self.rootUrl + subsiteUrl + fileHandlerUrl;
+
+                // file uploader default settings
+                self.fileUploaderSettings = {
+                    element: null,
+                    action: self.fileHandlerUrl,
+                    debug: self.debug,
+                    multiple: false,
+                    maxConnections: 3,
+                    allowedExtensions: self.allowedExtensions,
+                    params: {
+                        listId: self.listId,
+                        itemId: self.itemId
+                    },
+                    onSubmit: function (id, fileName) { },
+                    onComplete: function (id, fileName, json) {
+
+                        if (self.debug) {
+                            console.warn(json);
+                        }
+
+                        if (json.error != null && json.error != "") {
+                            self.logError(json.error);
+                            if (self.debug) {
+                                console.warn(json.error);
+                            }
+                            return;
+                        }
+
+                        if (self.itemId == null && json.itemId != null) {
+                            self.itemId = json.itemId;
+                            self.viewModel.Id(json.itemId);
+                        }
+
+                        // push a new SP attachment instance to the view model's `attachments` collection
+                        self.viewModel.attachments().push(new SpAttachment(self.rootUrl, self.siteUrl, self.listName, self.itemId, fileName));
+                        self.viewModel.attachments.valueHasMutated(); // tell KO the array has been updated
+                    },
+                    template: Templates.getFileUploadTemplate()
+                }
+
+                self.$form.find(".attachments, [data-sp-attachments]").each(function (i: number, att: HTMLElement) {
+                    var id = 'fileuploader_' + i;
+                    $(att).append(Templates.getAttachmentsTemplate(id));
+                    self.fileUploaderSettings.element = document.getElementById(id);
+                    self.fileUploader = new Shockout.qq.FileUploader(self.fileUploaderSettings);
+                    count++;
+                });
+
+                if (self.debug) {
+                    console.info('Attachments are enabled.');
+                }
+            }
+            catch (e) {
+                if (self.debug) { throw e; }
+                self.logError('Error in SPForm.setupAttachments(): ', e);
+            }
+
+            return count;
+        }
+
+        /**
+        * Setup Bootstrap validation for required fields.
+        * @return number
+        */
+        setupBootstrapValidation(self: SPForm = undefined): number {
+            var count: number = 0;
+            self = self || this;
+            try {
+                // add control validation to Bootstrap form elements
+                // http://getbootstrap.com/css/#forms-control-validation 
+                self.$form.find('[required], .required').each(function (i: number, el: HTMLElement) {
+
+                    var $parent = $(el).closest('.form-group');
+                    var db = $parent.attr('data-bind');
+
+                    if (/has-error/.test(db)) { return; } // already has the KO bindings
+
+                    var koName = Utils.observableNameFromControl(el, self.viewModel);               
+                    var css = "css:{ 'has-error': !!!" + koName + "(), 'has-success has-feedback': !!" + koName + "()}";
+
+                    // If the parent already has a data-bind attribute, append the css.
+                    if (!!db) {
+                        var dataBind = $parent.attr("data-bind");
+                        $parent.attr("data-bind", dataBind + ", " + css);
+                    } else {
+                        $parent.attr("data-bind", css);
+                    }
+
+                    $parent.append('<span class="glyphicon glyphicon-ok form-control-feedback" aria-hidden="true"></span>');
+                    count++;
+                });
+            }
+            catch (e) {
+                if (self.debug) { throw e; }
+                self.logError('Error in SPForm.setupBootstrapValidation(): ', e);
+            }
+
+            return count;
+        }
+
+        /**
+        * Setup form navigation on sections with class '.nav-section'
+        * @return number
+        */
+        setupNavigation(self: SPForm = undefined): number {
+            var self = self || this;
+            var count: number = 0;
+
+            try {
+                // Set up a navigation menu at the top of the form if there are elements with the class `nav-section`.
+                var $navSections = self.$form.find('.nav-section');
+
+                if ($navSections.length == 0) {
+                    return count;
+                }
+
+                // add navigation section to top of form
+                self.$form.prepend('<section class="no-print" id="TOP">' +
+                    '<h4>Navigation</h4>' +
+                    '<div class="navigation-buttons"></div>' +
+                    '</section>');
+
+                // include the workflow history section
+                self.$form.find('#workflowHistory, [data-workflow-history]').addClass('nav-section');
+
+                // add navigation buttons
+                self.$form.find(".nav-section:visible").each(function (i, el) {
+                    var $el = $(el);
+                    var $header = $el.find("> h4");
+                    if ($header.length == 0) {
+                        return;
+                    }
+                    var title = $header.text();
+                    var anchorName = Utils.toCamelCase(title) + 'Nav';
+                    $el.before('<div style="height:1px;" id="' + anchorName + '">&nbsp;</div>');
+                    self.$form.find(".navigation-buttons").append('<a href="#' + anchorName + '" class="btn btn-sm btn-info">' + title + '</a>');
+                    count++;
+                });
+
+                // add a back-to-top button
+                self.$form.append('<a href="#TOP" class="back-to-top"><span class="glyphicon glyphicon-chevron-up"></span></a>');
+
+                // add smooth scrolling to for anchors - animates page navigation
+                $('body').delegate('a[href*=#]:not([href=#])', 'click', function () {
+                    if (window.location.pathname.replace(/^\//, '') == this.pathname.replace(/^\//, '') && location.hostname == this.hostname) {
+                        var target = $(this.hash);
+                        target = target.length ? target : $('[name=' + this.hash.slice(1) + ']');
+                        if (target.length) {
+                            $('html,body').animate({
+                                scrollTop: target.offset().top - 50
+                            }, 1000);
+
+                            return false;
+                        }
+                    }
+                });              
+            }
+            catch (e) {
+                if (self.debug) { throw e; }
+                self.logError('Error in SpForm.setupNavigation(): ', e);
+            }
+
+            return count;
+        }
+
+        /**
+        * Setup Datepicker fields.
+        * @return number
+        */
+        setupDatePickers(self: SPForm = undefined): number {
+            self = self || this;
+
+            // Apply jQueryUI datepickers after all KO bindings have taken place to prevent error: 
+            // `Uncaught Missing instance data for this datepicker`
+            var $datepickers: Array<JQuery> = self.$form.find('input.datepicker').datepicker();
+
+            if (self.debug) {
+                console.info('Bound ' + $datepickers.length + ' jQueryUI datepickers.');
+            }
+
+            return $datepickers.length;
+
+        }
+
+        setupHtmlFields(self: SPForm = undefined): number {
+            self = self || this;
+            var count: number = 0;
+            try {
+                // set up HTML editors in the form
+                // This isn't necessary for the Shockout KO Components fields, but included for when a developer creates their own fields.
+                self.$form.find(".rte, [data-bind*='spHtml'], [data-sp-html]").each(function (i: number, el: HTMLElement) {
+                    var $el = $(el);
+                    var koName = Utils.observableNameFromControl(el, self.viewModel);
+
+                    var $rte = $('<div>', {
+                        'data-bind': 'spHtmlEditor: ' + koName,
+                        'class': 'form-control content-editable',
+                        'contenteditable': 'true'
+                    });
+
+                    if (!!$el.attr('required') || !!$el.hasClass('required')) {
+                        $rte.attr('required', 'required');
+                        $rte.addClass('required');
+                    }
+
+                    $rte.insertBefore($el);
+                    if (!self.debug) {
+                        $el.hide();
+                    }
+                    count++;
+                    if (self.debug) {
+                        console.info('initFormAsync: Created spHtml field: ' + koName);
+                    }
+                });
+            }
+            catch (e) {
+                if (self.debug) { throw e; }
+                self.logError('Error in SPForm.setupHtmlFields(): ', e);
+            }
+            return count;
         }
     }
 
