@@ -46,7 +46,7 @@
                         , person = ko.unwrap(modelValue)
                         ;
 
-                    var $element = $(element)
+                    var $element = $(element).before('<br/>')
                         .addClass('people-picker-control')
                         .attr('placeholder', 'Employee Account Name');
 
@@ -83,6 +83,13 @@
                         }
                         return false;
                     }).insertAfter($element);
+
+                    var $reset = $('<button>', { 'class': 'btn btn-sm btn-default reset', 'html': 'Reset' })
+                        .on('click', function () {
+                            modelValue(null);
+                            return false;
+                        })
+                        .insertAfter($spValidate);
                     
                     var autoCompleteOpts: any = {
                         source: function (request, response) {
@@ -282,17 +289,25 @@
         };
 
         ko.bindingHandlers['spDate'] = {
-            //after: ['id'],
+            after: ['attr'],
             init: function (element, valueAccessor, allBindings, viewModel: IViewModel, bindingContext) {
                 var modelValue: KnockoutObservable<Date> = valueAccessor();
 
                 if (element.tagName.toLowerCase() != 'input' || $(element).attr('type') == 'hidden') { return; }// stop if not an editable field
 
                 $(element)
+                    .css('display', 'inline-block')
                     .addClass('datepicker med')
                     .attr('placeholder', 'MM/DD/YYYY')
                     .on('blur', onDateChange)
-                    .on('change', onDateChange);
+                    .on('change', onDateChange)
+                    .after('<span class="glyphicon glyphicon-calendar"></span>')
+                    .before('<br />');
+
+                $(element).datepicker({
+                    changeMonth: true,
+                    changeYear: true
+                });
 
                 function onDateChange() {
                     modelValue(Utils.parseDate(this.value));
@@ -318,6 +333,7 @@
         // 1. REST returns UTC
         // 2. getUTCHours converts UTC to Locale
         ko.bindingHandlers['spDateTime'] = {
+            after: ['attr'],
             init: function (element, valueAccessor, allBindings, viewModel: IViewModel, bindingContext) {
 
                 if (element.tagName.toLowerCase() != 'input' || $(element).attr('type') == 'hidden') { return; }// stop if not an editable field
@@ -331,6 +347,7 @@
                     , $error
                     , $element: JQuery = $(element)
                     , $parent: JQuery = $element.parent()
+                    , $reset: JQuery
                     ;
 
                 try {
@@ -350,23 +367,20 @@
                         'placeholder': 'MM/DD/YYYY',
                         'maxlength': 10,
                         'class': 'datepicker med form-control'
-                    }).css('display', 'inline-block').on('change', function () {
-                        try {
-                            $error.hide();
-                            var date: Date = Utils.parseDate(this.value);
-                            modelValue(date);
-                            $display.html(Utils.toDateTimeLocaleString(date));
-                        }
-                        catch (e) {
-                            $error.show();
-                        }
-                    });
+                    }).css('display', 'inline-block')
+                        .on('change', setDateTime)
+                        .before('<br />');
 
                     if (required) {
                         $element.attr('required', 'required');
                     }
 
-                    var timeHtml: Array<string> = ['<span class="glyphicon glyphicon-calendar" style="margin-left:.2em;"></span>'];
+                    $element.datepicker({
+                        changeMonth: true,
+                        changeYear: true
+                    });
+
+                    var timeHtml: Array<string> = ['<span class="glyphicon glyphicon-calendar"></span>'];
 
                     // Hours 
                     timeHtml.push('<select class="form-control select-hours" style="margin-left:1em;width:5em;display:inline-block;">');
@@ -387,15 +401,32 @@
                     // TT: AM/PM
                     timeHtml.push('<select class="form-control select-tt" style="margin-left:1em;width:5em;display:inline-block;"><option value="AM">AM</option><option value="PM">PM</option></select>');
 
+                    timeHtml.push('&nbsp;<button class="btn btn-sm btn-default reset">Reset</button>');
+
                     $element.after(timeHtml.join(''));
 
                     $hh = $parent.find('.select-hours');
                     $mm = $parent.find('.select-minutes');
                     $tt = $parent.find('.select-tt');
+                    $reset = $parent.find('.btn.reset');
 
                     $hh.on('change', setDateTime);
                     $mm.on('change', setDateTime);
                     $tt.on('change', setDateTime);
+                    $reset.on('click', function () {
+                        try {
+                            modelValue(null);
+                            $element.val('');
+                            $hh.val('12');
+                            $mm.val('0');
+                            $tt.val('AM');
+                            $display.html('');
+                        }
+                        catch (e) {
+                            console.warn(e);
+                        }
+                        return false;
+                    });
 
                     element.$hh = $hh;
                     element.$mm = $mm;
@@ -415,12 +446,12 @@
                 }
                 catch (e) {
                     if (SPForm.DEBUG) {
-                        console.warn('Error in Knockout handler spDateTime init()...s');
+                        console.warn('Error in Knockout handler spDateTime init()...');
                         console.warn(e);
                     }
                 }
 
-                // must conver user's locale date/time to UTC for SP
+                // must convert user's locale date/time to UTC for SP
                 function setDateTime(): void {
                     try {
                         var date: Date = Utils.parseDate($element.val());
@@ -469,7 +500,10 @@
                         // add time zone
                         var timeZone = /\b\s\(\w+\s\w+\s\w+\)/i.exec(date.toString());
                         if (!!timeZone) {
-                            dateTimeStr += timeZone[0];
+                            // e.g. convert '(Central Daylight Time)' to '(CDT)'
+                            dateTimeStr += ' ' + timeZone[0].replace(/\b\w+/g, function (x) {
+                                return x[0];
+                            }).replace(/\s/g, '');
                         }
                         
                         if (element.tagName.toLowerCase() == 'input') {

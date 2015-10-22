@@ -20,6 +20,8 @@ $aliceblue: aliceblue;
         margin-top:30px;
     }
 
+    select{color: $dk-grey;}
+
     .container, .container-fluid{
         padding-top:3em;
 
@@ -49,6 +51,8 @@ $aliceblue: aliceblue;
             padding: 0 5px;
             font-size: 1.2em;
         }
+
+        .current-user{margin:0 .4em;}
         
         table{
 			width:90%;
@@ -220,7 +224,7 @@ $aliceblue: aliceblue;
             em{font-weight:bold; font-size:.7em; font-style:oblique; color:$blue;}
 
             .form-group{
-                padding:.4em;
+                padding:.2em;
                 margin-bottom:.2em;
                 position:relative;
             }
@@ -306,9 +310,6 @@ $aliceblue: aliceblue;
 
         }/*.user-profile-card*/
 
-         /* Boostrap overrides */
-        .form-control-feedback{right:1.5em;}
-
         /*Valum's QQ File Uploader*/
 	    .qq-uploader { position:relative; width: 100%;}	
 	    .qq-upload-button {}
@@ -342,12 +343,28 @@ $aliceblue: aliceblue;
 
         .even{background-color:$aliceblue;}
 
-        /*boostrap overrides*/
+        /* Boostrap overrides */
+
+        .form-control-feedback{right:1.5em;}
+
+        span.glyphicon-calendar{
+            color:$dk-grey;
+            margin-left:.2em;
+            display:inline-block;
+        }
+
+        select, select option,
+        .ui-datepicker-title option{
+            color: $dk-grey;
+        }
 
         .highlight{
             background-color:#ff9 !important;
             padding:.5em;
             color:$dk-grey;
+            .form-group{
+                background-color:transparent !important;
+            }
             label, label.control-label{
                 color:$dk-grey;
             }
@@ -356,7 +373,7 @@ $aliceblue: aliceblue;
             }
         }
 
-        .has-error {
+        .has-error, .form-group {
             .required, *[required] {
                 border-color: $red;
             }
@@ -383,11 +400,36 @@ $aliceblue: aliceblue;
             text-align:right !important;
         }
 
+        .indent{
+            margin-left:2em;
+        }
+
+        /* Shockout Components */
+        so-text-field, 
+        so-html-field, 
+        so-person-field, 
+        so-date-field, 
+        so-money-field, 
+        so-number-field, 
+        so-datetime-field, 
+        so-select-field, 
+        so-checkbox-field, 
+        so-checkbox-group, 
+        so-radio-group, 
+        so-usermulti-group,
+        so-static-field,
+        so-static-person,
+        so-static-date,
+        so-static-datetime,
+        so-static-money,
+        so-static-number,
+        so-static-html,
+        so-attachments{
+            display:block;
+        }
+
     }/*.sp-form*/
 
-    .sp-form .indent{
-        margin-left:2em;
-    }
  
 }
 

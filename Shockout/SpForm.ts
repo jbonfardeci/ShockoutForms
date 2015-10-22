@@ -372,6 +372,8 @@ module Shockout {
                 , self.getListAsync      
                 , self.initFormAsync 
                 , function (self: SPForm, args: any = undefined) {
+                    // Register Shockout's Knockout Components
+                    KoComponents.registerKoComponents();
                     // apply Knockout bindings
                     ko.applyBindings(self.viewModel, self.form);
                     self.viewModelIsBound = true;
@@ -668,7 +670,7 @@ module Shockout {
                 var rx: RegExp = /submitted/i;
 
                 // Register Shockout's Knockout Components
-                KoComponents.registerKoComponents();
+                //KoComponents.registerKoComponents();
 
                 // Find out of this list allows saving before submitting and triggering workflow approval.
                 // Must have a field with `submitted` in the name and it must be of type `Boolean`
@@ -1231,28 +1233,30 @@ module Shockout {
                         console.warn(itemId);
                     }
 
-                });             
+                });       
+                
+                if (Utils.getIdFromHash() == null && self.itemId != null) {
+                    Utils.setIdHash(self.itemId);
+                }      
 
-                if (isSubmit && !self.debug) {//submitting form
+                if (isSubmit) {//submitting form
                     self.showDialog('<p>Your form has been submitted. You will be redirected in ' + timeout / 1000 + ' seconds.</p>', 'Form Submission Successful');
-                    setTimeout(function () {
-                        window.location.href = self.sourceUrl != null ? self.sourceUrl : self.confirmationUrl;
-                    }, timeout);
+                    if (self.debug) {
+                        console.warn('DEBUG MODE: Would normally redirect user to confirmation page: ' + self.confirmationUrl);
+                    } else {
+                        setTimeout(function () {
+                            window.location.href = self.sourceUrl != null ? self.sourceUrl : self.confirmationUrl;
+                        }, timeout);
+                    }
                 }
                 else {//saving form
                     self.showDialog(saveMsg, 'The form has been saved.', timeout);
 
-                    // Append list item ID to querystring if this is a new form.
-                    if (Utils.getIdFromHash() == null && self.itemId != null) {                     
-                        setTimeout(function () {
-                            //append list item id to hash
-                            Utils.setIdHash(self.itemId);
-                        }, 10);
-                    }
-                    else {
-                        // refresh data from the server
-                        self.getListItemAsync(self);
-                        //give WF History list 5 seconds to update
+                    // refresh data from the server
+                    self.getListItemAsync(self);
+
+                    //give WF History list 5 seconds to update
+                    if (self.includeWorkflowHistory) {
                         setTimeout(function () { self.getHistoryAsync(self); }, 5000);
                     }
                 }
@@ -1456,6 +1460,7 @@ module Shockout {
                 }
 
                 if (errorCount > 0) {
+                    self.showDialog('<p>The following fields are required or invalid:</p><div class="error">' + labels.join('<br/>') + '</div>');
                     return false;
                 }
                 return true;
@@ -1530,7 +1535,7 @@ module Shockout {
             err = err.length > 0 ? err.join('; ') : err.join('');
 
             if (self.enableErrorLog) {
-                Utils.logError(msg, self.errorLogListName, self.rootUrl, self.debug);
+                Utils.logError(err, self.errorLogListName, self.rootUrl, self.debug);
                 self.showDialog('<p>An error has occurred and the web administrator has been notified.</p><pre>' + err + '</pre>');
             }
         }

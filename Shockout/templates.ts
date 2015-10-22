@@ -71,7 +71,7 @@
 
         public static getFormAction(allowSave: boolean = true, allowDelete: boolean = true, allowPrint: boolean = true): JQuery {
             var template: Array<string> = [];
-            template.push('<label>Logged in as:</label> <span data-bind="text: currentUser().title" class="current-user"></span>');
+            template.push('<label>Logged in as:</label><span data-bind="text: currentUser().title" class="current-user"></span>');
             template.push('<button class="btn btn-default cancel" data-bind="event: { click: cancel }" title="Close"><span class="glyphicon glyphicon-remove"></span><span class="hidden-xs">Close</span></button>');
 
             if (allowPrint) {
@@ -82,7 +82,7 @@
             }
             template.push('<button class="btn btn-success save" data-bind="event: { click: save }" style="display:none;" title="Save your work."><span class="glyphicon glyphicon-floppy-disk"></span><span class="hidden-xs">Save</span></button>');
 
-            template.push('<button class="btn btn-danger submit" data-bind="event: { click: submit }, disable: !isValid()" title="Submit for routing."><span class="glyphicon glyphicon-floppy-open"></span><span class="hidden-xs">Submit</span></button>');
+            template.push('<button class="btn btn-danger submit" data-bind="event: { click: submit }" title="Submit for routing."><span class="glyphicon glyphicon-floppy-open"></span><span class="hidden-xs">Submit</span></button>');
 
             var $div = $('<div>', { 'class': 'form-action no-print', 'html': template.join('') });
             return $div;

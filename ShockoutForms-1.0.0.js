@@ -32,6 +32,10 @@ var Shockout;
                 viewModel: soFieldModel,
                 template: KoComponents.soTextFieldTemplate.replace(/data-bind="(value|text): modelValue/g, 'data-bind="spNumber: modelValue')
             });
+            ko.components.register('so-decimal-field', {
+                viewModel: soFieldModel,
+                template: KoComponents.soTextFieldTemplate.replace(/data-bind="(value|text): modelValue/g, 'data-bind="spDecimal: modelValue')
+            });
             ko.components.register('so-checkbox-field', {
                 viewModel: soFieldModel,
                 template: KoComponents.soCheckboxFieldTemplate
@@ -75,6 +79,10 @@ var Shockout;
             ko.components.register('so-static-number', {
                 viewModel: soStaticModel,
                 template: KoComponents.soStaticFieldTemplate.replace(/data-bind="text: modelValue/g, 'data-bind="spNumber: modelValue')
+            });
+            ko.components.register('so-static-decimal', {
+                viewModel: soStaticModel,
+                template: KoComponents.soStaticFieldTemplate.replace(/data-bind="text: modelValue/g, 'data-bind="spDecimal: modelValue')
             });
             ko.components.register('so-static-html', {
                 viewModel: soStaticModel,
@@ -192,99 +200,129 @@ var Shockout;
         KoComponents.hasErrorCssDiv = '<div class="form-group" data-bind="css: {\'has-error\': !!!modelValue() && !!required, \'has-success has-feedback\': !!modelValue() && !!required}">';
         KoComponents.requiredFeedbackSpan = '<span class="glyphicon glyphicon-ok form-control-feedback" aria-hidden="true"></span>';
         KoComponents.soStaticFieldTemplate = '<div class="form-group">' +
+            '<div class="row">' +
             // field label
             '<!-- ko if: label -->' +
-            '<label data-bind="html: label"></label>' +
+            '<div class="col-sm-3"><label data-bind="html: label"></label></div>' +
             '<!-- /ko -->' +
             // field
-            '<span data-bind="text: modelValue"></span>' +
+            '<div class="col-sm-9" data-bind="text: modelValue"></div>' +
+            '</div>' +
             // description
             '<!-- ko if: description -->' +
-            '<p data-bind="html: description"></p>' +
+            '<div class="row"><div class="col-sm-3">&nbsp;</div><div class="col-sm-9" data-bind="html: description"></div></div>' +
             '<!-- /ko -->' +
             '</div>';
         KoComponents.soTextFieldTemplate = KoComponents.hasErrorCssDiv +
-            // show static field if readOnly
-            '<!-- ko if: readOnly -->' +
-            '<label data-bind="html: label"></label>' +
-            '<span data-bind="text: modelValue"></span>' +
+            '<div class="row">' +
+            // field label
+            '<!-- ko if: label -->' +
+            '<div class="col-sm-3"><label data-bind="html: label, attr: {for: id}"></label></div>' +
             '<!-- /ko -->' +
-            // show input field if not readOnly
+            // field
+            '<div class="col-sm-9">' +
+            '<!-- ko if: readOnly -->' +
+            '<div data-bind="text: modelValue"></div>' +
+            '<!-- /ko -->' +
             '<!-- ko ifnot: readOnly -->' +
-            '<label data-bind="attr:{for: id}, text: label"></label>' +
             '<input type="text" data-bind="value: modelValue, css: {\'so-editable\': editable}, attr: {id: id, placeholder: placeholder, title: title, required: required, \'ko-name\': koName }" class="form-control" />' +
-            // Boostrap visual feedback for required fields
             '<!-- ko if: !!required -->' +
             KoComponents.requiredFeedbackSpan +
             '<!-- /ko -->' +
             '<!-- /ko -->' +
-            // field description
+            '</div>' +
+            '</div>' +
+            // description
             '<!-- ko if: description -->' +
-            '<p data-bind="html: description"></p>' +
+            '<div class="row"><div class="col-sm-3">&nbsp;</div><div class="col-sm-9" data-bind="html: description"></div></div>' +
             '<!-- /ko -->' +
             '</div>';
+        //'<div data-bind="spHtmlEditor: modelValue" contenteditable="true" class="form-control content-editable"></div>'+
+        //'<textarea data-bind="value: modelValue, css: {\'so-editable\': editable}, attr: {id: id, required: required, \'ko-name\': koName }" data-sp-html="" style="display:none;"></textarea>' +
         KoComponents.soHtmlFieldTemplate = KoComponents.hasErrorCssDiv +
-            // show static field if readOnly
+            '<div class="row">' +
+            // field label
+            '<!-- ko if: label -->' +
+            '<div class="col-sm-3"><label data-bind="html: label, attr: {for: id}"></label></div>' +
+            '<!-- /ko -->' +
+            // field
+            '<div class="col-sm-9">' +
             '<!-- ko if: readOnly -->' +
-            '<label data-bind="html: label"></label>' +
             '<div data-bind="html: modelValue"></div>' +
             '<!-- /ko -->' +
-            // show input field if not readOnly
             '<!-- ko ifnot: readOnly -->' +
-            '<label data-bind="attr:{for: id}, text: label"></label>' +
             '<div data-bind="spHtmlEditor: modelValue" contenteditable="true" class="form-control content-editable"></div>' +
             '<textarea data-bind="value: modelValue, css: {\'so-editable\': editable}, attr: {id: id, required: required, \'ko-name\': koName }" data-sp-html="" style="display:none;"></textarea>' +
-            // Boostrap visual feedback for required fields
             '<!-- ko if: !!required -->' +
             KoComponents.requiredFeedbackSpan +
             '<!-- /ko -->' +
             '<!-- /ko -->' +
-            // field description
+            '</div>' +
+            '</div>' +
+            // description
             '<!-- ko if: description -->' +
-            '<p data-bind="html: description"></p>' +
+            '<div class="row"><div class="col-sm-3">&nbsp;</div><div class="col-sm-9" data-bind="html: description"></div></div>' +
             '<!-- /ko -->' +
             '</div>';
         KoComponents.soCheckboxFieldTemplate = '<div class="form-group">' +
-            // show static field if readOnly
-            '<!-- ko if: readOnly -->' +
-            '<label data-bind="html: label"></label>' +
-            '<span data-bind="text: !!modelValue() ? \'Yes\' : \'No\'"></span>' +
+            '<div class="row">' +
+            // field label
+            '<!-- ko if: label -->' +
+            '<div class="col-sm-3"><label data-bind="html: label"></label></div>' +
             '<!-- /ko -->' +
-            // show input field if not readOnly
+            // field
+            '<div class="col-sm-9">' +
+            '<!-- ko if: readOnly -->' +
+            '<div data-bind="text: !!modelValue() ? \'Yes\' : \'No\'"></div>' +
+            '<!-- /ko -->' +
             '<!-- ko ifnot: readOnly -->' +
             '<label class="checkbox">' +
             '<input type="checkbox" data-bind="checked: modelValue, css: {\'so-editable\': editable}, attr: {id: id, \'ko-name\': koName}, valueUpdate: valueUpdate" />' +
             '<span data-bind="html: label"></span>' +
             '</label>' +
             '<!-- /ko -->' +
-            // field description
+            '</div>' +
+            '</div>' +
+            // description
             '<!-- ko if: description -->' +
-            '<p data-bind="html: description"></p>' +
+            '<div class="row"><div class="col-sm-3">&nbsp;</div><div class="col-sm-9" data-bind="html: description"></div></div>' +
             '<!-- /ko -->' +
             '</div>';
         KoComponents.soSelectFieldTemplate = KoComponents.hasErrorCssDiv +
-            // show static field if readOnly
-            '<!-- ko if: readOnly -->' +
-            '<label data-bind="html: label"></label>' +
-            '<span data-bind="text: modelValue"></span>' +
+            '<div class="row">' +
+            // field label
+            '<!-- ko if: label -->' +
+            '<div class="col-sm-3"><label data-bind="html: label, attr: {for: id}"></label></div>' +
             '<!-- /ko -->' +
-            // show input field if not readOnly
+            // field
+            '<div class="col-sm-9">' +
+            '<!-- ko if: readOnly -->' +
+            '<div data-bind="text: modelValue"></div>' +
+            '<!-- /ko -->' +
             '<!-- ko ifnot: readOnly -->' +
-            '<label data-bind="attr: {for: id}, text: label"></label>' +
             '<select data-bind="value: modelValue, options: options, optionsCaption: caption, css: {\'so-editable\': editable}, attr: {id: id, title: title, required: required, \'ko-name\': koName}" class="form-control"></select>' +
-            // Boostrap visual feedback for required fields
             '<!-- ko if: !!required -->' +
             KoComponents.requiredFeedbackSpan +
             '<!-- /ko -->' +
             '<!-- /ko -->' +
-            // field description
+            '</div>' +
+            '</div>' +
+            // description
             '<!-- ko if: description -->' +
-            '<p data-bind="html: description"></p>' +
+            '<div class="row"><div class="col-sm-3">&nbsp;</div><div class="col-sm-9" data-bind="html: description"></div></div>' +
             '<!-- /ko -->' +
             '</div>';
         KoComponents.soCheckboxGroupTemplate = '<div class="form-group">' +
+            // description
+            '<!-- ko if: description -->' +
+            '<div class="row"><div class="col-sm-3">&nbsp;</div><div class="col-sm-9" data-bind="html: description"></div></div>' +
+            '<!-- /ko -->' +
+            '<div class="row">' +
             // field label
-            '<label data-bind="html: label"></label>' +
+            '<!-- ko if: label -->' +
+            '<div><label data-bind="html: label"></label></div>' +
+            '<!-- /ko -->' +
+            '<div>' +
             // show static elements if inline
             '<!-- ko if: readOnly -->' +
             // show static unordered list if !inline
@@ -318,17 +356,22 @@ var Shockout;
             '</label>' +
             '<!-- /ko -->' +
             '<!-- /ko -->' +
-            // field description
-            '<!-- ko if: description -->' +
-            '<p data-bind="html: description"></p>' +
-            '<!-- /ko -->' +
+            '</div>' +
             '</div>';
         KoComponents.soRadioGroupTemplate = '<div class="form-group">' +
+            // description
+            '<!-- ko if: description -->' +
+            '<div class="row"><div class="col-sm-3">&nbsp;</div><div class="col-sm-9" data-bind="html: description"></div></div>' +
+            '<!-- /ko -->' +
+            '<div class="row">' +
             // field label
-            '<label data-bind="html: label"></label>' +
+            '<!-- ko if: label -->' +
+            '<div class="col-sm-3"><label data-bind="html: label"></label></div>' +
+            '<!-- /ko -->' +
+            '<div class="col-sm-9">' +
             // show static field if readOnly
             '<!-- ko if: readOnly -->' +
-            '<span data-bind="text: modelValue"></span>' +
+            '<div data-bind="text: modelValue"></div>' +
             '<!-- /ko -->' +
             // show input field if not readOnly
             '<!-- ko ifnot: readOnly -->' +
@@ -339,10 +382,8 @@ var Shockout;
             '</label>' +
             '<!-- /ko -->' +
             '<!-- /ko -->' +
-            // field description
-            '<!-- ko if: description -->' +
-            '<p data-bind="html: description"></p>' +
-            '<!-- /ko -->' +
+            '</div>' +
+            '</div>' +
             '</div>';
         KoComponents.soUsermultiFieldTemplate = '<div class="form-group">' +
             // show input field if not readOnly
@@ -1554,7 +1595,7 @@ var Shockout;
                     // This will be called when the binding is first applied to an element
                     // Set up any initial state, event handlers, etc. here
                     var viewModel = bindingContext.$data, modelValue = valueAccessor(), person = ko.unwrap(modelValue);
-                    var $element = $(element)
+                    var $element = $(element).before('<br/>')
                         .addClass('people-picker-control')
                         .attr('placeholder', 'Employee Account Name');
                     //create wrapper for control
@@ -1586,6 +1627,12 @@ var Shockout;
                         }
                         return false;
                     }).insertAfter($element);
+                    var $reset = $('<button>', { 'class': 'btn btn-sm btn-default reset', 'html': 'Reset' })
+                        .on('click', function () {
+                        modelValue(null);
+                        return false;
+                    })
+                        .insertAfter($spValidate);
                     var autoCompleteOpts = {
                         source: function (request, response) {
                             Shockout.SpApi.peopleSearch(request.term, function (data) {
@@ -1768,17 +1815,24 @@ var Shockout;
             }
         };
         ko.bindingHandlers['spDate'] = {
-            //after: ['id'],
+            after: ['attr'],
             init: function (element, valueAccessor, allBindings, viewModel, bindingContext) {
                 var modelValue = valueAccessor();
                 if (element.tagName.toLowerCase() != 'input' || $(element).attr('type') == 'hidden') {
                     return;
                 } // stop if not an editable field
                 $(element)
+                    .css('display', 'inline-block')
                     .addClass('datepicker med')
                     .attr('placeholder', 'MM/DD/YYYY')
                     .on('blur', onDateChange)
-                    .on('change', onDateChange);
+                    .on('change', onDateChange)
+                    .after('<span class="glyphicon glyphicon-calendar"></span>')
+                    .before('<br />');
+                $(element).datepicker({
+                    changeMonth: true,
+                    changeYear: true
+                });
                 function onDateChange() {
                     modelValue(Shockout.Utils.parseDate(this.value));
                 }
@@ -1802,11 +1856,12 @@ var Shockout;
         // 1. REST returns UTC
         // 2. getUTCHours converts UTC to Locale
         ko.bindingHandlers['spDateTime'] = {
+            after: ['attr'],
             init: function (element, valueAccessor, allBindings, viewModel, bindingContext) {
                 if (element.tagName.toLowerCase() != 'input' || $(element).attr('type') == 'hidden') {
                     return;
                 } // stop if not an editable field
-                var modelValue = valueAccessor(), required, $hh, $mm, $tt, $display, $error, $element = $(element), $parent = $element.parent();
+                var modelValue = valueAccessor(), required, $hh, $mm, $tt, $display, $error, $element = $(element), $parent = $element.parent(), $reset;
                 try {
                     var currentVal = Shockout.Utils.parseDate(modelValue());
                     modelValue(currentVal); // just in case it was a string date
@@ -1820,21 +1875,17 @@ var Shockout;
                         'placeholder': 'MM/DD/YYYY',
                         'maxlength': 10,
                         'class': 'datepicker med form-control'
-                    }).css('display', 'inline-block').on('change', function () {
-                        try {
-                            $error.hide();
-                            var date = Shockout.Utils.parseDate(this.value);
-                            modelValue(date);
-                            $display.html(Shockout.Utils.toDateTimeLocaleString(date));
-                        }
-                        catch (e) {
-                            $error.show();
-                        }
-                    });
+                    }).css('display', 'inline-block')
+                        .on('change', setDateTime)
+                        .before('<br />');
                     if (required) {
                         $element.attr('required', 'required');
                     }
-                    var timeHtml = ['<span class="glyphicon glyphicon-calendar" style="margin-left:.2em;"></span>'];
+                    $element.datepicker({
+                        changeMonth: true,
+                        changeYear: true
+                    });
+                    var timeHtml = ['<span class="glyphicon glyphicon-calendar"></span>'];
                     // Hours 
                     timeHtml.push('<select class="form-control select-hours" style="margin-left:1em;width:5em;display:inline-block;">');
                     for (var i = 1; i <= 12; i++) {
@@ -1850,13 +1901,29 @@ var Shockout;
                     timeHtml.push('</select>');
                     // TT: AM/PM
                     timeHtml.push('<select class="form-control select-tt" style="margin-left:1em;width:5em;display:inline-block;"><option value="AM">AM</option><option value="PM">PM</option></select>');
+                    timeHtml.push('&nbsp;<button class="btn btn-sm btn-default reset">Reset</button>');
                     $element.after(timeHtml.join(''));
                     $hh = $parent.find('.select-hours');
                     $mm = $parent.find('.select-minutes');
                     $tt = $parent.find('.select-tt');
+                    $reset = $parent.find('.btn.reset');
                     $hh.on('change', setDateTime);
                     $mm.on('change', setDateTime);
                     $tt.on('change', setDateTime);
+                    $reset.on('click', function () {
+                        try {
+                            modelValue(null);
+                            $element.val('');
+                            $hh.val('12');
+                            $mm.val('0');
+                            $tt.val('AM');
+                            $display.html('');
+                        }
+                        catch (e) {
+                            console.warn(e);
+                        }
+                        return false;
+                    });
                     element.$hh = $hh;
                     element.$mm = $mm;
                     element.$tt = $tt;
@@ -1873,11 +1940,11 @@ var Shockout;
                 }
                 catch (e) {
                     if (Shockout.SPForm.DEBUG) {
-                        console.warn('Error in Knockout handler spDateTime init()...s');
+                        console.warn('Error in Knockout handler spDateTime init()...');
                         console.warn(e);
                     }
                 }
-                // must conver user's locale date/time to UTC for SP
+                // must convert user's locale date/time to UTC for SP
                 function setDateTime() {
                     try {
                         var date = Shockout.Utils.parseDate($element.val());
@@ -1920,7 +1987,10 @@ var Shockout;
                         // add time zone
                         var timeZone = /\b\s\(\w+\s\w+\s\w+\)/i.exec(date.toString());
                         if (!!timeZone) {
-                            dateTimeStr += timeZone[0];
+                            // e.g. convert '(Central Daylight Time)' to '(CDT)'
+                            dateTimeStr += ' ' + timeZone[0].replace(/\b\w+/g, function (x) {
+                                return x[0];
+                            }).replace(/\s/g, '');
                         }
                         if (element.tagName.toLowerCase() == 'input') {
                             $(element).val((date.getUTCMonth() + 1) + '/' + date.getUTCDate() + '/' + date.getUTCFullYear());
@@ -2465,6 +2535,8 @@ var Shockout;
                 self.initFormAsync,
                 function (self, args) {
                     if (args === void 0) { args = undefined; }
+                    // Register Shockout's Knockout Components
+                    Shockout.KoComponents.registerKoComponents();
                     // apply Knockout bindings
                     ko.applyBindings(self.viewModel, self.form);
                     self.viewModelIsBound = true;
@@ -2777,7 +2849,7 @@ var Shockout;
                 var vm = self.viewModel;
                 var rx = /submitted/i;
                 // Register Shockout's Knockout Components
-                Shockout.KoComponents.registerKoComponents();
+                //KoComponents.registerKoComponents();
                 // Find out of this list allows saving before submitting and triggering workflow approval.
                 // Must have a field with `submitted` in the name and it must be of type `Boolean`
                 if (self.fieldNames.indexOf('IsSubmitted') > -1) {
@@ -3265,25 +3337,26 @@ var Shockout;
                         console.warn(itemId);
                     }
                 });
-                if (isSubmit && !self.debug) {
+                if (Shockout.Utils.getIdFromHash() == null && self.itemId != null) {
+                    Shockout.Utils.setIdHash(self.itemId);
+                }
+                if (isSubmit) {
                     self.showDialog('<p>Your form has been submitted. You will be redirected in ' + timeout / 1000 + ' seconds.</p>', 'Form Submission Successful');
-                    setTimeout(function () {
-                        window.location.href = self.sourceUrl != null ? self.sourceUrl : self.confirmationUrl;
-                    }, timeout);
+                    if (self.debug) {
+                        console.warn('DEBUG MODE: Would normally redirect user to confirmation page: ' + self.confirmationUrl);
+                    }
+                    else {
+                        setTimeout(function () {
+                            window.location.href = self.sourceUrl != null ? self.sourceUrl : self.confirmationUrl;
+                        }, timeout);
+                    }
                 }
                 else {
                     self.showDialog(saveMsg, 'The form has been saved.', timeout);
-                    // Append list item ID to querystring if this is a new form.
-                    if (Shockout.Utils.getIdFromHash() == null && self.itemId != null) {
-                        setTimeout(function () {
-                            //append list item id to hash
-                            Shockout.Utils.setIdHash(self.itemId);
-                        }, 10);
-                    }
-                    else {
-                        // refresh data from the server
-                        self.getListItemAsync(self);
-                        //give WF History list 5 seconds to update
+                    // refresh data from the server
+                    self.getListItemAsync(self);
+                    //give WF History list 5 seconds to update
+                    if (self.includeWorkflowHistory) {
                         setTimeout(function () { self.getHistoryAsync(self); }, 5000);
                     }
                 }
@@ -3465,6 +3538,7 @@ var Shockout;
                     labels.push(self.attachmentMessage);
                 }
                 if (errorCount > 0) {
+                    self.showDialog('<p>The following fields are required or invalid:</p><div class="error">' + labels.join('<br/>') + '</div>');
                     return false;
                 }
                 return true;
@@ -3537,7 +3611,7 @@ var Shockout;
             }
             err = err.length > 0 ? err.join('; ') : err.join('');
             if (self.enableErrorLog) {
-                Shockout.Utils.logError(msg, self.errorLogListName, self.rootUrl, self.debug);
+                Shockout.Utils.logError(err, self.errorLogListName, self.rootUrl, self.debug);
                 self.showDialog('<p>An error has occurred and the web administrator has been notified.</p><pre>' + err + '</pre>');
             }
         };
@@ -4024,7 +4098,7 @@ var Shockout;
             if (allowDelete === void 0) { allowDelete = true; }
             if (allowPrint === void 0) { allowPrint = true; }
             var template = [];
-            template.push('<label>Logged in as:</label> <span data-bind="text: currentUser().title" class="current-user"></span>');
+            template.push('<label>Logged in as:</label><span data-bind="text: currentUser().title" class="current-user"></span>');
             template.push('<button class="btn btn-default cancel" data-bind="event: { click: cancel }" title="Close"><span class="glyphicon glyphicon-remove"></span><span class="hidden-xs">Close</span></button>');
             if (allowPrint) {
                 template.push('<button class="btn btn-primary print" data-bind="visible: Id() != null, event: {click: print}" title="Print"><span class="glyphicon glyphicon-print"></span><span class="hidden-xs">Print</span></button>');
@@ -4033,7 +4107,7 @@ var Shockout;
                 template.push('<button class="btn btn-warning delete" data-bind="visible: Id() != null, event: {click: deleteItem}" title="Delete"><span class="glyphicon glyphicon-remove"></span><span class="hidden-xs">Delete</span></button>');
             }
             template.push('<button class="btn btn-success save" data-bind="event: { click: save }" style="display:none;" title="Save your work."><span class="glyphicon glyphicon-floppy-disk"></span><span class="hidden-xs">Save</span></button>');
-            template.push('<button class="btn btn-danger submit" data-bind="event: { click: submit }, disable: !isValid()" title="Submit for routing."><span class="glyphicon glyphicon-floppy-open"></span><span class="hidden-xs">Submit</span></button>');
+            template.push('<button class="btn btn-danger submit" data-bind="event: { click: submit }" title="Submit for routing."><span class="glyphicon glyphicon-floppy-open"></span><span class="hidden-xs">Submit</span></button>');
             var $div = $('<div>', { 'class': 'form-action no-print', 'html': template.join('') });
             return $div;
         };
