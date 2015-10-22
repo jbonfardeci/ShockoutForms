@@ -141,11 +141,11 @@ KO Components are really amazing. Visit the KO docs to learn more about them htt
 <so-text-field params="val: MySpField"></so-text-field>
 ```
 * Optional Parameters
-    * label: string
-    * id: string
-    * title: string
+    * label: string (default is the field's display name defined in the SharePoint field)
+    * id: string (default is the field's static name defined in the SharePoint field)
+    * title: string (default undefined)
     * maxlength: number (default = 255)
-    * description: string
+    * description: string (default is Description defined in the SharePoint field; pass null/false to hide)
     * placeholder: string
     * required: boolean | KO observable (default = ko.observable(false))
     * readOnly: boolean | KO observable (default = ko.observable(false))
@@ -157,10 +157,10 @@ KO Components are really amazing. Visit the KO docs to learn more about them htt
 <so-checkbox-field params="val: MySpField"></so-checkbox-field>
 ```
 * Optional Parameters
-    * label: string
-    * id: string
-    * title: string
-    * description: string
+    * label: string (default is the field's display name defined in the SharePoint field)
+    * id: string (default is the field's static name defined in the SharePoint field)
+    * title: string (default undefined)
+    * description: string (default is Description defined in the SharePoint field; pass null/false to hide)
     * required: boolean | KO observable (default = ko.observable(false))
     * readOnly: boolean | KO observable (default = ko.observable(false))
     * labelColWidth: number (default = 3, Bootstrap grids are up to 12 units wide)
@@ -172,12 +172,12 @@ How to display the choices from a SharePoint Choice Field in a select menu.
 <so-select-field params="val: MySpField"></so-select-field>
 ```
 * Optional Parameters
-    * label: string
-    * id: string
-    * title: string
-    * caption: string
+    * label: string (default is the field's display name defined in the SharePoint field)
+    * id: string (default is the field's static name defined in the SharePoint field)
+    * title: string (default undefined)
+    * caption: string (default undefined)
     * options: Array (default is the choices defined in the SharePoint list)
-    * description: string
+    * description: string (default is Description defined in the SharePoint field; pass null/false to hide)
     * required: boolean | KO observable (default = ko.observable(false))
     * readOnly: boolean | KO observable (default = ko.observable(false))
     * labelColWidth: number (default = 3, Bootstrap grids are up to 12 units wide)
@@ -189,10 +189,10 @@ How to display the choices from a SharePoint MultiChoice Field with checkboxes.
 <so-checkbox-group params="val: MySpField"></so-checkbox-group>
 ```
 * Optional Parameters
-    * label: string
-    * id: string
-    * title: string
-    * description: string
+    * label: string (default is the field's display name defined in the SharePoint field)
+    * id: string (default is the field's static name defined in the SharePoint field)
+    * title: string (default undefined)
+    * description: string (default is Description defined in the SharePoint field; pass null/false to hide)
     * inline: boolean (default = false)
     * readOnly: boolean | KO observable (default = ko.observable(false))
     * labelColWidth: number (default = 3, Bootstrap grids are up to 12 units wide)
@@ -204,10 +204,10 @@ How to display the choices from a SharePoint MultiChoice Field with radio button
 <so-radio-group params="val: MySpField"></so-radio-group>
 ```
 * Optional Parameters
-    * label: string
-    * id: string
-    * title: string
-    * description: string
+    * label: string (default is the field's display name defined in the SharePoint field)
+    * id: string (default is the field's static name defined in the SharePoint field)
+    * title: string (default undefined)
+    * description: string (default is Description defined in the SharePoint field; pass null/false to hide)
     * inline: boolean (default = false)
     * readOnly: boolean | KO observable (default = ko.observable(false))
     * labelColWidth: number (default = 3, Bootstrap grids are up to 12 units wide)
@@ -221,10 +221,10 @@ How to display the choices from a SharePoint MultiChoice Field with radio button
 <so-usermulti-field params="val: MySpField"></so-usermulti-field>
 ```
 * Optional Parameters
-    * label: string
-    * id: string
-    * title: string
-    * description: string
+    * label: string (default is the field's display name defined in the SharePoint field)
+    * id: string (default is the field's static name defined in the SharePoint field)
+    * title: string (default undefined)
+    * description: string (default is Description defined in the SharePoint field; pass null/false to hide)
     * required: boolean | KO observable (default = ko.observable(false))
     * readOnly: boolean | KO observable (default = ko.observable(false))
 
