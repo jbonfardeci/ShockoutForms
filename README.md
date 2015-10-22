@@ -133,136 +133,39 @@ Now that you know the variable names, you're ready to create your Shockout form.
 
 ###Displaying a SharePoint Text Field
 ```
-<div class="form-group">
-	<label data-bind="text: MySpFieldName._displayName" class="control-label" for="MySpFieldName"></label>
-	
-	<input type="text" data-bind="value: MySpFieldName, attr:{'placeholder': MySpFieldName._displayName}" maxlength="255" id="MySpFieldName" class="form-control" />
-	
-	<!-- optional Field Description -->
-	<p data-bind="text: MySpFieldName._description"></p>
-</div>
+<so-text-field params="val: MySpField"></so-text-field>
 ```
 
 ###Displaying a SharePoint Checkbox Field (Boolean)
 ```
-<div class="form-group">
-	<label class="checkbox">
-        <input type="checkbox" data-bind="checked: MySpFieldName" />
-        <span data-bind="text: MySpFieldName._displayName"></span>
-    </label>
-
-	<!-- optional Field Description -->
-	<p data-bind="text: MySpFieldName._description"></p>
-</div>
+<so-checkbox-field params="val: MySpField"></so-checkbox-field>
 ```
 
 ###Displaying SharePoint Choice Fields - Select Menu
 How to display the choices from a SharePoint Choice Field in a select menu.
 ```
-<div class="form-group">
-	<label data-bind="text: MySpFieldName._displayName" class="control-label" for="MySpFieldName"></label>
-	
-	<select data-bind="value: MySpFieldName, attr:{'placeholder': MySpFieldName._displayName}, options: MySpFieldName._choices, optionsValue: 'value', optionsCaption: '--SELECT--'" id="MySpFieldName" class="form-control"></select>
-
-	<!-- optional Field Description -->
-	<p data-bind="text: MySpFieldName._description"></p>
-</div>
+<so-select-field params="val: MySpField"></so-select-field>
 ```
 
 ###Displaying SharePoint MultiChoice Fields - Checkboxes
 How to display the choices from a SharePoint MultiChoice Field with checkboxes.
 ```
-<div class="form-group">
-	<label data-bind="text: MySpFieldName._displayName" class="control-label"></label>
-				
-	<!-- ko foreach: MySpFieldName._choices -->
-	<label class="radio">
-		<input type="checkbox" data-bind="checked: $root.MySpFieldName, attr: { value: $data.value }" />
-		<span data-bind="text: $data.value"></span>
-	</label>
-	<!-- /ko -->   
-					
-	<!-- optional Field Description -->
-	<p data-bind="text: MySpFieldName._description"></p>          
-</div>
+<so-checkbox-group params="val: MySpField"></so-checkbox-group>
 
 ```
 
 ###Displaying SharePoint MultiChoice Fields - Radio Buttons
 How to display the choices from a SharePoint MultiChoice Field with radio buttons.
 ```
-<div class="form-group">
-	<label data-bind="text: MySpFieldName._displayName" class="control-label"></label>
-				
-	<!-- ko foreach: MySpFieldName._choices -->
-	<label class="radio">
-		<input type="radio" data-bind="checked: $root.MySpFieldName, attr: {value: $data.value}" name="MySpFieldName" />
-		<span data-bind="text: $data.value"></span>
-	</label>
-	<!-- /ko -->   
-					
-	<!-- optional Field Description -->
-	<p data-bind="text: MySpFieldName._description"></p>          
-</div>
+<so-radio-group params="val: MySpField"></so-radio-group>
 
 ```
      
-
-
 ###Multiple Persons (UserMulti)
 ####A Control with Multiple User Accounts
 
 ```
-<!-- in markup -->
-<div class="row">
-	<div class="col-md-6 col-xs-6">
-		<input type="text" data-bind="spPerson: person" />
-		<button class="btn btn-success" data-bind="click: addPerson, attr: {'disabled': person() == null}"><span>Add</span></button> 		
-	</div>	
-</div>
-
-<!-- ko foreach: People -->
-<div class="row">
-	<div class="col-md-10 col-xs-10" data-bind="spPerson: $data"></div>
-	<div class="col-md-2 col-xs-2">
-		<button class="btn btn-xs btn-danger" data-bind="click: $root.removePerson"><span class="glyphicon glyphicon-trash"></span></button>
-	</div>
-</div>
-<!-- /ko -->
-```
-
-If `People` is a field in your SharePoint list, then:
-
-```
-// in preRender
-...
-preRender(spForm, vm){
-
-    // This is a temporary local variable to hold a person object.
-    // You will push this to the People observable array.
-	vm.person = ko.observable(null);
-	
-	// add a person to KO object People
-	vm.addPerson = function(model, ctrl){
-		if(vm.People() == null){
-			vm.People([]);
-		}
-		
-		vm.People().push(vm.person());
-		vm.People.valueHasMutated();
-		
-		vm.person(null);
-		return false;
-	};
-	
-	// remove a person from KO object People
-	vm.removePerson = function(person, event){
-		vm.People.remove(person);
-		return false;
-	}
-
-}
-...
+<so-usermulti-field params="val: MySpField"></so-usermulti-field>
 ```
 
 ##Required Field Validation

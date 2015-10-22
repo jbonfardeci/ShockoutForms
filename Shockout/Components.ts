@@ -4,6 +4,13 @@
 
         public static registerKoComponents() {
 
+            var uniqueId = (function () {
+                var i = 0;
+                return function () {
+                    return i++;
+                };
+            })();
+
             ko.components.register('so-text-field', {
                 viewModel: soFieldModel,
                 template: KoComponents.soTextFieldTemplate
@@ -111,7 +118,7 @@
 
             ko.components.register('so-attachments', {
                 viewModel: function (params) {
-
+                    var self = this;
                     if (!params) {
                         throw 'params is undefined in so-attachments';
                         return;
@@ -123,16 +130,36 @@
 
                     this.attachments = params.val; 
                     this.title = params.title || 'Attachments';
-                    this.id = params.id;
+                    this.id = params.id || 'fileUploader_' + uniqueId();
+                    this.readOnly = typeof params.readOnly != undefined ? params.readOnly : ko.observable(true);
+                    this.description = params.description;
+
+                    this.deleteAttachment = function (att: ISpAttachment, event: any): void {
+                        if (!confirm('Are you sure you want to delete ' + att.Name + '? This can\'t be undone.')) { return; }
+                        SpApi.deleteAttachment(att, function (data, error) {
+                            if (!!error) {
+                                alert("Failed to delete attachment: " + error);
+                                return;
+                            }
+                            var attachments: any = self.attachments;
+                            attachments.remove(att);
+                        });
+                    };
                 },
                 template: '<section>' +
                     '<h4 data-bind="text: title">Attachments (<span data-bind="text: attachments().length"></span>)</h4>' +
                     '<div data-bind="attr:{id: id}"></div>'+
                     '<div data-bind="foreach: attachments">' +
                         '<div>' +
-                            '<a href="" data-bind="attr: {href: __metadata.media_src}"><span class="glyphicon glyphicon-paperclip"></span> <span data-bind="text: Name"></span></a>&nbsp;' + 
+                            '<a href="" data-bind="attr: {href: __metadata.media_src}"><span class="glyphicon glyphicon-paperclip"></span> <span data-bind="text: Name"></span></a>' + 
+                            '<!-- ko ifnot: readonly() -->' +
+                            '<button data-bind="event: {click: $parent.deleteAttachment}" class="btn btn-sm btn-danger" title="Delete Attachment"><span class="glyphicon glyphicon-remove"></span></button>'+
+                            '<!-- /ko -->'+
                         '</div>' +
                     '</div>' +
+                    '<!-- ko if: description -->' +
+                    '<div data-bind="text: description"></div>'+
+                    '<!-- /ko -->'+
                 '</section>'
             });
 
@@ -152,6 +179,11 @@
                 this.id = params.id || koObj._koName;
                 this.label = params.label || koObj._displayName;
                 this.description = params.description || koObj._description;
+
+                var labelX: number = parseInt(params.labelColWidth || 3); // Bootstrap label column width 1-12
+                var fieldX: number = parseInt(params.fieldColWidth || (12 - (labelX - 0))); // Bootstrap field column width 1-12
+                this.labelColWidth = 'col-sm-' + labelX;
+                this.fieldColWidth = 'col-sm-' + fieldX;
             };
 
             function soFieldModel(params) {
@@ -175,14 +207,21 @@
                 this.caption = params.caption;
                 this.maxlength = params.maxlength || 255;
                 this.placeholder = params.placeholder || koObj._displayName;
-                this.description = params.description || koObj._description;
+                this.description = (typeof params.description != 'undefined') ? (params.description == null ? false : params.description) : koObj._description;
                 this.valueUpdate = params.valueUpdate;
                 this.editable = !!koObj._koName; // if `_koName` is a prop of our KO var, it's a field we can update in theSharePoint list.
                 this.koName = koObj._koName; // include the name of the KO var in case we need to reference it.
                 this.options = params.options || koObj._options;
-                this.required = params.required || koObj._required;
-                this.readOnly = params.readOnly || false;
+                this.required = (typeof params.required == 'function') ? params.required : ko.observable(!!params.required || false);
                 this.inline = params.inline || false;
+
+                var labelX: number = parseInt(params.labelColWidth || 3); // Bootstrap label column width 1-12
+                var fieldX: number = parseInt(params.fieldColWidth || (12 - (labelX - 0))); // Bootstrap field column width 1-12
+                this.labelColWidth = 'col-sm-' + labelX;
+                this.fieldColWidth = 'col-sm-' + fieldX;
+
+                // allow for static bool or ko obs
+                this.readOnly = (typeof params.readOnly == 'function') ? params.readOnly : ko.observable(!!params.readOnly || false);
 
             };
 
@@ -213,7 +252,8 @@
                 this.editable = !!koObj._koName; // if `_koName` is a prop of our KO var, it's a field we can update in theSharePoint list.
                 this.koName = koObj._koName; // include the name of the KO var in case we need to reference it.
                 this.person = ko.observable(null);
-                this.readOnly = params.readOnly || false;
+                // allow for static bool or ko obs
+                this.readOnly = (typeof params.readOnly == 'function') ? params.readOnly : ko.observable(!!params.readOnly || false);
 
                 // add a person to KO object People
                 this.addPerson = function (model, ctrl) {
@@ -237,7 +277,7 @@
         };
 
         //&& !!required && !readOnly
-        private static hasErrorCssDiv: string = '<div class="form-group" data-bind="css: {\'has-error\': !!!modelValue() && !!required, \'has-success has-feedback\': !!modelValue() && !!required}">';
+        private static hasErrorCssDiv: string = '<div class="form-group" data-bind="css: {\'has-error\': !!!modelValue() && !!required(), \'has-success has-feedback\': !!modelValue() && !!required()}">';
 
         private static requiredFeedbackSpan: string = '<span class="glyphicon glyphicon-ok form-control-feedback" aria-hidden="true"></span>';
 
@@ -246,14 +286,14 @@
             '<div class="row">' +            
                 // field label
                 '<!-- ko if: label -->' +
-                    '<div class="col-sm-3"><label data-bind="html: label"></label></div>'+
+                    '<div class="col-sm-3" data-bind="attr:{\'class\': labelColWidth}"><label data-bind="html: label"></label></div>'+
                 '<!-- /ko -->' +
                 // field
-                '<div class="col-sm-9" data-bind="text: modelValue"></div>' +
+                '<div class="col-sm-9" data-bind="text: modelValue, attr:{\'class\': fieldColWidth}"></div>' +
             '</div>' +
             // description
             '<!-- ko if: description -->' +
-            '<div class="row"><div class="col-sm-3">&nbsp;</div><div class="col-sm-9" data-bind="html: description"></div></div>' +
+            '<div class="so-field-description"><p data-bind="html: description"></p></div>' +
             '<!-- /ko -->' +
         '</div>';
 
@@ -263,18 +303,18 @@
                    
                 // field label
                 '<!-- ko if: label -->' +
-                    '<div class="col-sm-3"><label data-bind="html: label, attr: {for: id}"></label></div>' +
+                    '<div class="col-sm-3" data-bind="attr:{\'class\': labelColWidth}"><label data-bind="html: label, attr: {for: id}"></label></div>' +
                 '<!-- /ko -->' +
             
                 // field
-                '<div class="col-sm-9">' +
-                    '<!-- ko if: readOnly -->' +
+                '<div class="col-sm-9" data-bind="attr:{\'class\': fieldColWidth}">' +
+                    '<!-- ko if: readOnly() -->' +
                         '<div data-bind="text: modelValue"></div>' +
                     '<!-- /ko -->' +
 
-                    '<!-- ko ifnot: readOnly -->' +
+                    '<!-- ko ifnot: readOnly() -->' +
                         '<input type="text" data-bind="value: modelValue, css: {\'so-editable\': editable}, attr: {id: id, placeholder: placeholder, title: title, required: required, \'ko-name\': koName }" class="form-control" />' +
-                        '<!-- ko if: !!required -->' +
+                        '<!-- ko if: !!required() -->' +
                             KoComponents.requiredFeedbackSpan +
                         '<!-- /ko -->' +
                     '<!-- /ko -->' +
@@ -284,7 +324,7 @@
 
             // description
             '<!-- ko if: description -->' +
-            '<div class="row"><div class="col-sm-3">&nbsp;</div><div class="col-sm-9" data-bind="html: description"></div></div>' +
+            '<div class="so-field-description"><p data-bind="html: description"></p></div>' +
             '<!-- /ko -->' +
 
         '</div>';
@@ -297,19 +337,19 @@
                    
                 // field label
                 '<!-- ko if: label -->' +
-                    '<div class="col-sm-3"><label data-bind="html: label, attr: {for: id}"></label></div>' +
+                    '<div class="col-sm-3" data-bind="attr:{\'class\': labelColWidth}"><label data-bind="html: label, attr: {for: id}"></label></div>' +
                 '<!-- /ko -->' +
             
                 // field
-                '<div class="col-sm-9">' +
-                    '<!-- ko if: readOnly -->' +
+                '<div class="col-sm-9" data-bind="attr:{\'class\': fieldColWidth}">' +
+                    '<!-- ko if: readOnly() -->' +
                         '<div data-bind="html: modelValue"></div>' +
                     '<!-- /ko -->' +
 
-                    '<!-- ko ifnot: readOnly -->' +
+                    '<!-- ko ifnot: readOnly() -->' +
                         '<div data-bind="spHtmlEditor: modelValue" contenteditable="true" class="form-control content-editable"></div>' +
                         '<textarea data-bind="value: modelValue, css: {\'so-editable\': editable}, attr: {id: id, required: required, \'ko-name\': koName }" data-sp-html="" style="display:none;"></textarea>' +
-                        '<!-- ko if: !!required -->' +
+                        '<!-- ko if: !!required() -->' +
                             KoComponents.requiredFeedbackSpan +
                         '<!-- /ko -->' +
                     '<!-- /ko -->' +
@@ -319,7 +359,7 @@
 
             // description
             '<!-- ko if: description -->' +
-            '<div class="row"><div class="col-sm-3">&nbsp;</div><div class="col-sm-9" data-bind="html: description"></div></div>' +
+            '<div class="so-field-description"><p data-bind="html: description"></p></div>' +
             '<!-- /ko -->' +
 
         '</div>';
@@ -331,16 +371,16 @@
                    
                 // field label
                 '<!-- ko if: label -->' +
-                    '<div class="col-sm-3"><label data-bind="html: label"></label></div>' +
+                    '<div class="col-sm-3" data-bind="attr:{\'class\': labelColWidth}"><label data-bind="html: label"></label></div>' +
                 '<!-- /ko -->' +
             
                 // field
-                '<div class="col-sm-9">' +
-                    '<!-- ko if: readOnly -->' +
+                '<div class="col-sm-9" data-bind="attr:{\'class\': fieldColWidth}">' +
+                    '<!-- ko if: readOnly() -->' +
                         '<div data-bind="text: !!modelValue() ? \'Yes\' : \'No\'"></div>' +
                     '<!-- /ko -->' +
 
-                    '<!-- ko ifnot: readOnly -->' +
+                    '<!-- ko ifnot: readOnly() -->' +
                         '<label class="checkbox">' +
                             '<input type="checkbox" data-bind="checked: modelValue, css: {\'so-editable\': editable}, attr: {id: id, \'ko-name\': koName}, valueUpdate: valueUpdate" />' +
                             '<span data-bind="html: label"></span>' +
@@ -352,7 +392,7 @@
 
             // description
             '<!-- ko if: description -->' +
-            '<div class="row"><div class="col-sm-3">&nbsp;</div><div class="col-sm-9" data-bind="html: description"></div></div>' +
+            '<div class="so-field-description"><p data-bind="html: description"></p></div>' +
             '<!-- /ko -->' +
 
         '</div>';
@@ -363,18 +403,18 @@
                    
                 // field label
                 '<!-- ko if: label -->' +
-                '<div class="col-sm-3"><label data-bind="html: label, attr: {for: id}"></label></div>' +
+                '<div class="col-sm-3" data-bind="attr:{\'class\': labelColWidth}"><label data-bind="html: label, attr: {for: id}"></label></div>' +
                 '<!-- /ko -->' +
             
                 // field
-                '<div class="col-sm-9">' +
-                    '<!-- ko if: readOnly -->' +
+                '<div class="col-sm-9" data-bind="attr:{\'class\': fieldColWidth}">' +
+                    '<!-- ko if: readOnly() -->' +
                     '<div data-bind="text: modelValue"></div>' +
                     '<!-- /ko -->' +
 
-                    '<!-- ko ifnot: readOnly -->' +
+                    '<!-- ko ifnot: readOnly() -->' +
                         '<select data-bind="value: modelValue, options: options, optionsCaption: caption, css: {\'so-editable\': editable}, attr: {id: id, title: title, required: required, \'ko-name\': koName}" class="form-control"></select>' +
-                        '<!-- ko if: !!required -->' +
+                        '<!-- ko if: !!required() -->' +
                             KoComponents.requiredFeedbackSpan +
                         '<!-- /ko -->' +
                     '<!-- /ko -->' +
@@ -384,7 +424,7 @@
 
             // description
             '<!-- ko if: description -->' +
-            '<div class="row"><div class="col-sm-3">&nbsp;</div><div class="col-sm-9" data-bind="html: description"></div></div>' +
+            '<div class="so-field-description"><p data-bind="html: description"></p></div>' +
             '<!-- /ko -->' +
 
         '</div>';
@@ -393,8 +433,8 @@
         '<div class="form-group">' +
             // description
             '<!-- ko if: description -->' +
-            '<div class="row"><div class="col-sm-3">&nbsp;</div><div class="col-sm-9" data-bind="html: description"></div></div>' +
-        '<!-- /ko -->' +
+            '<div class="so-field-description"><p data-bind="html: description"></p></div>' +
+            '<!-- /ko -->' +
 
             '<div class="row">'+
 
@@ -405,7 +445,7 @@
 
                 '<div>'+
                     // show static elements if inline
-                    '<!-- ko if: readOnly -->' +
+                    '<!-- ko if: readOnly() -->' +
 
                         // show static unordered list if !inline
                         '<!-- ko ifnot: inline -->'+
@@ -439,7 +479,7 @@
                     '<!-- /ko -->' +
 
                     // show input field if not readOnly
-                    '<!-- ko ifnot: readOnly -->' +
+                    '<!-- ko ifnot: readOnly() -->' +
                         '<!-- ko foreach: options -->' +
                             '<label data-bind="css:{\'checkbox\': !$parent.inline, \'checkbox-inline\': $parent.inline}">' +
                                 '<input type="checkbox" data-bind="checked: $parent.modelValue, css: {\'so-editable\': $parent.editable}, attr: {\'ko-name\': $parent.koName, \'value\': $data}" />' +
@@ -455,24 +495,24 @@
         '<div class="form-group">' +
             // description
             '<!-- ko if: description -->' +
-            '<div class="row"><div class="col-sm-3">&nbsp;</div><div class="col-sm-9" data-bind="html: description"></div></div>' +
+            '<div class="so-field-description"><p data-bind="html: description"></p></div>' +
             '<!-- /ko -->' +
 
             '<div class="row">' +
 
                 // field label
                 '<!-- ko if: label -->'+
-                    '<div class="col-sm-3"><label data-bind="html: label"></label></div>' +
+                    '<div class="col-sm-3" data-bind="attr:{\'class\': labelColWidth}"><label data-bind="html: label"></label></div>' +
                 '<!-- /ko -->'+
 
-                '<div class="col-sm-9">'+
+                '<div class="col-sm-9" data-bind="attr:{\'class\': fieldColWidth}">'+
                     // show static field if readOnly
-                    '<!-- ko if: readOnly -->' +
+                    '<!-- ko if: readOnly() -->' +
                         '<div data-bind="text: modelValue"></div>' +
                     '<!-- /ko -->' +
 
                     // show input field if not readOnly
-                    '<!-- ko ifnot: readOnly -->' +
+                    '<!-- ko ifnot: readOnly() -->' +
                         '<!-- ko foreach: options -->' +  
                             '<label data-bind="css:{\'radio\': !$parent.inline, \'radio-inline\': $parent.inline}">' +
                                 '<input type="radio" data-bind="checked: $parent.modelValue, attr:{value: $data, name: $parent.name, \'ko-name\': $parent.koName}, css:{\'so-editable\': $parent.editable}" />' +
@@ -489,7 +529,7 @@
         '<div class="form-group">' +
 
             // show input field if not readOnly
-            '<!-- ko ifnot: readOnly -->' +
+            '<!-- ko ifnot: readOnly() -->' +
                 '<input type="hidden" data-bind="value: modelValue, css: {\'so-editable\': editable}, attr: {id: id, \'ko-name\': koName, required: required}" />' +
                 '<div class="row">' +
                     '<div class="col-md-6 col-xs-6">' +
@@ -510,7 +550,7 @@
                 '<div class="row">' +
                     '<div class="col-md-10 col-xs-10" data-bind="spPerson: $data"></div>' +
 
-                    '<!-- ko ifnot: readOnly -->'+
+                    '<!-- ko ifnot: readOnly() -->'+
                         '<div class="col-md-2 col-xs-2">' +
                             '<button class="btn btn-xs btn-danger" data-bind="click: $parent.removePerson"><span class="glyphicon glyphicon-trash"></span></button>' +
                         '</div>' +
@@ -520,7 +560,7 @@
             '<!-- /ko -->' +
 
             '<!-- ko if: description -->' +
-                '<p data-bind="html: description"></p>' +
+            '<div class="so-field-description"><p data-bind="html: description"></p></div>' +
             '<!-- /ko -->' +
 
         '</div>';

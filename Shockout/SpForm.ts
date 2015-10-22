@@ -1416,6 +1416,7 @@ module Shockout {
         * @return bool
         */
         formIsValid(model: IViewModel, showDialog: boolean = false): boolean {
+
             var self: SPForm = model.parent,
                 labels: Array<string> = [],
                 errorCount: number = 0,
@@ -1426,20 +1427,42 @@ module Shockout {
             try {
 
                 self.$form.find('.required, [required]').each(function checkRequired(i: number, n: any): void {
-                    var p = Utils.observableNameFromControl(n, self.viewModel);
-                    if (!!p && model[p]) {
-                        var val = model[p]();
-                        if (val == null || $.trim(val+'').length == 0) {
-                            var label = $(n).parent().find('label:first').html();
-                            if (!!!label) {
+
+                    var koName = Utils.observableNameFromControl(n, self.viewModel);
+
+                    if (!!koName && model[koName]) {
+
+                        var val = model[koName]();
+
+                        if (val == null || $.trim(val + '').length == 0) {
+
+                            // Try to get the field label text.
+                            var labelTxt;
+                            var $label = $("label[for='" + koName + "']");
+
+                            if (!!$label) {
+                                labelTxt = $label.html();
+                            }
+
+                            if (!!!labelTxt) {
+                                labelTxt = $(n).closest('.form-group').find('label:first').html();
+                            }
+
+                            if (!!!labelTxt) {
+                                labelTxt = model[koName]['_displayName'];
+                            }
+
+                            if (!!!labelTxt) {
                                 $(n).parent().first().html();
                             }
-                            if (labels.indexOf(label) < 0) {
-                                labels.push(label);
+
+                            if (labels.indexOf(labelTxt) < 0) {
+                                labels.push(labelTxt);
                                 errorCount++;
                             }
                         }
                     }
+
                 });
 
                 //check for sp object data errors before saving
@@ -1528,8 +1551,7 @@ module Shockout {
             var err: any = [msg];
 
             if (!!e) {
-                e = typeof e == 'object' ? JSON.stringify(e) : e;
-                err.push(e);
+                err.push(e+'');
             }
 
             err = err.length > 0 ? err.join('; ') : err.join('');
