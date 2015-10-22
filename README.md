@@ -132,7 +132,7 @@ Now that you know the variable names, you're ready to create your Shockout form.
     * `_format` (String) the standard name of the type of SP field: Text, Choice, Note, Computed, etc.
 
 ##Default Field Templates with Knockout Components
-(Thanks to John Kerski at Definitive Group for the recommendation!)
+(Thanks to John Kerski at Definitive Logic for the recommendation!)
 
 KO Components are really amazing. Visit the KO docs to learn more about them http://knockoutjs.com/documentation/component-overview.html
 
@@ -149,8 +149,8 @@ KO Components are really amazing. Visit the KO docs to learn more about them htt
     * placeholder: string
     * required: boolean | KO observable (default = ko.observable(false))
     * readOnly: boolean | KO observable (default = ko.observable(false))
-    * labelColWidth: number (default = 3)
-    * fieldColWidth: number (default = 9)
+    * labelColWidth: number (default = 3, Bootstrap grids are up to 12 units wide)
+    * fieldColWidth: number (default = 9, if you only provide the labelColWidth, the fieldColWidth will be computed `12 - labelColWidth`)
 
 ###Displaying a SharePoint Checkbox Field (Boolean)
 ```
@@ -163,8 +163,8 @@ KO Components are really amazing. Visit the KO docs to learn more about them htt
     * description: string
     * required: boolean | KO observable (default = ko.observable(false))
     * readOnly: boolean | KO observable (default = ko.observable(false))
-    * labelColWidth: number (default = 3)
-    * fieldColWidth: number (default = 9)
+    * labelColWidth: number (default = 3, Bootstrap grids are up to 12 units wide)
+    * fieldColWidth: number (default = 9, if you only provide the labelColWidth, the fieldColWidth will be computed `12 - labelColWidth`)
 
 ###Displaying SharePoint Choice Fields - Select Menu
 How to display the choices from a SharePoint Choice Field in a select menu.
@@ -180,8 +180,8 @@ How to display the choices from a SharePoint Choice Field in a select menu.
     * description: string
     * required: boolean | KO observable (default = ko.observable(false))
     * readOnly: boolean | KO observable (default = ko.observable(false))
-    * labelColWidth: number (default = 3)
-    * fieldColWidth: number (default = 9)
+    * labelColWidth: number (default = 3, Bootstrap grids are up to 12 units wide)
+    * fieldColWidth: number (default = 9, if you only provide the labelColWidth, the fieldColWidth will be computed `12 - labelColWidth`)
 
 ###Displaying SharePoint MultiChoice Fields - Checkboxes
 How to display the choices from a SharePoint MultiChoice Field with checkboxes.
@@ -195,8 +195,8 @@ How to display the choices from a SharePoint MultiChoice Field with checkboxes.
     * description: string
     * inline: boolean (default = false)
     * readOnly: boolean | KO observable (default = ko.observable(false))
-    * labelColWidth: number (default = 3)
-    * fieldColWidth: number (default = 9)
+    * labelColWidth: number (default = 3, Bootstrap grids are up to 12 units wide)
+    * fieldColWidth: number (default = 9, if you only provide the labelColWidth, the fieldColWidth will be computed `12 - labelColWidth`)
 
 ###Displaying SharePoint MultiChoice Fields - Radio Buttons
 How to display the choices from a SharePoint MultiChoice Field with radio buttons.
@@ -210,8 +210,8 @@ How to display the choices from a SharePoint MultiChoice Field with radio button
     * description: string
     * inline: boolean (default = false)
     * readOnly: boolean | KO observable (default = ko.observable(false))
-    * labelColWidth: number (default = 3)
-    * fieldColWidth: number (default = 9)
+    * labelColWidth: number (default = 3, Bootstrap grids are up to 12 units wide)
+    * fieldColWidth: number (default = 9, if you only provide the labelColWidth, the fieldColWidth will be computed `12 - labelColWidth`)
 
      
 ###Multiple Persons (UserMulti)
