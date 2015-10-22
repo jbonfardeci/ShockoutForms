@@ -131,35 +131,88 @@ Now that you know the variable names, you're ready to create your Shockout form.
     * `_readOnly` (Boolean) if the field is read-only or not
     * `_format` (String) the standard name of the type of SP field: Text, Choice, Note, Computed, etc.
 
+##Default Field Templates with Knockout Components
+(Thanks to John Kerski at Definitive Group for the recommendation!)
+
+KO Components are really amazing. Visit the KO docs to learn more about them http://knockoutjs.com/documentation/component-overview.html
+
 ###Displaying a SharePoint Text Field
 ```
 <so-text-field params="val: MySpField"></so-text-field>
 ```
+* Optional Parameters
+    * label: string
+    * id: string
+    * title: string
+    * maxlength: number (default = 255)
+    * description: string
+    * placeholder: string
+    * required: boolean | KO observable (default = ko.observable(false))
+    * readOnly: boolean | KO observable (default = ko.observable(false))
+    * labelColWidth: number (default = 3)
+    * fieldColWidth: number (default = 9)
 
 ###Displaying a SharePoint Checkbox Field (Boolean)
 ```
 <so-checkbox-field params="val: MySpField"></so-checkbox-field>
 ```
+* Optional Parameters
+    * label: string
+    * id: string
+    * title: string
+    * description: string
+    * required: boolean | KO observable (default = ko.observable(false))
+    * readOnly: boolean | KO observable (default = ko.observable(false))
+    * labelColWidth: number (default = 3)
+    * fieldColWidth: number (default = 9)
 
 ###Displaying SharePoint Choice Fields - Select Menu
 How to display the choices from a SharePoint Choice Field in a select menu.
 ```
 <so-select-field params="val: MySpField"></so-select-field>
 ```
+* Optional Parameters
+    * label: string
+    * id: string
+    * title: string
+    * caption: string
+    * options: Array (default is the choices defined in the SharePoint list)
+    * description: string
+    * required: boolean | KO observable (default = ko.observable(false))
+    * readOnly: boolean | KO observable (default = ko.observable(false))
+    * labelColWidth: number (default = 3)
+    * fieldColWidth: number (default = 9)
 
 ###Displaying SharePoint MultiChoice Fields - Checkboxes
 How to display the choices from a SharePoint MultiChoice Field with checkboxes.
 ```
 <so-checkbox-group params="val: MySpField"></so-checkbox-group>
-
 ```
+* Optional Parameters
+    * label: string
+    * id: string
+    * title: string
+    * description: string
+    * inline: boolean (default = false)
+    * readOnly: boolean | KO observable (default = ko.observable(false))
+    * labelColWidth: number (default = 3)
+    * fieldColWidth: number (default = 9)
 
 ###Displaying SharePoint MultiChoice Fields - Radio Buttons
 How to display the choices from a SharePoint MultiChoice Field with radio buttons.
 ```
 <so-radio-group params="val: MySpField"></so-radio-group>
-
 ```
+* Optional Parameters
+    * label: string
+    * id: string
+    * title: string
+    * description: string
+    * inline: boolean (default = false)
+    * readOnly: boolean | KO observable (default = ko.observable(false))
+    * labelColWidth: number (default = 3)
+    * fieldColWidth: number (default = 9)
+
      
 ###Multiple Persons (UserMulti)
 ####A Control with Multiple User Accounts
@@ -167,6 +220,13 @@ How to display the choices from a SharePoint MultiChoice Field with radio button
 ```
 <so-usermulti-field params="val: MySpField"></so-usermulti-field>
 ```
+* Optional Parameters
+    * label: string
+    * id: string
+    * title: string
+    * description: string
+    * required: boolean | KO observable (default = ko.observable(false))
+    * readOnly: boolean | KO observable (default = ko.observable(false))
 
 ##Required Field Validation
 Simply add the `required` attribute to required fields. Shockout will do the rest!

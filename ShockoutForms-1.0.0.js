@@ -205,10 +205,7 @@ var Shockout;
                 this.name = params.name || koObj._koName || params.id;
                 this.label = params.label || koObj._displayName;
                 this.title = params.title;
-                this.caption = params.caption;
                 this.required = params.required;
-                this.maxlength = params.maxlength || 255;
-                this.placeholder = params.placeholder || koObj._displayName;
                 this.description = params.description || koObj._description;
                 this.editable = !!koObj._koName; // if `_koName` is a prop of our KO var, it's a field we can update in theSharePoint list.
                 this.koName = koObj._koName; // include the name of the KO var in case we need to reference it.
