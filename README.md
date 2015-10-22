@@ -136,16 +136,30 @@ Now that you know the variable names, you're ready to create your Shockout form.
 
 KO Components are really amazing. Visit the KO docs to learn more about them http://knockoutjs.com/documentation/component-overview.html
 
-###Displaying a SharePoint Text Field
+###Displaying a SharePoint Text Fields
 ```
-<so-text-field params="val: MySpField"></so-text-field>
+    <so-text-field params="val: MySpField"></so-text-field>
+
+    <so-person-field params="val: MySpField"></so-person-field> // shows user profile names with jQuery UI auto-complete
+
+    <so-number-field params="val: MySpField"></so-number-field> // show integer
+
+    <so-decimal-field params="val: MySpField"></so-decimal-field> //show decimal points; 2 places by default, pass 'precision: <num>' to override 
+
+    <so-money-field params="val: MySpField"></so-money-field> // show currency
+
+    <so-html-field params="val: MySpField"></so-html-field> // for rich text fields
+
+    <so-date-field params="val: MySpField"></so-date-field> // with jQuery Datepicker
+
+    <so-datetime-field params="val: MySpField"></so-datetime-field> // jQuery Datepicker plus Time controls
 ```
 * Optional Parameters
-    * label: string (default is the field's display name defined in the SharePoint field)
+    * label: string (default is the field's display name defined in the SharePoint field; can pass HTML)
     * id: string (default is the field's static name defined in the SharePoint field)
     * title: string (default undefined)
     * maxlength: number (default = 255)
-    * description: string (default is Description defined in the SharePoint field; pass null/false to hide)
+    * description: string (default is Description defined in the SharePoint field; pass null/false to hide; can pass HTML)
     * placeholder: string
     * required: boolean | KO observable (default = ko.observable(false))
     * readOnly: boolean | KO observable (default = ko.observable(false))
