@@ -79,7 +79,8 @@ If you've spent any time implementing rules in InfoPath, you have probably becom
 			includeWorkflowHistory: true, // default true        
 			requireAttachments: false, // default false
 			siteUrl: '', // default       
-			workflowHistoryListName: 'Workflow History' // the default
+			workflowHistoryListName: 'Workflow History', // the default
+            errorLogSiteUrl: '/' // the default
 		});
 
 })();
@@ -136,7 +137,7 @@ Now that you know the variable names, you're ready to create your Shockout form.
 
 KO Components are really amazing. Visit the KO docs to learn more about them http://knockoutjs.com/documentation/component-overview.html
 
-###Displaying a SharePoint Text Fields
+###SharePoint Fields
 ```
     <so-text-field params="val: MySpField"></so-text-field>
 
@@ -166,7 +167,7 @@ KO Components are really amazing. Visit the KO docs to learn more about them htt
     * labelColWidth: number (default = 3, Bootstrap grids are up to 12 units wide)
     * fieldColWidth: number (default = 9, if you only provide the labelColWidth, the fieldColWidth will be computed `12 - labelColWidth`)
 
-###Displaying a SharePoint Checkbox Field (Boolean)
+###SharePoint Checkbox Field (Boolean)
 ```
 <so-checkbox-field params="val: MySpField"></so-checkbox-field>
 ```
@@ -180,7 +181,7 @@ KO Components are really amazing. Visit the KO docs to learn more about them htt
     * labelColWidth: number (default = 3, Bootstrap grids are up to 12 units wide)
     * fieldColWidth: number (default = 9, if you only provide the labelColWidth, the fieldColWidth will be computed `12 - labelColWidth`)
 
-###Displaying SharePoint Choice Fields - Select Menu
+###SharePoint Choice Fields - Select Menu
 How to display the choices from a SharePoint Choice Field in a select menu.
 ```
 <so-select-field params="val: MySpField"></so-select-field>
@@ -197,7 +198,7 @@ How to display the choices from a SharePoint Choice Field in a select menu.
     * labelColWidth: number (default = 3, Bootstrap grids are up to 12 units wide)
     * fieldColWidth: number (default = 9, if you only provide the labelColWidth, the fieldColWidth will be computed `12 - labelColWidth`)
 
-###Displaying SharePoint MultiChoice Fields - Checkboxes
+###SharePoint MultiChoice Fields - Checkboxes
 How to display the choices from a SharePoint MultiChoice Field with checkboxes.
 ```
 <so-checkbox-group params="val: MySpField"></so-checkbox-group>
@@ -212,7 +213,7 @@ How to display the choices from a SharePoint MultiChoice Field with checkboxes.
     * labelColWidth: number (default = 3, Bootstrap grids are up to 12 units wide)
     * fieldColWidth: number (default = 9, if you only provide the labelColWidth, the fieldColWidth will be computed `12 - labelColWidth`)
 
-###Displaying SharePoint MultiChoice Fields - Radio Buttons
+###SharePoint MultiChoice Fields - Radio Buttons
 How to display the choices from a SharePoint MultiChoice Field with radio buttons.
 ```
 <so-radio-group params="val: MySpField"></so-radio-group>
