@@ -131,8 +131,10 @@
                     this.attachments = params.val; 
                     this.title = params.title || 'Attachments';
                     this.id = params.id || 'fileUploader_' + uniqueId();
-                    this.readOnly = typeof params.readOnly != undefined ? params.readOnly : ko.observable(true);
                     this.description = params.description;
+
+                    // allow for static bool or ko obs
+                    this.readOnly = (typeof params.readOnly == 'function') ? params.readOnly : ko.observable(!!params.readOnly || false);
 
                     this.deleteAttachment = function (att: ISpAttachment, event: any): void {
                         if (!confirm('Are you sure you want to delete ' + att.Name + '? This can\'t be undone.')) { return; }
@@ -152,7 +154,7 @@
                     '<div data-bind="foreach: attachments">' +
                         '<div>' +
                             '<a href="" data-bind="attr: {href: __metadata.media_src}"><span class="glyphicon glyphicon-paperclip"></span> <span data-bind="text: Name"></span></a>' + 
-                            '<!-- ko ifnot: readonly() -->' +
+                            '<!-- ko ifnot: $parent.readOnly() -->' +
                             '<button data-bind="event: {click: $parent.deleteAttachment}" class="btn btn-sm btn-danger" title="Delete Attachment"><span class="glyphicon glyphicon-remove"></span></button>'+
                             '<!-- /ko -->'+
                         '</div>' +

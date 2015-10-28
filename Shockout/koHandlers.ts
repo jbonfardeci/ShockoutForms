@@ -93,16 +93,18 @@
                     
                     var autoCompleteOpts: any = {
                         source: function (request, response) {
-                            SpApi.peopleSearch(request.term, function (data: Array<ISpPersonSearchResult>) {
-                                response($.map(data, function (item) {
-                                    var email: string = item['EMail'] || item['WorkEMail']; // SP 2013 vs SP 2010 Email key name.
-                                    var name: string = item['Name'] || item['Account'];
+
+                            // Use People.asmx instead of REST services against the User Information List, 
+                            // which allows you to search users that haven't logged into SharePoint yet.
+                            // Thanks to John Kerski from Definitive Logic for the suggestion.
+                            SpSoap.searchPrincipals(request.term, function (data: Array<IPrincipalInfo>) {
+                                response($.map(data, function (item: IPrincipalInfo) {
                                     return {
-                                        label: item.Name + ' (' + email + ')',
-                                        value: item.Id + ';#' + name
+                                        label: item.DisplayName + ' (' + item.Email + ')',
+                                        value: item.UserInfoID + ';#' + item.AccountName
                                     }
                                 }));
-                            });
+                            }, 10, 'User');
                         },
                         minLength: 3,
                         select: function (event, ui) {
@@ -410,8 +412,8 @@
                     $tt = $parent.find('.select-tt');
                     $reset = $parent.find('.btn.reset');
 
-                    $hh.on('change', setDateTime);
-                    $mm.on('change', setDateTime);
+                    $hh.on('change', setDateTime); //.on('keydown', onKeyDown);
+                    $mm.on('change', setDateTime); //.on('keydown', onKeyDown);
                     $tt.on('change', setDateTime);
                     $reset.on('click', function () {
                         try {
@@ -484,6 +486,10 @@
                     }
                 }
 
+                function onKeyDown() {
+                    var val = $(this).val().replace(/\d/g, '');
+                    $(this).val(val);
+                };
             },
             update: function (element, valueAccessor, allBindings, viewModel: IViewModel, bindingContext) {
 

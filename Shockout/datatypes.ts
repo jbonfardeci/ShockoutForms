@@ -211,4 +211,14 @@
         __metadata: ISpMetadata;
         Value: any;
     }
+
+    export interface IPrincipalInfo {
+        AccountName: string;
+        UserInfoID: number;
+        DisplayName: string;
+        Email: string;
+        Title: string; //job title
+        IsResolved: boolean;
+        PrincipalType: string;
+    }
 }

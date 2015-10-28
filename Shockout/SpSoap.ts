@@ -8,7 +8,7 @@
             var query = '<Query><Where><Eq><FieldRef Name="ID" /><Value Type="Counter"><UserID /></Value></Eq></Where></Query>';
             var viewFields = '<ViewFields><FieldRef Name="ID" /><FieldRef Name="Name" /><FieldRef Name="EMail" /><FieldRef Name="Department" /><FieldRef Name="JobTitle" /><FieldRef Name="UserName" /><FieldRef Name="Office" /></ViewFields>';
 
-            SpSoap.getListItems('', 'User Information List', viewFields, query, function (xmlDoc: any, status: string, jqXhr: any) {
+            SpSoap.getListItems('', 'User Information List', viewFields, query, function (xmlDoc: XMLDocument, status: string, jqXhr: JQueryXHR) {
                     
                 $(xmlDoc).find('*').filter(function () {
                     return this.nodeName == 'z:row';
@@ -184,14 +184,15 @@
         * @param params: Array<any>
         * param self?: SPForm = undefined
         * @param callback?: Function = undefined
+        * @param service?: string = 'lists.asmx'
         * @return void
         */
-        public static executeSoapRequest = function (action: string, packet: string, params: Array<any>, siteUrl: string = '/', callback: Function = undefined): void {
+        public static executeSoapRequest(action: string, packet: string, params: Array<any>, siteUrl: string = '/', callback: Function = undefined, service: string = 'lists.asmx'): void {
 
             siteUrl = Utils.formatSubsiteUrl(siteUrl);
 
             try {
-                var serviceUrl: string = siteUrl + '_vti_bin/lists.asmx';
+                var serviceUrl: string = siteUrl + '_vti_bin/' + service;
 
                 if (params != null) {
                     for (var i = 0; i < params.length; i++) {
@@ -235,7 +236,7 @@
         * @param self: SPForm = undefined
         * @return void
         */
-        public static updateListItem = function (itemId: number, listName: string, fields: Array<Array<any>>, isNew: boolean = true, siteUrl: string = '/', callback: Function = undefined): void {
+        public static updateListItem(itemId: number, listName: string, fields: Array<Array<any>>, isNew: boolean = true, siteUrl: string = '/', callback: Function = undefined): void {
 
             var action = 'http://schemas.microsoft.com/sharepoint/soap/UpdateListItems';
             var packet = '<?xml version="1.0" encoding="utf-8"?>' +
@@ -265,6 +266,42 @@
             params.push(soapEnvelope);
 
             SpSoap.executeSoapRequest(action, packet, params, siteUrl, callback);
+        }
+
+        public static searchPrincipals(term: string, callback: Function, maxResults: number = 10, principalType: string = 'User'): void {
+
+            var action = 'http://schemas.microsoft.com/sharepoint/soap/SearchPrincipals';
+            var params = [term, maxResults, principalType];
+            var packet: string = '<?xml version="1.0" encoding="utf-8"?>' +
+                '<soap:Envelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">' +
+                '<soap:Body>' +
+                '<SearchPrincipals xmlns="http://schemas.microsoft.com/sharepoint/soap/">' +
+                '<searchText>{0}</searchText>' +
+                '<maxResults>{1}</maxResults>' +
+                '<principalType>{2}</principalType>' + //'None' or 'User' or 'DistributionList' or 'SecurityGroup' or 'SharePointGroup' or 'All'
+                '</SearchPrincipals>' +
+                '</soap:Body>' +
+                '</soap:Envelope>';
+
+            SpSoap.executeSoapRequest(action, packet, params, '/', cb, 'People.asmx');
+
+            function cb(xmlDoc: XMLDocument, status: string, jqXhr: JQueryXHR) {
+                var results: Array<IPrincipalInfo> = [];
+
+                $(xmlDoc).find('PrincipalInfo').each((i: number, n: any): void => {
+                    results.push({
+                        AccountName: $('AccountName', n).text(),
+                        UserInfoID: parseInt($('UserInfoID', n).text()),
+                        DisplayName: $('DisplayName', n).text(),
+                        Email: $('Email', n).text(),
+                        Title: $('Title', n).text(), //job title
+                        IsResolved: $('IsResolved', n).text() == 'true' ? !0 : !1,
+                        PrincipalType: $('PrincipalType', n).text()
+                    });
+                });
+
+                callback(results);
+            }
         }
     }
 
