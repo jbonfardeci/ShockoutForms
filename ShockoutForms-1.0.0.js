@@ -261,7 +261,7 @@ var Shockout;
             '<div data-bind="text: modelValue"></div>' +
             '<!-- /ko -->' +
             '<!-- ko ifnot: readOnly() -->' +
-            '<input type="text" data-bind="value: modelValue, css: {\'so-editable\': editable}, attr: {id: id, placeholder: placeholder, title: title, required: required, \'ko-name\': koName }" class="form-control" />' +
+            '<input type="text" data-bind="value: modelValue, css: {\'so-editable\': editable}, attr: {id: id, placeholder: placeholder, title: title, required: required, maxlength: maxlength, \'ko-name\': koName }" class="form-control" />' +
             '<!-- ko if: !!required() -->' +
             KoComponents.requiredFeedbackSpan +
             '<!-- /ko -->' +
