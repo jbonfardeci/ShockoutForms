@@ -363,6 +363,7 @@ module Shockout {
             // Don't change the order of these unless you know what you're doing.
             this.asyncFns = [            
                 self.getCurrentUserAsync
+                , self.getUsersGroupsAsync
                 , function (self: SPForm) {
                     if (self.preRender) {
                         self.preRender(self, self.viewModel);
@@ -380,7 +381,6 @@ module Shockout {
                     self.nextAsync(true);
                 }            
                 , self.getListItemAsync
-                , self.getUsersGroupsAsync
                 , self.getAttachmentsAsync
                 , self.getHistoryAsync
                 , function (self: SPForm) {
