@@ -15,54 +15,6 @@
 
     export var qq = qq || {};
 
-    qq.getFileUploaderSettings = function (fileHandlerUrl: string,
-        rootUrl: string,
-        siteUrl: string,
-        listName: string,
-        listId: string,
-        itemId, vm: IViewModel,
-        ext: Array<string> = [],
-        debug: boolean = false) {
-        return {
-            element: null,
-            action: fileHandlerUrl,
-            debug: debug,
-            multiple: false,
-            maxConnections: 3,
-            allowedExtensions: ext,
-            params: {
-                listId: listId,
-                itemId: itemId
-            },
-            onSubmit: function (id, fileName) { },
-            onComplete: function (id, fileName, json) {
-
-                if (debug) {
-                    console.warn(json);
-                }
-
-                if (json.error != null && json.error != "") {
-                    if (debug) {
-                        throw (json.error);
-                    } else {
-                        alert(json.error);
-                    }
-                    return;
-                }
-
-                if (itemId == null && json.itemId != null) {
-                    itemId = json.itemId;
-                    vm.Id(json.itemId);
-                }
-
-                // push a new SP attachment instance to the view model's `attachments` collection
-                vm.attachments().push(new SpAttachment(rootUrl, siteUrl, listName, itemId, fileName));
-                vm.attachments.valueHasMutated(); // tell KO the array has been updated
-            },
-            template: Templates.getFileUploadTemplate()
-        }
-    };
-
     /**
      * Adds all missing properties from second obj to first obj
      */

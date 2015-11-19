@@ -165,6 +165,73 @@
                 '</section>'
             });
 
+            ko.components.register('so-created-modified-info', {
+                viewModel: function (params) {
+                    this.CreatedBy = <KnockoutObservable<ISpPerson>>params.createdBy
+                    this.ModifiedBy = <KnockoutObservable<ISpPerson>>params.modifiedBy;
+                    this.profiles = ko.observableArray([
+                        { header: 'Created By', profile: this.CreatedBy },
+                        { header: 'Modified By', profile: this.ModifiedBy }
+                    ]);
+                    this.Created = params.created;
+                    this.Modified = params.modified;
+                    this.showUserProfiles = params.showUserProfiles;
+                },
+                template:
+                '<!-- ko if: !!CreatedBy && CreatedBy() != null -->' +
+
+                    '<!-- ko if: showUserProfiles() -->' +
+                        '<div class="create-mod-info no-print hidden-xs">' +
+                            '<!-- ko foreach: profiles -->' +
+                                '<div class="user-profile-card">' +
+                                    '<h4 data-bind="text: header"></h4>' +
+                                    '<!-- ko with: profile -->'+
+                                        '<img data-bind="attr: {src: Picture, alt: Name}" />' +
+                                        '<ul>' +
+                                            '<li><label>Name</label><span data-bind="text: Name"></span><li>' +
+                                            '<li><label>Title</label><span data-bind="text: Title"></span></li>' +
+                                            '<li><label>Department</label><span data-bind="text: Department"></span></li>' +
+                                            '<li><label>Email</label><a data-bind="text: WorkEMail, attr: {href: (\'mailto:\' + WorkEMail)}"></a></li>' +
+                                            '<li><label>Phone</label><span data-bind="text: WorkPhone"></span></li>' +
+                                            '<li><label>Office</label><span data-bind="text: Office"></span></li>' +
+                                        '</ul>' +
+                                    '<!-- /ko -->' + 
+                                '</div>'+
+                            '<!-- /ko -->' +               
+                        '</div>' +
+                    '<!-- /ko -->' +
+
+                    '<div class="row">' +
+                        '<!-- ko with: CreatedBy -->' +
+                            '<div class="col-md-3"><label>Created By</label> <a data-bind="text: Name, attr: {href: \'mailto:\' + WorkEMail}" class="email" > </a></div>' +
+                        '<!-- /ko -->' +
+                        '<div class="col-md-3"><label>Created</label> <span data-bind="spDateTime: Created"></span></div>' +                    
+
+                        '<!-- ko with: ModifiedBy -->' +
+                            '<div class="col-md-3"><label>Modified By</label> <a data-bind="text: Name, attr: {href: \'mailto:\' + WorkEMail}" class="email"></a></div>' +
+                        '<!-- /ko -->' +
+                        '<div class="col-md-3"><label>Modified</label> <span data-bind="spDateTime: Modified"></span></div>' +
+                    '</div>' +
+                '<!-- /ko -->'
+            });
+
+            ko.components.register('so-workflow-history', {
+                viewModel: function (params) {
+                    this.historyItems = <Array<IHistoryItem>>(params.val || params.historyItems);
+                },
+                template:
+                '<div class="row">' +
+                    '<div class="col-sm-8"><strong>Description</strong></div>' +
+                    '<div class="col-sm-4"><strong>Date</strong></div>' +
+                '</div>' +
+                '<!-- ko foreach: historyItems -->' +
+                '<div class="row">' +
+                    '<div class="col-sm-8"><span data-bind="text: _description"></span></div>' +
+                    '<div class="col-sm-4"><span data-bind="spDateTime: _dateOccurred"></span></div>' +
+                '</div>' +
+                '<!-- /ko -->'
+            });
+
             function soStaticModel(params) {
                 if (!params) {
                     throw 'params is undefined in so-static-field';
@@ -563,6 +630,10 @@
             '<!-- /ko -->' +
 
         '</div>';
+
+        public static soCreatedModifiedTemplate = '<section><so-created-modified-info params="created: Created, createdBy: CreatedBy, modified: Modified, modifiedBy: ModifiedBy, showUserProfiles: showUserProfiles"></so-created-modified-info></section>';
+
+        public static soWorkflowHistoryTemplate = '<section id="workflowHistory" class="nav-section"><h4>Workflow History</h4><so-workflow-history params="val: historyItems"></so-workflow-history></section>';
     }
 
 }

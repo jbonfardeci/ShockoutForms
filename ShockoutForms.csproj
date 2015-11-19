@@ -23,18 +23,19 @@
     <Service Include="{4A0DDDB5-7A95-4FBF-97CC-616D07737A77}" />
   </ItemGroup>
   <ItemGroup>
-    <TypeScriptCompile Include="Shockout\Components.ts" />
-    <TypeScriptCompile Include="Shockout\datatypes15.ts" />
-    <TypeScriptCompile Include="Shockout\SpApi15.ts" />
-    <TypeScriptCompile Include="Shockout\SpForm.ts" />
-    <TypeScriptCompile Include="Shockout\datatypes.ts" />
-    <TypeScriptCompile Include="Shockout\fileUploader.ts" />
-    <TypeScriptCompile Include="Shockout\koHandlers.ts" />
-    <TypeScriptCompile Include="Shockout\SpApi.ts" />
-    <TypeScriptCompile Include="Shockout\SpSoap.ts" />
-    <TypeScriptCompile Include="Shockout\templates.ts" />
-    <TypeScriptCompile Include="Shockout\utils.ts" />
-    <TypeScriptCompile Include="Shockout\viewModel.ts" />
+    <TypeScriptCompile Include="Shockout\d_koComponents.ts" />
+    <TypeScriptCompile Include="Shockout\i_spDatatypes15.ts" />
+    <TypeScriptCompile Include="Shockout\f_spApi15.ts" />
+    <TypeScriptCompile Include="Shockout\a_SPForm.ts" />
+    <TypeScriptCompile Include="Shockout\h_spDatatypes.ts" />
+    <TypeScriptCompile Include="Shockout\z_qqFileUploader.ts" />
+    <TypeScriptCompile Include="Shockout\c_koHandlers.ts" />
+    <TypeScriptCompile Include="Shockout\e_spApi.ts" />
+    <TypeScriptCompile Include="Shockout\g_spSoap.ts" />
+    <TypeScriptCompile Include="Shockout\j_templates.ts" />
+    <TypeScriptCompile Include="Shockout\k_utils.ts" />
+    <TypeScriptCompile Include="Shockout\b_ViewModel.ts" />
+    <TypeScriptCompile Include="_references.ts" />
     <TypeScriptCompile Include="typings\accounting.d.ts" />
     <TypeScriptCompile Include="typings\jquery.d.ts" />
     <TypeScriptCompile Include="typings\jquery.ui.datetimepicker.d.ts" />
@@ -97,13 +98,13 @@
   <PropertyGroup Condition="'$(Configuration)' == 'Debug'">
     <TypeScriptRemoveComments>false</TypeScriptRemoveComments>
     <TypeScriptSourceMap>true</TypeScriptSourceMap>
-    <TypeScriptOutFile>ShockoutForms-1.0.0.js</TypeScriptOutFile>
+    <TypeScriptOutFile>ShockoutForms-1.0.1.js</TypeScriptOutFile>
     <TypeScriptTarget>ES5</TypeScriptTarget>
     <TypeScriptCompileOnSaveEnabled>True</TypeScriptCompileOnSaveEnabled>
     <TypeScriptNoImplicitAny>False</TypeScriptNoImplicitAny>
     <TypeScriptModuleKind>None</TypeScriptModuleKind>
     <TypeScriptOutDir />
-    <TypeScriptGeneratesDeclarations>False</TypeScriptGeneratesDeclarations>
+    <TypeScriptGeneratesDeclarations>True</TypeScriptGeneratesDeclarations>
     <TypeScriptNoEmitOnError>True</TypeScriptNoEmitOnError>
     <TypeScriptMapRoot />
     <TypeScriptSourceRoot />
