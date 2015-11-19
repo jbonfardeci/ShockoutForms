@@ -715,15 +715,25 @@ module Shockout {
                     self.$form.append(KoComponents.soWorkflowHistoryTemplate);
                 }
                             
-                // remove elements with attribute `data-new-only` from the DOM if not a new form - an edit form where `itemId != null`
-                self.$form.find('[data-new-only]').each(function () {
-                    $(this).before('<!-- ko if: Id() == null -->').after('<!-- /ko -->');
-                });
+                // Dynamically add/remove elements with attribute `data-new-only` from the DOM if not a new form - an edit form where `itemId != null`.
+                self.$form.find('[data-new-only]')
+                    .before('<!-- ko if: Id() == null -->')
+                    .after('<!-- /ko -->');
 
-                // remove elements with attribute `data-edit-only` from the DOM if not editing an existing form - a new form where `itemId == null || undefined`
-                self.$form.find('[data-edit-only]').each(function () {
-                    $(this).before('<!-- ko if: Id() != null -->').after('<!-- /ko -->');
-                });
+                // Dynamically add/remove elements with attribute `data-edit-only` from the DOM if not editing an existing form - a new form where `itemId == null || undefined`.
+                self.$form.find('[data-edit-only]')
+                    .before('<!-- ko if: Id() != null -->')
+                    .after('<!-- /ko -->');
+
+                // Dynamically add/remove elements if it's restricted to the author only for example, input elements for editing the form. 
+                self.$form.find('[data-author-only]')
+                    .before('<!-- ko if: isAuthor() -->')
+                    .after('<!-- /ko -->');
+
+                // Dynamically add/remove elements if for non-authors only such as read-only elements for viewers of a form. 
+                self.$form.find('[data-non-authors]')
+                    .before('<!-- ko ifnot: isAuthor() -->')
+                    .after('<!-- /ko -->');          
 
                 self.nextAsync(true, "Form initialized.");
                 return;
@@ -856,15 +866,6 @@ module Shockout {
                     }
                 });
 
-                // Remove element if it's restricted to the author only for example, input elements for editing the form. 
-                self.$form.find('[data-author-only]').each(function (i: number, el: HTMLElement): void {
-                    $(this).before('<!-- ko if: isAuthor() -->').after('<!-- /ko -->');
-                });
-
-                // Remove element if for non-authors only such as read-only elements for viewers of a form. 
-                self.$form.find('[data-non-authors]').each(function (i: number, el: HTMLElement): void {
-                    $(this).before('<!-- ko ifnot: isAuthor() -->').after('<!-- /ko -->');
-                });            
 
                 self.nextAsync(true, "Retrieved your permissions.");
             }
