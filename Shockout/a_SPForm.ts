@@ -373,7 +373,7 @@ module Shockout {
                     self.nextAsync(true);
                 }  
                 , self.getListAsync      
-                , self.initFormAsync 
+                , self.initForm 
                 , function (self: SPForm, args: any = undefined) {
                     // Register Shockout's Knockout Components
                     KoComponents.registerKoComponents();
@@ -390,7 +390,7 @@ module Shockout {
                     }
                     self.nextAsync(true);
                 }
-                , self.implementPermissionsAsync
+                , self.implementPermissions
                 , self.finalize
             ];
 
@@ -663,7 +663,7 @@ module Shockout {
         * @param args?: any = undefined
         * @return void
         */
-        initFormAsync(self: SPForm, args: any = undefined): void {            
+        initForm(self: SPForm, args: any = undefined): void {            
             try {
                 self.updateStatus("Initializing dynamic form features...");
 
@@ -765,7 +765,7 @@ module Shockout {
                 }
             }
 
-            if (self.enableAttachments && !!self.itemId) {
+            if (self.enableAttachments) {
                 expand.push('Attachments');
             }
 
@@ -828,7 +828,7 @@ module Shockout {
         * @param args?: any = undefined
         * @return void
         */
-        implementPermissionsAsync(self: SPForm, args: any = undefined): void {
+        implementPermissions(self: SPForm, args: any = undefined): void {
             try {
                 self.updateStatus("Retrieving your permissions...");
 
