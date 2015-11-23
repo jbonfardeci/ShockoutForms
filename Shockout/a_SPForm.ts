@@ -684,13 +684,11 @@ module Shockout {
                 }
 
                 // Append action buttons to form.
-                self.$formAction = $(Templates.getFormAction(self.allowSave, self.allowDelete, self.allowPrint)).appendTo(self.$form);
-                if (self.allowSave) {
-                    self.$formAction.find('.btn.save').show();
-                    if (self.debug) {
-                        console.info('initFormAsync: Unhide Save button.');
-                    }
-                }
+                self.viewModel._allowSave(self.allowSave);
+                self.viewModel._allowPrint(self.allowPrint);
+                self.viewModel._allowDelete(self.allowDelete);
+
+                self.$formAction = $(Templates.getFormAction()).appendTo(self.$form);
 
                 // Setup attachments modules.
                 if (self.enableAttachments) {

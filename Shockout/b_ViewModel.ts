@@ -21,6 +21,12 @@
         deleteAttachment(obj: any, event: any): boolean;
         save(model: ViewModel, btn: HTMLElement): void;
         submit(model: ViewModel, btn: HTMLElement): void;
+        _allowSave: KnockoutObservable<boolean>;
+        _allowPrint: KnockoutObservable<boolean>;
+        _allowDelete: KnockoutObservable<boolean>;
+        allowSave(): boolean;
+        allowPrint(): boolean;
+        allowDelete(): boolean;
     }
 
     export class ViewModel implements IViewModel {
@@ -44,6 +50,9 @@
         public currentUser: KnockoutObservable<ICurrentUser>;
         public isValid: KnockoutComputed<boolean>;
         public deleteAttachment;
+        public _allowSave: KnockoutObservable<boolean> = ko.observable(false);
+        public _allowPrint: KnockoutObservable<boolean> = ko.observable(false);
+        public _allowDelete: KnockoutObservable<boolean> = ko.observable(false);
 
         constructor(instance: Shockout.SPForm) {
             var self = this;
@@ -82,6 +91,18 @@
 
         public submit(model: ViewModel, btn: HTMLElement): void {
             this.parent.saveListItem(model, true);
+        }
+
+        public allowSave(): boolean {
+            return this._allowSave();
+        }
+
+        public allowPrint(): boolean {
+            return this._allowPrint();
+        }
+
+        public allowDelete(): boolean {
+            return this._allowDelete();
         }
 
     }
