@@ -715,22 +715,22 @@ module Shockout {
                             
                 // Dynamically add/remove elements with attribute `data-new-only` from the DOM if not a new form - an edit form where `itemId != null`.
                 self.$form.find('[data-new-only]')
-                    .before('<!-- ko if: Id() == null -->')
+                    .before('<!-- ko if: $root.Id() == null -->')
                     .after('<!-- /ko -->');
 
                 // Dynamically add/remove elements with attribute `data-edit-only` from the DOM if not editing an existing form - a new form where `itemId == null || undefined`.
                 self.$form.find('[data-edit-only]')
-                    .before('<!-- ko if: Id() != null -->')
+                    .before('<!-- ko if: $root.Id() != null -->')
                     .after('<!-- /ko -->');
 
                 // Dynamically add/remove elements if it's restricted to the author only for example, input elements for editing the form. 
                 self.$form.find('[data-author-only]')
-                    .before('<!-- ko if: isAuthor() -->')
+                    .before('<!-- ko if: $root.isAuthor() -->')
                     .after('<!-- /ko -->');
 
                 // Dynamically add/remove elements if for non-authors only such as read-only elements for viewers of a form. 
                 self.$form.find('[data-non-authors]')
-                    .before('<!-- ko ifnot: isAuthor() -->')
+                    .before('<!-- ko ifnot: $root.isAuthor() -->')
                     .after('<!-- /ko -->');          
 
                 self.nextAsync(true, "Form initialized.");
