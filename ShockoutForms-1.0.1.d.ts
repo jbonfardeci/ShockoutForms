@@ -323,7 +323,6 @@ declare module Shockout {
         * @return number
         */
         setupDatePickers(self?: SPForm): number;
-        setupHtmlFields(self?: SPForm): number;
         /**
         * Determine if the current user is a member of at least one of list of target SharePoint groups.
         * @param targetGroups: comma delimited string || Array<string>

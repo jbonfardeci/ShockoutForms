@@ -128,7 +128,7 @@ var Shockout;
             * @return string
             */
             this.sourceUrl = null;
-            this.version = '0.0.1';
+            this.version = '1.0.1';
             this.queryStringId = 'formid';
             this.isSp2013 = false;
             var self = this;
@@ -686,12 +686,11 @@ var Shockout;
                     if (!!!groups) {
                         groups = $(el).attr("user-groups");
                     }
-                    var groupNames = groups.match(/\,/) != null ? groups.split(',') : [groups];
+                    var isMember = self.currentUserIsMemberOfGroups(groups);
                     if (self.debug) {
                         console.info('element is restricted to groups...');
-                        console.info(groupNames);
+                        console.info(groups);
                     }
-                    var isMember = self.currentUserIsMemberOfGroups(groups);
                     if (!isMember) {
                         $(el).remove();
                     }
@@ -1439,43 +1438,41 @@ var Shockout;
             }
             return $datepickers.length;
         };
-        SPForm.prototype.setupHtmlFields = function (self) {
-            if (self === void 0) { self = undefined; }
-            self = self || this;
-            var count = 0;
-            try {
-                // set up HTML editors in the form
-                // This isn't necessary for the Shockout KO Components fields, but included for when a developer creates their own fields.
-                self.$form.find(".rte, [data-bind*='spHtml'], [data-sp-html]").each(function (i, el) {
-                    var $el = $(el);
-                    var koName = Shockout.Utils.observableNameFromControl(el, self.viewModel);
-                    var $rte = $('<div>', {
-                        'data-bind': 'spHtmlEditor: ' + koName,
-                        'class': 'form-control content-editable',
-                        'contenteditable': 'true'
-                    });
-                    if (!!$el.attr('required') || !!$el.hasClass('required')) {
-                        $rte.attr('required', 'required');
-                        $rte.addClass('required');
-                    }
-                    $rte.insertBefore($el);
-                    if (!self.debug) {
-                        $el.hide();
-                    }
-                    count++;
-                    if (self.debug) {
-                        console.info('initFormAsync: Created spHtml field: ' + koName);
-                    }
-                });
-            }
-            catch (e) {
-                if (self.debug) {
-                    throw e;
-                }
-                self.logError('Error in SPForm.setupHtmlFields(): ', e);
-            }
-            return count;
-        };
+        // obsolete
+        //setupHtmlFields(self: SPForm = undefined): number {
+        //    self = self || this;
+        //    var count: number = 0;
+        //    try {
+        //        // set up HTML editors in the form
+        //        // This isn't necessary for the Shockout KO Components fields, but included for when a developer creates their own fields.
+        //        self.$form.find(".rte, [data-bind*='spHtml'], [data-sp-html]").each(function (i: number, el: HTMLElement) {
+        //            var $el = $(el);
+        //            var koName = Utils.observableNameFromControl(el, self.viewModel);
+        //            var $rte = $('<div>', {
+        //                'data-bind': 'spHtmlEditor: ' + koName,
+        //                'class': 'form-control content-editable',
+        //                'contenteditable': 'true'
+        //            });
+        //            if (!!$el.attr('required') || !!$el.hasClass('required')) {
+        //                $rte.attr('required', 'required');
+        //                $rte.addClass('required');
+        //            }
+        //            $rte.insertBefore($el);
+        //            if (!self.debug) {
+        //                $el.hide();
+        //            }
+        //            count++;
+        //            if (self.debug) {
+        //                console.info('initFormAsync: Created spHtml field: ' + koName);
+        //            }
+        //        });
+        //    }
+        //    catch (e) {
+        //        if (self.debug) { throw e; }
+        //        self.logError('Error in SPForm.setupHtmlFields(): ', e);
+        //    }
+        //    return count;
+        //}
         /**
         * Determine if the current user is a member of at least one of list of target SharePoint groups.
         * @param targetGroups: comma delimited string || Array<string>
