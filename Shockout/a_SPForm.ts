@@ -1561,8 +1561,8 @@ module Shockout {
                 }
 
                 self.$form.find(".attachments, [data-sp-attachments]").each(function (i: number, att: HTMLElement) {
-                    var id = 'fileuploader_' + i;
-                    $(att).append(Templates.getAttachmentsTemplate(id));
+                    var id = 'so-qq-fileuploader_' + i;
+                    $(att).replaceWith(Templates.getAttachmentsTemplate(id));
                     self.fileUploaderSettings.element = document.getElementById(id);
                     self.fileUploader = new Shockout.qq.FileUploader(self.fileUploaderSettings);
                     count++;

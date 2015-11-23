@@ -2,23 +2,25 @@
 
     export class Templates {
 
-        public static attachmentsTemplate = '<h4>Attachments (<span data-bind="text: attachments().length"></span>)</h4>\
-            <div id="{0}"></div>\
-            <div data-bind="foreach: attachments">\
-            <div>\
-            <a href="" data-bind="attr: {href: __metadata.media_src}"><span class="glyphicon glyphicon-paperclip"></span> <span data-bind="text: Name"></span></a>&nbsp;\
-            <button data-bind="event: {click: $root.deleteAttachment}" class="btn btn-sm btn-danger" title="Delete Attachment"><span class="glyphicon glyphicon-remove"></span></button>\
-            </div>\
-            </div>';
+        public static attachmentsTemplate = 
+        '<h4>Attachments (<span data-bind="text: attachments().length"></span>)</h4>' +
+        '<div id="{0}"></div>' +
+        '<!-- ko foreach: attachments -->'+
+        '<div class="row">' +
+            '<div class="col-xs-10"><a href="" data-bind="attr: {href: __metadata.media_src}"><span class="glyphicon glyphicon-paperclip"></span> <span data-bind="text: Name"></span></a></div>' +
+            '<div class="col-xs-2"><button data-bind="event: {click: $root.deleteAttachment}" class="btn btn-sm btn-danger" title="Delete Attachment"><span class="glyphicon glyphicon-remove"></span></button></div>' +
+        '</div>' +
+        '<!-- /ko -->';
 
-        public static fileuploadTemplate: string = '<div class="qq-uploader" data-author-only>\
-            <div class="qq-upload-drop-area"><span>Drop files here to upload</span></div>\
-            <div class="btn btn-primary qq-upload-button"><span class="glyphicon glyphicon-paperclip"></span> Attach File</div>\
-            <ul class="qq-upload-list"></ul></div>';
+        public static fileuploadTemplate: string =
+        '<div class="qq-uploader" data-author-only>' +
+            '<div class="qq-upload-drop-area"><span>Drop files here to upload</span></div>' +
+            '<div class="btn btn-primary qq-upload-button"><span class="glyphicon glyphicon-paperclip"></span> Attach File</div>' +
+            '<ul class="qq-upload-list"></ul>' +
+        '</div>';
 
         public static getFileUploadTemplate(): string {
-            var $div = $('<div>').html(Templates.fileuploadTemplate);
-            return $div.html();
+            return Templates.fileuploadTemplate;
         }
 
         public static getFormAction(allowSave: boolean = true, allowDelete: boolean = true, allowPrint: boolean = true): JQuery {
@@ -40,10 +42,10 @@
             return $div;
         }
 
-        public static getAttachmentsTemplate(fileuploaderId: string): JQuery {
-            var template = Templates.attachmentsTemplate.replace(/\{0\}/, fileuploaderId);
-            var $div = $('<div>', { 'html': template });
-            return $div;
+        public static getAttachmentsTemplate(fileuploaderId: string): HTMLElement {
+            var section = document.createElement('section');
+            section.innerHTML = Templates.attachmentsTemplate.replace(/\{0\}/, fileuploaderId);
+            return section;
         }
     }
    
