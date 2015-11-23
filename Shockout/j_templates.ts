@@ -3,12 +3,12 @@
     export class Templates {
 
         public static attachmentsTemplate = 
-        '<h4>Attachments (<span data-bind="text: attachments().length"></span>)</h4>' +
+        '<h4>Attachments <span data-bind="text: attachments().length" class="badge"></span></h4>' +
         '<div id="{0}"></div>' +
         '<!-- ko foreach: attachments -->'+
-        '<div class="row">' +
-            '<div class="col-xs-10"><a href="" data-bind="attr: {href: __metadata.media_src}"><span class="glyphicon glyphicon-paperclip"></span> <span data-bind="text: Name"></span></a></div>' +
-            '<div class="col-xs-2"><button data-bind="event: {click: $root.deleteAttachment}" class="btn btn-sm btn-danger" title="Delete Attachment"><span class="glyphicon glyphicon-remove"></span></button></div>' +
+        '<div class="so-attachment">' +
+            '<a href="" data-bind="attr: {href: __metadata.media_src}"><span class="glyphicon glyphicon-paperclip"></span> <span data-bind="text: Name"></span></a>' +
+            '&nbsp;&nbsp;<button data-bind="event: {click: $root.deleteAttachment}" class="btn btn-sm btn-danger" title="Delete Attachment"><span class="glyphicon glyphicon-trash"></span></button>' +
         '</div>' +
         '<!-- /ko -->';
 

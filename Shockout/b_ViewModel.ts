@@ -59,7 +59,7 @@
         }
 
         public isAuthor(): boolean {
-            if(this.CreatedBy() == null){ return false; }
+            if(this.CreatedBy() == null){ return true; }
             return this.currentUser().id == this.CreatedBy().Id;
         }
 

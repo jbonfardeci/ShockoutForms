@@ -326,6 +326,9 @@
       text-align: right !important; }
     .sp-form .indent {
       margin-left: 2em; }
+    .sp-form .so-attachment {
+      display: inline-block;
+      margin: .5em 1em; }
     .sp-form so-text-field,
     .sp-form so-html-field,
     .sp-form so-person-field,
