@@ -9,6 +9,28 @@
     export class Utils {
     
         /**
+        * Returns the index of a value in an array. Returns -1 if not found. Use for IE8 browser compatibility.
+        * @param a: Array<any>
+        * @param value: any
+        * @return number
+        */
+        public static indexOf(a: Array<any>, value: any): number {
+
+            // use the native Array.indexOf method if exists
+            if (!!Array.prototype.indexOf) {
+                return Array.prototype.indexOf.apply(a, [value]);
+            }
+
+            for (var i = 0; i < a.length; i++) {
+                if (a[i] === value) {
+                    return i;
+                }
+            }
+
+            return -1;
+        }
+
+        /**
         * Ensure site url is or ends with '/'
         * @param url: string
         * @return string

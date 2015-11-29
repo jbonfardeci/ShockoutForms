@@ -1,19 +1,25 @@
 ﻿module Shockout {
     
     export interface IViewModel {
+        // SP List Item Fields
         Id: KnockoutObservable<number>;
         Created: KnockoutObservable<Date>;
         CreatedBy: KnockoutObservable<ISpPerson>;
         Modified: KnockoutObservable<Date>;
         ModifiedBy: KnockoutObservable<ISpPerson>;
 
+        // non-list item properties
         parent: Shockout.SPForm;
-        historyItems: KnockoutObservable<Array<IHistoryItem>>;
+        allowSave: KnockoutObservable<boolean>;
+        allowPrint: KnockoutObservable<boolean>;
+        allowDelete: KnockoutObservable<boolean>;
         attachments: KnockoutObservable<Array<any>>;
         currentUser: KnockoutObservable<any>;
+        historyItems: KnockoutObservable<Array<IHistoryItem>>;       
         isValid: KnockoutComputed<boolean>;
         showUserProfiles: KnockoutObservable<boolean>;
 
+        // methods
         isAuthor(): boolean;
         deleteItem(): void;
         cancel(): void;
@@ -21,38 +27,33 @@
         deleteAttachment(obj: any, event: any): boolean;
         save(model: ViewModel, btn: HTMLElement): void;
         submit(model: ViewModel, btn: HTMLElement): void;
-        _allowSave: KnockoutObservable<boolean>;
-        _allowPrint: KnockoutObservable<boolean>;
-        _allowDelete: KnockoutObservable<boolean>;
-        allowSave(): boolean;
-        allowPrint(): boolean;
-        allowDelete(): boolean;
     }
 
     export class ViewModel implements IViewModel {
 
-        public static historyKey: string = 'history';
-        public static historyDescriptionKey: string = 'description';
-        public static historyDateKey: string = 'date';
+        // static properties
         public static isSubmittedKey: string;
         public static parent: SPForm;
 
+        // SP List Item Fields
         public Id: KnockoutObservable<number> = ko.observable(null);
         public Created: KnockoutObservable<Date> = ko.observable(null);
         public CreatedBy: KnockoutObservable<ISpPerson> = ko.observable(null);
         public Modified: KnockoutObservable<Date> = ko.observable(null);
         public ModifiedBy: KnockoutObservable<ISpPerson> = ko.observable(null);
-        public showUserProfiles: KnockoutObservable<boolean> = ko.observable(false);
 
+        // non-list item fields
         public parent: Shockout.SPForm;
-        public historyItems: KnockoutObservable<Array<any>> = ko.observableArray();
+        public allowSave: KnockoutObservable<boolean> = ko.observable(false);
+        public allowPrint: KnockoutObservable<boolean> = ko.observable(false);
+        public allowDelete: KnockoutObservable<boolean> = ko.observable(false);
         public attachments: KnockoutObservableArray<any> = ko.observableArray();
         public currentUser: KnockoutObservable<ICurrentUser>;
+        public historyItems: KnockoutObservable<Array<any>> = ko.observableArray();
         public isValid: KnockoutComputed<boolean>;
+        public showUserProfiles: KnockoutObservable<boolean> = ko.observable(false);
+
         public deleteAttachment;
-        public _allowSave: KnockoutObservable<boolean> = ko.observable(false);
-        public _allowPrint: KnockoutObservable<boolean> = ko.observable(false);
-        public _allowDelete: KnockoutObservable<boolean> = ko.observable(false);
 
         constructor(instance: Shockout.SPForm) {
             var self = this;
@@ -68,7 +69,7 @@
         }
 
         public isAuthor(): boolean {
-            if(this.CreatedBy() == null){ return true; }
+            if(!!!this.CreatedBy()){ return true; }
             return this.currentUser().id == this.CreatedBy().Id;
         }
 
@@ -91,18 +92,6 @@
 
         public submit(model: ViewModel, btn: HTMLElement): void {
             this.parent.saveListItem(model, true);
-        }
-
-        public allowSave(): boolean {
-            return this._allowSave();
-        }
-
-        public allowPrint(): boolean {
-            return this._allowPrint();
-        }
-
-        public allowDelete(): boolean {
-            return this._allowDelete();
         }
 
     }

@@ -535,7 +535,7 @@ var Shockout;
                 //KoComponents.registerKoComponents();
                 // Find out of this list allows saving before submitting and triggering workflow approval.
                 // Must have a field with `submitted` in the name and it must be of type `Boolean`
-                if (self.fieldNames.indexOf('IsSubmitted') > -1) {
+                if (Shockout.Utils.indexOf(self.fieldNames, 'IsSubmitted') > -1) {
                     self.allowSave = true;
                     Shockout.ViewModel.isSubmittedKey = 'IsSubmitted';
                     if (self.debug) {
@@ -543,9 +543,9 @@ var Shockout;
                     }
                 }
                 // Append action buttons to form.
-                self.viewModel._allowSave(self.allowSave);
-                self.viewModel._allowPrint(self.allowPrint);
-                self.viewModel._allowDelete(self.allowDelete);
+                self.viewModel.allowSave(self.allowSave);
+                self.viewModel.allowPrint(self.allowPrint);
+                self.viewModel.allowDelete(self.allowDelete);
                 self.$formAction = $(Shockout.Templates.getFormAction()).appendTo(self.$form);
                 // Setup attachments modules.
                 if (self.enableAttachments) {
@@ -568,11 +568,11 @@ var Shockout;
                 }
                 // Dynamically add/remove elements with attribute `data-new-only` from the DOM if not a new form - an edit form where `itemId != null`.
                 self.$form.find('[data-new-only]')
-                    .before('<!-- ko if: $root.Id() == null -->')
+                    .before('<!-- ko if: !!$root.Id() -->')
                     .after('<!-- /ko -->');
                 // Dynamically add/remove elements with attribute `data-edit-only` from the DOM if not editing an existing form - a new form where `itemId == null || undefined`.
                 self.$form.find('[data-edit-only]')
-                    .before('<!-- ko if: $root.Id() != null -->')
+                    .before('<!-- ko ifnot: !!$root.Id() -->')
                     .after('<!-- /ko -->');
                 // Dynamically add/remove elements if it's restricted to the author only for example, input elements for editing the form. 
                 self.$form.find('[data-author-only]')
@@ -1155,7 +1155,7 @@ var Shockout;
                             if (!!!labelTxt) {
                                 $(n).parent().first().html();
                             }
-                            if (labels.indexOf(labelTxt) < 0) {
+                            if (Shockout.Utils.indexOf(labels, labelTxt) < 0) {
                                 labels.push(labelTxt);
                                 errorCount++;
                             }
@@ -1228,7 +1228,7 @@ var Shockout;
         * @return number: length of array or -1 if not added
         */
         SPForm.prototype.pushEditableFieldName = function (key) {
-            if (!!!key || this.editableFields.indexOf(key) > -1 || key.match(/^(_|\$)/) != null || this.fieldNames.indexOf(key) < 0 || this.viewModel[key]._readOnly) {
+            if (!!!key || Shockout.Utils.indexOf(this.editableFields, key) > -1 || key.match(/^(_|\$)/) != null || Shockout.Utils.indexOf(this.fieldNames, key) < 0 || this.viewModel[key]._readOnly) {
                 return -1;
             }
             return this.editableFields.push(key);
@@ -1512,17 +1512,18 @@ var Shockout;
 (function (Shockout) {
     var ViewModel = (function () {
         function ViewModel(instance) {
+            // SP List Item Fields
             this.Id = ko.observable(null);
             this.Created = ko.observable(null);
             this.CreatedBy = ko.observable(null);
             this.Modified = ko.observable(null);
             this.ModifiedBy = ko.observable(null);
-            this.showUserProfiles = ko.observable(false);
-            this.historyItems = ko.observableArray();
+            this.allowSave = ko.observable(false);
+            this.allowPrint = ko.observable(false);
+            this.allowDelete = ko.observable(false);
             this.attachments = ko.observableArray();
-            this._allowSave = ko.observable(false);
-            this._allowPrint = ko.observable(false);
-            this._allowDelete = ko.observable(false);
+            this.historyItems = ko.observableArray();
+            this.showUserProfiles = ko.observable(false);
             var self = this;
             this.parent = instance;
             ViewModel.parent = instance;
@@ -1533,7 +1534,7 @@ var Shockout;
             this.currentUser = ko.observable(instance.getCurrentUser());
         }
         ViewModel.prototype.isAuthor = function () {
-            if (this.CreatedBy() == null) {
+            if (!!!this.CreatedBy()) {
                 return true;
             }
             return this.currentUser().id == this.CreatedBy().Id;
@@ -1554,18 +1555,6 @@ var Shockout;
         ViewModel.prototype.submit = function (model, btn) {
             this.parent.saveListItem(model, true);
         };
-        ViewModel.prototype.allowSave = function () {
-            return this._allowSave();
-        };
-        ViewModel.prototype.allowPrint = function () {
-            return this._allowPrint();
-        };
-        ViewModel.prototype.allowDelete = function () {
-            return this._allowDelete();
-        };
-        ViewModel.historyKey = 'history';
-        ViewModel.historyDescriptionKey = 'description';
-        ViewModel.historyDateKey = 'date';
         return ViewModel;
     })();
     Shockout.ViewModel = ViewModel;
@@ -3215,6 +3204,24 @@ var Shockout;
     var Utils = (function () {
         function Utils() {
         }
+        /**
+        * Returns the index of a value in an array. Returns -1 if not found. Use for IE8 browser compatibility.
+        * @param a: Array<any>
+        * @param value: any
+        * @return number
+        */
+        Utils.indexOf = function (a, value) {
+            // use the native Array.indexOf method if exists
+            if (!!Array.prototype.indexOf) {
+                return Array.prototype.indexOf.apply(a, [value]);
+            }
+            for (var i = 0; i < a.length; i++) {
+                if (a[i] === value) {
+                    return i;
+                }
+            }
+            return -1;
+        };
         /**
         * Ensure site url is or ends with '/'
         * @param url: string

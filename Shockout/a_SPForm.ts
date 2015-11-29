@@ -675,7 +675,7 @@ module Shockout {
 
                 // Find out of this list allows saving before submitting and triggering workflow approval.
                 // Must have a field with `submitted` in the name and it must be of type `Boolean`
-                if (self.fieldNames.indexOf('IsSubmitted') > -1) {
+                if (Utils.indexOf(self.fieldNames, 'IsSubmitted') > -1) {
                     self.allowSave = true;
                     ViewModel.isSubmittedKey = 'IsSubmitted';
                     if (self.debug) {
@@ -684,9 +684,9 @@ module Shockout {
                 }
 
                 // Append action buttons to form.
-                self.viewModel._allowSave(self.allowSave);
-                self.viewModel._allowPrint(self.allowPrint);
-                self.viewModel._allowDelete(self.allowDelete);
+                self.viewModel.allowSave(self.allowSave);
+                self.viewModel.allowPrint(self.allowPrint);
+                self.viewModel.allowDelete(self.allowDelete);
 
                 self.$formAction = $(Templates.getFormAction()).appendTo(self.$form);
 
@@ -715,12 +715,12 @@ module Shockout {
                             
                 // Dynamically add/remove elements with attribute `data-new-only` from the DOM if not a new form - an edit form where `itemId != null`.
                 self.$form.find('[data-new-only]')
-                    .before('<!-- ko if: $root.Id() == null -->')
+                    .before('<!-- ko if: !!$root.Id() -->')
                     .after('<!-- /ko -->');
 
                 // Dynamically add/remove elements with attribute `data-edit-only` from the DOM if not editing an existing form - a new form where `itemId == null || undefined`.
                 self.$form.find('[data-edit-only]')
-                    .before('<!-- ko if: $root.Id() != null -->')
+                    .before('<!-- ko ifnot: !!$root.Id() -->')
                     .after('<!-- /ko -->');
 
                 // Dynamically add/remove elements if it's restricted to the author only for example, input elements for editing the form. 
@@ -1391,7 +1391,7 @@ module Shockout {
                                 $(n).parent().first().html();
                             }
 
-                            if (labels.indexOf(labelTxt) < 0) {
+                            if (Utils.indexOf(labels, labelTxt) < 0) {
                                 labels.push(labelTxt);
                                 errorCount++;
                             }
@@ -1471,7 +1471,7 @@ module Shockout {
         * @return number: length of array or -1 if not added 
         */
         pushEditableFieldName(key: string): number {
-            if (!!!key || this.editableFields.indexOf(key) > -1 || key.match(/^(_|\$)/) != null || this.fieldNames.indexOf(key) < 0 || this.viewModel[key]._readOnly) { return -1; }
+            if (!!!key || Utils.indexOf(this.editableFields, key) > -1 || key.match(/^(_|\$)/) != null || Utils.indexOf(this.fieldNames, key) < 0 || this.viewModel[key]._readOnly) { return -1; }
             return this.editableFields.push(key);
         }
 

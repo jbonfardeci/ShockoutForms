@@ -339,9 +339,12 @@ declare module Shockout {
         Modified: KnockoutObservable<Date>;
         ModifiedBy: KnockoutObservable<ISpPerson>;
         parent: Shockout.SPForm;
-        historyItems: KnockoutObservable<Array<IHistoryItem>>;
+        allowSave: KnockoutObservable<boolean>;
+        allowPrint: KnockoutObservable<boolean>;
+        allowDelete: KnockoutObservable<boolean>;
         attachments: KnockoutObservable<Array<any>>;
         currentUser: KnockoutObservable<any>;
+        historyItems: KnockoutObservable<Array<IHistoryItem>>;
         isValid: KnockoutComputed<boolean>;
         showUserProfiles: KnockoutObservable<boolean>;
         isAuthor(): boolean;
@@ -351,17 +354,8 @@ declare module Shockout {
         deleteAttachment(obj: any, event: any): boolean;
         save(model: ViewModel, btn: HTMLElement): void;
         submit(model: ViewModel, btn: HTMLElement): void;
-        _allowSave: KnockoutObservable<boolean>;
-        _allowPrint: KnockoutObservable<boolean>;
-        _allowDelete: KnockoutObservable<boolean>;
-        allowSave(): boolean;
-        allowPrint(): boolean;
-        allowDelete(): boolean;
     }
     class ViewModel implements IViewModel {
-        static historyKey: string;
-        static historyDescriptionKey: string;
-        static historyDateKey: string;
         static isSubmittedKey: string;
         static parent: SPForm;
         Id: KnockoutObservable<number>;
@@ -369,16 +363,16 @@ declare module Shockout {
         CreatedBy: KnockoutObservable<ISpPerson>;
         Modified: KnockoutObservable<Date>;
         ModifiedBy: KnockoutObservable<ISpPerson>;
-        showUserProfiles: KnockoutObservable<boolean>;
         parent: Shockout.SPForm;
-        historyItems: KnockoutObservable<Array<any>>;
+        allowSave: KnockoutObservable<boolean>;
+        allowPrint: KnockoutObservable<boolean>;
+        allowDelete: KnockoutObservable<boolean>;
         attachments: KnockoutObservableArray<any>;
         currentUser: KnockoutObservable<ICurrentUser>;
+        historyItems: KnockoutObservable<Array<any>>;
         isValid: KnockoutComputed<boolean>;
+        showUserProfiles: KnockoutObservable<boolean>;
         deleteAttachment: any;
-        _allowSave: KnockoutObservable<boolean>;
-        _allowPrint: KnockoutObservable<boolean>;
-        _allowDelete: KnockoutObservable<boolean>;
         constructor(instance: Shockout.SPForm);
         isAuthor(): boolean;
         deleteItem(): void;
@@ -386,9 +380,6 @@ declare module Shockout {
         print(): void;
         save(model: ViewModel, btn: HTMLElement): void;
         submit(model: ViewModel, btn: HTMLElement): void;
-        allowSave(): boolean;
-        allowPrint(): boolean;
-        allowDelete(): boolean;
     }
 }
 declare module Shockout {
@@ -749,6 +740,13 @@ declare module Shockout {
 }
 declare module Shockout {
     class Utils {
+        /**
+        * Returns the index of a value in an array. Returns -1 if not found. Use for IE8 browser compatibility.
+        * @param a: Array<any>
+        * @param value: any
+        * @return number
+        */
+        static indexOf(a: Array<any>, value: any): number;
         /**
         * Ensure site url is or ends with '/'
         * @param url: string
