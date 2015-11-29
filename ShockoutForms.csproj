@@ -47,7 +47,6 @@
     <Content Include="example\SP2010\PurchaseRequisition.aspx" />
     <Content Include="example\SP2013\PurchaseRequisition.aspx" />
     <Content Include="README.md" />
-    <Content Include="test.html" />
     <Content Include="_layouts\SPFormFileHandler.ashx" />
     <Content Include="example\SP2010\PurchaseRequisitions.stp" />
     <Content Include="example\SP2010\Shockout.SpForms.master" />

@@ -194,7 +194,7 @@
 
             $(parent).find('.so-editable[ko-name]').each(function (i, el) {
                 var n = $(el).attr('ko-name');
-                if (a.indexOf(n) < 0) {
+                if (Utils.indexOf(a, n) < 0) {
                     a.push(n);
                 }
             });
@@ -205,7 +205,7 @@
                 var n = comments[i].nodeValue
                     .replace(/\s*ko\s*foreach\s*:\s*(\$root\.|)/, '')
                     .replace(/\s/g, '');
-                if (a.indexOf(n) < 0) {
+                if (Utils.indexOf(a, n) < 0) {
                     a.push(n);
                 }
             }
@@ -214,7 +214,7 @@
             var koNames = Utils.getEditableKoControlNames(parent);
             for (var i = 0; i < koNames.length; i++) {
                 var n = koNames[i];
-                if (a.indexOf(n) < 0) {
+                if (Utils.indexOf(a, n) < 0) {
                     a.push(n);
                 }
             }
@@ -603,7 +603,7 @@
             var results: Array<any> = [];
             for (var i = 0; i < array1.length; i++) {
                 for (var j = 0; j < array2.length; j++) {
-                    if (array1[i] == array2[j] && results.indexOf(array2[j]) < 0) {
+                    if (array1[i] == array2[j] && Utils.indexOf(results, array2[j]) < 0) {
                         results.push(array2[j]);
                     }
                 }
