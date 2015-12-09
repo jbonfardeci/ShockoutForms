@@ -492,7 +492,7 @@ module Shockout {
             
             // Determine if the field is a `Choice` or `MultiChoice` field with choices.
             var rxIsChoice = /choice/i;
-            var rxExcludeNames: RegExp = /^(FolderChildCount|ItemChildCount|MetaInfo|ContentType|Edit|Type|LinkTitleNoMenu|LinkTitle|LinkTitle2|Version|Attachments)/;
+            var rxExcludeNames: RegExp = /\b(FolderChildCount|ItemChildCount|MetaInfo|ContentType|Edit|Type|LinkTitleNoMenu|LinkTitle|LinkTitle2|Version|Attachments)\b/;
 
             SpSoap.getList(self.siteUrl, self.listName, function (xmlDoc: XMLDocument, error: string) {
                 if (!!error) {

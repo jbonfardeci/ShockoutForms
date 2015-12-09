@@ -377,7 +377,7 @@ var Shockout;
             if (args === void 0) { args = undefined; }
             // Determine if the field is a `Choice` or `MultiChoice` field with choices.
             var rxIsChoice = /choice/i;
-            var rxExcludeNames = /^(FolderChildCount|ItemChildCount|MetaInfo|ContentType|Edit|Type|LinkTitleNoMenu|LinkTitle|LinkTitle2|Version|Attachments)/;
+            var rxExcludeNames = /\b(FolderChildCount|ItemChildCount|MetaInfo|ContentType|Edit|Type|LinkTitleNoMenu|LinkTitle|LinkTitle2|Version|Attachments)\b/;
             Shockout.SpSoap.getList(self.siteUrl, self.listName, function (xmlDoc, error) {
                 if (!!error) {
                     var msg = 'Failed to retrieve list data. ' + error;
@@ -2196,8 +2196,7 @@ var Shockout;
                     this.Modified = params.modified;
                     this.showUserProfiles = params.showUserProfiles;
                 },
-                template: '<!-- ko if: !!CreatedBy && CreatedBy() != null -->' +
-                    '<!-- ko if: showUserProfiles() -->' +
+                template: '<!-- ko if: showUserProfiles() -->' +
                     '<div class="create-mod-info no-print hidden-xs">' +
                     '<!-- ko foreach: profiles -->' +
                     '<div class="user-profile-card">' +
@@ -2226,8 +2225,7 @@ var Shockout;
                     '<div class="col-md-3"><label>Modified By</label> <a data-bind="text: Name, attr: {href: \'mailto:\' + WorkEMail}" class="email"></a></div>' +
                     '<!-- /ko -->' +
                     '<div class="col-md-3"><label>Modified</label> <span data-bind="spDateTime: Modified"></span></div>' +
-                    '</div>' +
-                    '<!-- /ko -->'
+                    '</div>'
             });
             ko.components.register('so-workflow-history', {
                 viewModel: function (params) {
@@ -2555,8 +2553,8 @@ var Shockout;
             '<div class="so-field-description"><p data-bind="html: description"></p></div>' +
             '<!-- /ko -->' +
             '</div>';
-        KoComponents.soCreatedModifiedTemplate = '<section><so-created-modified-info params="created: Created, createdBy: CreatedBy, modified: Modified, modifiedBy: ModifiedBy, showUserProfiles: showUserProfiles"></so-created-modified-info></section>';
-        KoComponents.soWorkflowHistoryTemplate = '<section id="workflowHistory" class="nav-section"><h4>Workflow History</h4><so-workflow-history params="val: historyItems"></so-workflow-history></section>';
+        KoComponents.soCreatedModifiedTemplate = '<!-- ko if: !!CreatedBy && CreatedBy() != null --><section><so-created-modified-info params="created: Created, createdBy: CreatedBy, modified: Modified, modifiedBy: ModifiedBy, showUserProfiles: showUserProfiles"></so-created-modified-info></section><!-- /ko -->';
+        KoComponents.soWorkflowHistoryTemplate = '<!-- ko if: !!Id() --><section id="workflowHistory" class="nav-section"><h4>Workflow History</h4><so-workflow-history params="val: historyItems"></so-workflow-history></section><!-- /ko -->';
         return KoComponents;
     })();
     Shockout.KoComponents = KoComponents;

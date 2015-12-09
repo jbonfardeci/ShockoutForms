@@ -23,6 +23,7 @@
     <Service Include="{4A0DDDB5-7A95-4FBF-97CC-616D07737A77}" />
   </ItemGroup>
   <ItemGroup>
+    <TypeScriptCompile Include="ShockoutForms-1.0.1.d.ts" />
     <TypeScriptCompile Include="Shockout\d_koComponents.ts" />
     <TypeScriptCompile Include="Shockout\i_spDatatypes15.ts" />
     <TypeScriptCompile Include="Shockout\f_spApi15.ts" />
@@ -47,11 +48,14 @@
     <Content Include="example\SP2010\PurchaseRequisition.aspx" />
     <Content Include="example\SP2013\PurchaseRequisition.aspx" />
     <Content Include="README.md" />
+    <Content Include="ShockoutForms-1.0.1.js" />
+    <Content Include="ShockoutForms-1.0.1.min.js" />
     <Content Include="_layouts\SPFormFileHandler.ashx" />
     <Content Include="example\SP2010\PurchaseRequisitions.stp" />
     <Content Include="example\SP2010\Shockout.SpForms.master" />
     <Content Include="example\SP2013\PurchaseRequisitionList.stp" />
     <Content Include="example\SP2013\Shockout.SpForms.master" />
+    <Content Include="ShockoutForms-1.0.1.js.map" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="Microsoft.SharePoint, Version=15.0.0.0, Culture=neutral, PublicKeyToken=71e9bce111e9429c, processorArchitecture=MSIL" />

@@ -178,8 +178,6 @@
                     this.showUserProfiles = params.showUserProfiles;
                 },
                 template:
-                '<!-- ko if: !!CreatedBy && CreatedBy() != null -->' +
-
                     '<!-- ko if: showUserProfiles() -->' +
                         '<div class="create-mod-info no-print hidden-xs">' +
                             '<!-- ko foreach: profiles -->' +
@@ -211,8 +209,7 @@
                             '<div class="col-md-3"><label>Modified By</label> <a data-bind="text: Name, attr: {href: \'mailto:\' + WorkEMail}" class="email"></a></div>' +
                         '<!-- /ko -->' +
                         '<div class="col-md-3"><label>Modified</label> <span data-bind="spDateTime: Modified"></span></div>' +
-                    '</div>' +
-                '<!-- /ko -->'
+                    '</div>'
             });
 
             ko.components.register('so-workflow-history', {
@@ -631,9 +628,9 @@
 
         '</div>';
 
-        public static soCreatedModifiedTemplate = '<section><so-created-modified-info params="created: Created, createdBy: CreatedBy, modified: Modified, modifiedBy: ModifiedBy, showUserProfiles: showUserProfiles"></so-created-modified-info></section>';
+        public static soCreatedModifiedTemplate = '<!-- ko if: !!CreatedBy && CreatedBy() != null --><section><so-created-modified-info params="created: Created, createdBy: CreatedBy, modified: Modified, modifiedBy: ModifiedBy, showUserProfiles: showUserProfiles"></so-created-modified-info></section><!-- /ko -->';
 
-        public static soWorkflowHistoryTemplate = '<section id="workflowHistory" class="nav-section"><h4>Workflow History</h4><so-workflow-history params="val: historyItems"></so-workflow-history></section>';
+        public static soWorkflowHistoryTemplate = '<!-- ko if: !!Id() --><section id="workflowHistory" class="nav-section"><h4>Workflow History</h4><so-workflow-history params="val: historyItems"></so-workflow-history></section><!-- /ko -->';
     }
 
 }
