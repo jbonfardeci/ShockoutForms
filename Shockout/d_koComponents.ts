@@ -268,12 +268,12 @@
                 this.modelValue = koObj;
                 this.id = params.id || koObj._koName;
                 this.name = params.name || koObj._koName || params.id;
-                this.label = params.label || koObj._displayName;
+                this.label = params.label = null || params.label == '' ? undefined : params.label || koObj._displayName;
                 this.title = params.title;
                 this.caption = params.caption;
                 this.maxlength = params.maxlength || 255;
-                this.placeholder = params.placeholder || koObj._displayName;
-                this.description = (typeof params.description != 'undefined') ? (params.description == null ? false : params.description) : koObj._description;
+                this.placeholder = params.placeholder || params.label || koObj._displayName;
+                this.description = (typeof params.description != 'undefined') ? (params.description == null ? undefined : params.description) : koObj._description;
                 this.valueUpdate = params.valueUpdate;
                 this.editable = !!koObj._koName; // if `_koName` is a prop of our KO var, it's a field we can update in theSharePoint list.
                 this.koName = koObj._koName; // include the name of the KO var in case we need to reference it.
@@ -348,7 +348,7 @@
         '<div class="form-group">'+
             '<div class="row">' +            
                 // field label
-                '<!-- ko if: label -->' +
+                '<!-- ko if: !!label -->' +
                     '<div class="col-sm-3" data-bind="attr:{\'class\': labelColWidth}"><label data-bind="html: label"></label></div>'+
                 '<!-- /ko -->' +
                 // field
@@ -365,7 +365,7 @@
             '<div class="row">' + 
                    
                 // field label
-                '<!-- ko if: label -->' +
+                '<!-- ko if: !!label -->' +
                     '<div class="col-sm-3" data-bind="attr:{\'class\': labelColWidth}"><label data-bind="html: label, attr: {for: id}"></label></div>' +
                 '<!-- /ko -->' +
             
@@ -399,7 +399,7 @@
             '<div class="row">' + 
                    
                 // field label
-                '<!-- ko if: label -->' +
+                '<!-- ko if: !!label -->' +
                     '<div class="col-sm-3" data-bind="attr:{\'class\': labelColWidth}"><label data-bind="html: label, attr: {for: id}"></label></div>' +
                 '<!-- /ko -->' +
             
@@ -433,7 +433,7 @@
             '<div class="row">' + 
                    
                 // field label
-                '<!-- ko if: label -->' +
+                '<!-- ko if: !!label -->' +
                     '<div class="col-sm-3" data-bind="attr:{\'class\': labelColWidth}"><label data-bind="html: label"></label></div>' +
                 '<!-- /ko -->' +
             
@@ -465,7 +465,7 @@
             '<div class="row">' + 
                    
                 // field label
-                '<!-- ko if: label -->' +
+                '<!-- ko if: !!label -->' +
                 '<div class="col-sm-3" data-bind="attr:{\'class\': labelColWidth}"><label data-bind="html: label, attr: {for: id}"></label></div>' +
                 '<!-- /ko -->' +
             
@@ -502,7 +502,7 @@
             '<div class="row">'+
 
                 // field label
-                '<!-- ko if: label -->' +
+                '<!-- ko if: !!label -->' +
                 '<div><label data-bind="html: label"></label></div>' +
                 '<!-- /ko -->' +
 
@@ -543,6 +543,7 @@
 
                     // show input field if not readOnly
                     '<!-- ko ifnot: readOnly() -->' +
+                        '<input type="hidden" data-bind="value: modelValue, attr:{required: !!required}" /><p data-bind="visible: !!required" class="req">(Required)</p>'+
                         '<!-- ko foreach: options -->' +
                             '<label data-bind="css:{\'checkbox\': !$parent.inline, \'checkbox-inline\': $parent.inline}">' +
                                 '<input type="checkbox" data-bind="checked: $parent.modelValue, css: {\'so-editable\': $parent.editable}, attr: {\'ko-name\': $parent.koName, \'value\': $data}" />' +
@@ -564,7 +565,7 @@
             '<div class="row">' +
 
                 // field label
-                '<!-- ko if: label -->'+
+                '<!-- ko if: !!label -->'+
                     '<div class="col-sm-3" data-bind="attr:{\'class\': labelColWidth}"><label data-bind="html: label"></label></div>' +
                 '<!-- /ko -->'+
 

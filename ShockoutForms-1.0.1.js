@@ -609,16 +609,15 @@ var Shockout;
             self.updateStatus("Retrieving form values...");
             var vm = self.viewModel;
             // expand the REST query for MultiChoice types
+            // MAXIMUM is 7!!!
             var expand = [];
-            for (var i = 0; i < self.fieldNames.length; i++) {
-                var key = self.fieldNames[i];
-                if (!(key in vm) || !('_type' in vm[key])) {
-                    continue;
-                }
-                if (vm[key]._type == 'MultiChoice') {
-                    expand.push(key);
-                }
-            }
+            //for (var i = 0; i < self.fieldNames.length; i++) {
+            //    var key = self.fieldNames[i];
+            //    if (!(key in vm) || !('_type' in vm[key])) { continue; }
+            //    if (vm[key]._type == 'MultiChoice') {
+            //        expand.push(key);
+            //    }
+            //}
             if (self.enableAttachments) {
                 expand.push('Attachments');
             }
@@ -758,8 +757,8 @@ var Shockout;
                 var item = self.listItem;
                 var vm = self.viewModel;
                 // Exclude these read-only metadata fields from the Knockout view model.
-                var rxExclude = /^(__metadata|ContentTypeID|ContentType|Owshiddenversion|Version|Attachments|Path)/;
-                var rxExcludeTypes = /^(User|Choice)/;
+                var rxExclude = /(__metadata|ContentTypeID|ContentType|Owshiddenversion|Version|Attachments|Path)/;
+                var rxExcludeTypes = /(MultiChoice|User|Choice)/;
                 var isObj = /Object/;
                 self.itemId = item.Id;
                 vm.Id(item.Id);
@@ -807,6 +806,22 @@ var Shockout;
                     return self.viewModel[key]._type == 'Choice' && (key + 'Value' in item);
                 }).each(function (i, key) {
                     vm[key](item[key + 'Value']);
+                });
+                // query values for MultiChoice types
+                $(self.fieldNames).filter(function (i, key) {
+                    return !!self.viewModel[key] && self.viewModel[key]._type == 'MultiChoice' && '__deferred' in item[key];
+                }).each(function (i, key) {
+                    Shockout.SpApi.executeRestRequest(item[key].__deferred.uri, function (data, status, jqXhr) {
+                        if (self.debug) {
+                            console.info('Retrieved MultiChoice data for ' + key + '...');
+                            console.info(data);
+                        }
+                        var values = [];
+                        $.each(data.d.results, function (i, choice) {
+                            values.push(choice.Value);
+                        });
+                        vm[key](values);
+                    });
                 });
                 // query values for UserMulti types
                 $(self.fieldNames).filter(function (i, key) {
@@ -1601,7 +1616,7 @@ var Shockout;
                     // This will be called when the binding is first applied to an element
                     // Set up any initial state, event handlers, etc. here
                     var viewModel = bindingContext.$data, modelValue = valueAccessor(), person = ko.unwrap(modelValue);
-                    var $element = $(element).before('<br/>')
+                    var $element = $(element)
                         .addClass('people-picker-control')
                         .attr('placeholder', 'Employee Account Name');
                     //create wrapper for control
@@ -1834,8 +1849,7 @@ var Shockout;
                     .attr('placeholder', 'MM/DD/YYYY')
                     .on('blur', onDateChange)
                     .on('change', onDateChange)
-                    .after('<span class="glyphicon glyphicon-calendar"></span>')
-                    .before('<br />');
+                    .after('<span class="glyphicon glyphicon-calendar"></span>');
                 $(element).datepicker({
                     changeMonth: true,
                     changeYear: true
@@ -2273,12 +2287,12 @@ var Shockout;
                 this.modelValue = koObj;
                 this.id = params.id || koObj._koName;
                 this.name = params.name || koObj._koName || params.id;
-                this.label = params.label || koObj._displayName;
+                this.label = params.label = null || params.label == '' ? undefined : params.label || koObj._displayName;
                 this.title = params.title;
                 this.caption = params.caption;
                 this.maxlength = params.maxlength || 255;
-                this.placeholder = params.placeholder || koObj._displayName;
-                this.description = (typeof params.description != 'undefined') ? (params.description == null ? false : params.description) : koObj._description;
+                this.placeholder = params.placeholder || params.label || koObj._displayName;
+                this.description = (typeof params.description != 'undefined') ? (params.description == null ? undefined : params.description) : koObj._description;
                 this.valueUpdate = params.valueUpdate;
                 this.editable = !!koObj._koName; // if `_koName` is a prop of our KO var, it's a field we can update in theSharePoint list.
                 this.koName = koObj._koName; // include the name of the KO var in case we need to reference it.
@@ -2340,7 +2354,7 @@ var Shockout;
         KoComponents.soStaticFieldTemplate = '<div class="form-group">' +
             '<div class="row">' +
             // field label
-            '<!-- ko if: label -->' +
+            '<!-- ko if: !!label -->' +
             '<div class="col-sm-3" data-bind="attr:{\'class\': labelColWidth}"><label data-bind="html: label"></label></div>' +
             '<!-- /ko -->' +
             // field
@@ -2354,7 +2368,7 @@ var Shockout;
         KoComponents.soTextFieldTemplate = KoComponents.hasErrorCssDiv +
             '<div class="row">' +
             // field label
-            '<!-- ko if: label -->' +
+            '<!-- ko if: !!label -->' +
             '<div class="col-sm-3" data-bind="attr:{\'class\': labelColWidth}"><label data-bind="html: label, attr: {for: id}"></label></div>' +
             '<!-- /ko -->' +
             // field
@@ -2380,7 +2394,7 @@ var Shockout;
         KoComponents.soHtmlFieldTemplate = KoComponents.hasErrorCssDiv +
             '<div class="row">' +
             // field label
-            '<!-- ko if: label -->' +
+            '<!-- ko if: !!label -->' +
             '<div class="col-sm-3" data-bind="attr:{\'class\': labelColWidth}"><label data-bind="html: label, attr: {for: id}"></label></div>' +
             '<!-- /ko -->' +
             // field
@@ -2405,7 +2419,7 @@ var Shockout;
         KoComponents.soCheckboxFieldTemplate = '<div class="form-group">' +
             '<div class="row">' +
             // field label
-            '<!-- ko if: label -->' +
+            '<!-- ko if: !!label -->' +
             '<div class="col-sm-3" data-bind="attr:{\'class\': labelColWidth}"><label data-bind="html: label"></label></div>' +
             '<!-- /ko -->' +
             // field
@@ -2429,7 +2443,7 @@ var Shockout;
         KoComponents.soSelectFieldTemplate = KoComponents.hasErrorCssDiv +
             '<div class="row">' +
             // field label
-            '<!-- ko if: label -->' +
+            '<!-- ko if: !!label -->' +
             '<div class="col-sm-3" data-bind="attr:{\'class\': labelColWidth}"><label data-bind="html: label, attr: {for: id}"></label></div>' +
             '<!-- /ko -->' +
             // field
@@ -2457,7 +2471,7 @@ var Shockout;
             '<!-- /ko -->' +
             '<div class="row">' +
             // field label
-            '<!-- ko if: label -->' +
+            '<!-- ko if: !!label -->' +
             '<div><label data-bind="html: label"></label></div>' +
             '<!-- /ko -->' +
             '<div>' +
@@ -2487,6 +2501,7 @@ var Shockout;
             '<!-- /ko -->' +
             // show input field if not readOnly
             '<!-- ko ifnot: readOnly() -->' +
+            '<input type="hidden" data-bind="value: modelValue, attr:{required: !!required}" /><p data-bind="visible: !!required" class="req">(Required)</p>' +
             '<!-- ko foreach: options -->' +
             '<label data-bind="css:{\'checkbox\': !$parent.inline, \'checkbox-inline\': $parent.inline}">' +
             '<input type="checkbox" data-bind="checked: $parent.modelValue, css: {\'so-editable\': $parent.editable}, attr: {\'ko-name\': $parent.koName, \'value\': $data}" />' +
@@ -2503,7 +2518,7 @@ var Shockout;
             '<!-- /ko -->' +
             '<div class="row">' +
             // field label
-            '<!-- ko if: label -->' +
+            '<!-- ko if: !!label -->' +
             '<div class="col-sm-3" data-bind="attr:{\'class\': labelColWidth}"><label data-bind="html: label"></label></div>' +
             '<!-- /ko -->' +
             '<div class="col-sm-9" data-bind="attr:{\'class\': fieldColWidth}">' +

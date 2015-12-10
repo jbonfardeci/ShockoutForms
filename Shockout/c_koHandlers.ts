@@ -46,7 +46,7 @@
                         , person = ko.unwrap(modelValue)
                         ;
 
-                    var $element = $(element).before('<br/>')
+                    var $element = $(element)
                         .addClass('people-picker-control')
                         .attr('placeholder', 'Employee Account Name');
 
@@ -303,8 +303,7 @@
                     .attr('placeholder', 'MM/DD/YYYY')
                     .on('blur', onDateChange)
                     .on('change', onDateChange)
-                    .after('<span class="glyphicon glyphicon-calendar"></span>')
-                    .before('<br />');
+                    .after('<span class="glyphicon glyphicon-calendar"></span>');
 
                 $(element).datepicker({
                     changeMonth: true,

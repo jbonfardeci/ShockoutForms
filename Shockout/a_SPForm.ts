@@ -762,16 +762,17 @@ module Shockout {
             var vm = self.viewModel;
 
             // expand the REST query for MultiChoice types
+            // MAXIMUM is 7!!!
             var expand: Array<string> = [];
-            for (var i = 0; i < self.fieldNames.length; i++) {
-                var key = self.fieldNames[i];
+            //for (var i = 0; i < self.fieldNames.length; i++) {
+            //    var key = self.fieldNames[i];
 
-                if (!(key in vm) || !('_type' in vm[key])) { continue; }
+            //    if (!(key in vm) || !('_type' in vm[key])) { continue; }
 
-                if (vm[key]._type == 'MultiChoice') {
-                    expand.push(key);
-                }
-            }
+            //    if (vm[key]._type == 'MultiChoice') {
+            //        expand.push(key);
+            //    }
+            //}
 
             if (self.enableAttachments) {
                 expand.push('Attachments');
@@ -934,8 +935,8 @@ module Shockout {
                 var vm: IViewModel = self.viewModel;
                 
                 // Exclude these read-only metadata fields from the Knockout view model.
-                var rxExclude: RegExp = /^(__metadata|ContentTypeID|ContentType|Owshiddenversion|Version|Attachments|Path)/;
-                var rxExcludeTypes: RegExp = /^(User|Choice)/;
+                var rxExclude: RegExp = /(__metadata|ContentTypeID|ContentType|Owshiddenversion|Version|Attachments|Path)/;
+                var rxExcludeTypes: RegExp = /(MultiChoice|User|Choice)/;
                 var isObj: RegExp = /Object/;
 
                 self.itemId = item.Id;
@@ -986,6 +987,23 @@ module Shockout {
                     return self.viewModel[key]._type == 'Choice' && (key+'Value' in item);
                 }).each(function (i: number, key: any) {
                     vm[key](item[key+'Value']);
+                    });
+
+                // query values for MultiChoice types
+                $(self.fieldNames).filter(function (i: number, key: any): boolean {
+                    return !!self.viewModel[key] && self.viewModel[key]._type == 'MultiChoice' && '__deferred' in item[key];
+                }).each(function (i: number, key: any) {
+                    Shockout.SpApi.executeRestRequest(item[key].__deferred.uri, function (data: ISpCollectionWrapper<ISpMultichoiceValue>, status, jqXhr) {
+                        if (self.debug) {
+                            console.info('Retrieved MultiChoice data for ' + key + '...');
+                            console.info(data);
+                        }
+                        var values = [];
+                        $.each(data.d.results, function (i: number, choice: ISpMultichoiceValue) {
+                            values.push(choice.Value);
+                        });
+                        vm[key](values);
+                    });
                 });
 
                 // query values for UserMulti types
