@@ -333,7 +333,7 @@ var Shockout;
                 console.info('Testing for SP 2013 API...');
             }
             // If this is SP 2013, it will return thre current user's account.
-            Shockout.SpApi15.getCurrentUser(function (user, error) {
+            Shockout.SpApi15.getCurrentUser(/*callback:*/ function (user, error) {
                 if (error == 404) {
                     getSp2010User();
                 }
@@ -348,7 +348,7 @@ var Shockout;
                     }
                     self.nextAsync(true, success);
                 }
-            });
+            }, /*expandGroups:*/ true);
             function getSp2010User() {
                 Shockout.SpSoap.getCurrentUser(function (user, error) {
                     if (!!error) {
@@ -643,7 +643,7 @@ var Shockout;
         */
         SPForm.prototype.getUsersGroupsAsync = function (self, args) {
             if (args === void 0) { args = undefined; }
-            if (self.$form.find("[data-sp-groups], [user-groups]").length == 0) {
+            if (self.$form.find("[data-sp-groups], [user-groups]").length == 0 || self.isSp2013) {
                 self.nextAsync(true);
                 return;
             }
@@ -2632,6 +2632,14 @@ var Shockout;
                 callback(data);
             }, '/', true);
         };
+        /**
+        * General REST request method.
+        * @param url: string
+        * @param callback: Function
+        * @param cache?: boolean = false
+        * @param type?: string = 'GET'
+        * @return void
+        */
         SpApi.executeRestRequest = function (url, callback, cache, type) {
             if (cache === void 0) { cache = false; }
             if (type === void 0) { type = 'GET'; }
@@ -2727,6 +2735,13 @@ var Shockout;
             }
             ;
         };
+        /**
+        * Insert a list item with REST service.
+        * @param item: ISpItem
+        * @param callback: Function
+        * @param data?: Object<any> = undefined
+        * @return void
+        */
         SpApi.insertListItem = function (url, callback, data) {
             if (data === void 0) { data = undefined; }
             var $jqXhr = $.ajax({
@@ -2734,7 +2749,7 @@ var Shockout;
                 type: 'POST',
                 processData: false,
                 contentType: 'application/json',
-                data: data ? JSON.stringify(data) : null,
+                data: !!data ? JSON.stringify(data) : null,
                 headers: {
                     'Accept': 'application/json;odata=verbose'
                 }
@@ -2746,6 +2761,13 @@ var Shockout;
                 callback(null, status + ': ' + error);
             });
         };
+        /**
+        * Update a list item with REST service.
+        * @param item: ISpItem
+        * @param callback: Function
+        * @param data?: Object<any> = undefined
+        * @return void
+        */
         SpApi.updateListItem = function (item, callback, data) {
             if (data === void 0) { data = undefined; }
             var $jqXhr = $.ajax({
@@ -2754,10 +2776,9 @@ var Shockout;
                 processData: false,
                 contentType: 'application/json',
                 data: data ? JSON.stringify(data) : null,
-                headers: {
-                    'Accept': 'application/json;odata=verbose',
-                    'X-HTTP-Method': 'MERGE',
-                    'If-Match': item.__metadata.etag
+                beforeSend: function (xhr) {
+                    xhr.setRequestHeader('X-HTTP-Method', 'MERGE');
+                    xhr.setRequestHeader('If-Match', item.__metadata.etag);
                 }
             });
             $jqXhr.done(function (data, status, jqXhr) {
@@ -2768,7 +2789,7 @@ var Shockout;
             });
         };
         /**
-        * Delete the list item.
+        * Delete the list item with REST service.
         * @param model: IViewModel
         * @param callback?: Function = undefined
         * @return void
@@ -2791,7 +2812,10 @@ var Shockout;
             });
         };
         /**
-        * Delete an attachment.
+        * Delete an attachment with REST service.
+        * @param att: ISpAttachment
+        * @param callback: Function
+        * @return void
         */
         SpApi.deleteAttachment = function (att, callback) {
             var $jqXhr = $.ajax({
@@ -2820,9 +2844,16 @@ var Shockout;
     var SpApi15 = (function () {
         function SpApi15() {
         }
-        SpApi15.getCurrentUser = function (callback) {
+        /**
+        * Get the current user.
+        * @param callback: Function
+        * @param expandGroups?: boolean = false
+        * @return void
+        */
+        SpApi15.getCurrentUser = function (callback, expandGroups) {
+            if (expandGroups === void 0) { expandGroups = false; }
             var $jqXhr = $.ajax({
-                url: '/_api/Web/CurrentUser',
+                url: '/_api/Web/CurrentUser' + (expandGroups ? '?$expand=Groups' : ''),
                 type: 'GET',
                 cache: true,
                 dataType: 'json',
@@ -2843,12 +2874,24 @@ var Shockout;
                     login: user.LoginName,
                     title: user.Title
                 };
+                if (expandGroups) {
+                    var groups = data.d.Groups;
+                    $(groups.results).each(function (i, group) {
+                        currentUser.groups.push({ id: group.Id, name: group.Title });
+                    });
+                }
                 callback(currentUser);
             });
             $jqXhr.fail(function (jqXhr, status, error) {
                 callback(null, jqXhr.status); // '404'
             });
         };
+        /**
+        * Get user's groups.
+        * @param iserId: number
+        * @param callback: Function
+        * @return void
+        */
         SpApi15.getUsersGroups = function (userId, callback) {
             var $jqXhr = $.ajax({
                 url: '/_api/Web/GetUserById(' + userId + ')/Groups',
@@ -2881,6 +2924,11 @@ var Shockout;
     var SpSoap = (function () {
         function SpSoap() {
         }
+        /**
+        * Get the current user via SOAP.
+        * @param callback: Function
+        * @return void
+        */
         SpSoap.getCurrentUser = function (callback) {
             var user = {};
             var query = '<Query><Where><Eq><FieldRef Name="ID" /><Value Type="Counter"><UserID /></Value></Eq></Where></Query>';
@@ -2918,6 +2966,12 @@ var Shockout;
                 ows_FSObjType="1;#0"/>
             */
         };
+        /**
+        * Get the a user's groups via SOAP.
+        * @param loginName: string (DOMAIN\loginName)
+        * @param callback: Function
+        * @return void
+        */
         SpSoap.getUsersGroups = function (loginName, callback) {
             var packet = '<soap:Envelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">' +
                 '<soap:Body>' +
@@ -2952,6 +3006,16 @@ var Shockout;
                 callback(groups);
             }
         };
+        /**
+        * Get list items via SOAP.
+        * @param siteUrl: string
+        * @param listName: string
+        * @param viewFields: string (XML)
+        * @param query?: string (XML)
+        * @param callback?: Function
+        * @param rowLimit?: number = 25
+        * @return void
+        */
         SpSoap.getListItems = function (siteUrl, listName, viewFields, query, callback, rowLimit) {
             if (rowLimit === void 0) { rowLimit = 25; }
             siteUrl = Shockout.Utils.formatSubsiteUrl(siteUrl);
@@ -2986,6 +3050,13 @@ var Shockout;
                 callback(null, status + ': ' + error);
             });
         };
+        /**
+        * Get list definition
+        * @param siteUrl: string
+        * @param listName: string
+        * @param callback: Function
+        * @return void
+        */
         SpSoap.getList = function (siteUrl, listName, callback) {
             siteUrl = Shockout.Utils.formatSubsiteUrl(siteUrl);
             var packet = '<?xml version="1.0" encoding="utf-8"?><soap:Envelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/"><soap:Body><GetList xmlns="http://schemas.microsoft.com/sharepoint/soap/"><listName>{0}</listName></GetList></soap:Body></soap:Envelope>'
@@ -3008,18 +3079,34 @@ var Shockout;
                 callback(null, status + ': ' + error);
             });
         };
-        SpSoap.checkInFile = function (pageUrl, checkinType, comment) {
+        /**
+        * Check in file.
+        * @param pageUrl: string
+        * @param checkinType: string
+        * @param callback: Function
+        * @param comment?: string = ''
+        * @return void
+        */
+        SpSoap.checkInFile = function (pageUrl, checkinType, callback, comment) {
             if (comment === void 0) { comment = ''; }
             var action = 'http://schemas.microsoft.com/sharepoint/soap/CheckInFile';
             var params = [pageUrl, comment, checkinType];
             var packet = '<?xml version="1.0" encoding="utf-8"?><soap:Envelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/"><soap:Body><CheckInFile xmlns="http://schemas.microsoft.com/sharepoint/soap/"><pageUrl>{0}</pageUrl><comment>{1}</comment><CheckinType>{2}</CheckinType></CheckInFile></soap:Body></soap:Envelope>';
-            return this.executeSoapRequest(action, packet, params);
+            return this.executeSoapRequest(action, packet, params, null, callback);
         };
-        SpSoap.checkOutFile = function (pageUrl, checkoutToLocal, lastmodified) {
+        /**
+        * Check out file.
+        * @param pageUrl: string
+        * @param checkoutToLocal: string
+        * @param lastmodified: string
+        * @param callback: Function
+        * @return void
+        */
+        SpSoap.checkOutFile = function (pageUrl, checkoutToLocal, lastmodified, callback) {
             var action = 'http://schemas.microsoft.com/sharepoint/soap/CheckOutFile';
             var params = [pageUrl, checkoutToLocal, lastmodified];
             var packet = '<?xml version="1.0" encoding="utf-8"?><soap:Envelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/"><soap:Body><CheckOutFile xmlns="http://schemas.microsoft.com/sharepoint/soap/"><pageUrl>{0}</pageUrl><checkoutToLocal>{1}</checkoutToLocal><lastmodified>{2}</lastmodified></CheckOutFile></soap:Body></soap:Envelope>';
-            return this.executeSoapRequest(action, packet, params);
+            return this.executeSoapRequest(action, packet, params, null, callback);
         };
         /**
         * Execute SOAP Request
@@ -3104,6 +3191,13 @@ var Shockout;
             params.push(soapEnvelope);
             SpSoap.executeSoapRequest(action, packet, params, siteUrl, callback);
         };
+        /**
+        * People search.
+        * @param term: string
+        * @param callback: Function
+        * @param maxResults?: number = 10
+        * @param principalType?: string = 'User'
+        */
         SpSoap.searchPrincipals = function (term, callback, maxResults, principalType) {
             if (maxResults === void 0) { maxResults = 10; }
             if (principalType === void 0) { principalType = 'User'; }

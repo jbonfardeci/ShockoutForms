@@ -44,6 +44,14 @@
             }, '/', true);
         }
 
+        /**
+        * General REST request method.
+        * @param url: string
+        * @param callback: Function
+        * @param cache?: boolean = false
+        * @param type?: string = 'GET'
+        * @return void
+        */
         public static executeRestRequest(url: string, callback: JQueryPromiseCallback<any>, cache: boolean = false, type: string = 'GET'): void {
 
             var $jqXhr: JQueryXHR = $.ajax({
@@ -140,7 +148,13 @@
 
         }
 
-
+        /**
+        * Insert a list item with REST service.
+        * @param item: ISpItem
+        * @param callback: Function
+        * @param data?: Object<any> = undefined
+        * @return void
+        */
         public static insertListItem(url: string, callback: Function, data: any = undefined): void {
 
             var $jqXhr: JQueryXHR = $.ajax({
@@ -148,7 +162,7 @@
                 type: 'POST',
                 processData: false,
                 contentType: 'application/json',
-                data: data ? JSON.stringify(data) : null,
+                data: !!data ? JSON.stringify(data) : null,
                 headers: {
                     'Accept': 'application/json;odata=verbose'
                 }
@@ -163,6 +177,13 @@
             });
         }
 
+        /**
+        * Update a list item with REST service.
+        * @param item: ISpItem
+        * @param callback: Function
+        * @param data?: Object<any> = undefined
+        * @return void
+        */
         public static updateListItem(item: ISpItem, callback: Function, data: any = undefined): void {
 
             var $jqXhr: JQueryXHR = $.ajax({
@@ -171,10 +192,9 @@
                 processData: false,
                 contentType: 'application/json',
                 data: data ? JSON.stringify(data) : null,
-                headers: {
-                    'Accept': 'application/json;odata=verbose',
-                    'X-HTTP-Method': 'MERGE',
-                    'If-Match': item.__metadata.etag           
+                beforeSend: function (xhr) {
+                    xhr.setRequestHeader('X-HTTP-Method', 'MERGE');
+                    xhr.setRequestHeader('If-Match', item.__metadata.etag);
                 }
             });
 
@@ -188,7 +208,7 @@
         }
 
         /**
-        * Delete the list item.
+        * Delete the list item with REST service.
         * @param model: IViewModel 
         * @param callback?: Function = undefined
         * @return void
@@ -215,7 +235,10 @@
         }
 
         /**
-        * Delete an attachment.
+        * Delete an attachment with REST service.
+        * @param att: ISpAttachment
+        * @param callback: Function
+        * @return void
         */
         public static deleteAttachment(att: ISpAttachment, callback: Function): void {
 

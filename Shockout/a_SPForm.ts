@@ -440,7 +440,7 @@ module Shockout {
             }
 
             // If this is SP 2013, it will return thre current user's account.
-            SpApi15.getCurrentUser(function (user: ICurrentUser, error: number) {
+            SpApi15.getCurrentUser(/*callback:*/ function (user: ICurrentUser, error: number) {
 
                 if (error == 404) {
                     getSp2010User();
@@ -457,7 +457,7 @@ module Shockout {
 
                     self.nextAsync(true, success);
                 }
-            });
+            }, /*expandGroups:*/ true);
 
             function getSp2010User() {
                 SpSoap.getCurrentUser(function (user: ICurrentUser, error: string) {
@@ -801,7 +801,7 @@ module Shockout {
         * @return void
         */
         getUsersGroupsAsync(self: SPForm, args: any = undefined): void {
-            if (self.$form.find("[data-sp-groups], [user-groups]").length == 0) {
+            if (self.$form.find("[data-sp-groups], [user-groups]").length == 0 || self.isSp2013) {
                 self.nextAsync(true);
                 return;
             }

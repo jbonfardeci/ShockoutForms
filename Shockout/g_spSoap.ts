@@ -2,6 +2,11 @@
 
     export class SpSoap {
 
+        /**
+        * Get the current user via SOAP.
+        * @param callback: Function
+        * @return void
+        */
         public static getCurrentUser(callback: Function): void {
 
             var user: ICurrentUser = <ICurrentUser>{};
@@ -47,6 +52,12 @@
             */
         }
 
+        /**
+        * Get the a user's groups via SOAP.
+        * @param loginName: string (DOMAIN\loginName)
+        * @param callback: Function
+        * @return void
+        */
         public static getUsersGroups(loginName: string, callback: Function) {
             var packet = '<soap:Envelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">' +
                 '<soap:Body>' +
@@ -91,6 +102,16 @@
 
         }
 
+        /**
+        * Get list items via SOAP.
+        * @param siteUrl: string
+        * @param listName: string
+        * @param viewFields: string (XML)
+        * @param query?: string (XML)
+        * @param callback?: Function
+        * @param rowLimit?: number = 25
+        * @return void
+        */
         public static getListItems(siteUrl: string, listName: string, viewFields: string, query: string, callback: Function, rowLimit: number = 25): void {
 
             siteUrl = Utils.formatSubsiteUrl(siteUrl);
@@ -132,6 +153,13 @@
 
         }
 
+        /**
+        * Get list definition
+        * @param siteUrl: string
+        * @param listName: string
+        * @param callback: Function
+        * @return void
+        */
         public static getList(siteUrl: string, listName: string, callback: Function): void {
 
             siteUrl = Utils.formatSubsiteUrl(siteUrl);
@@ -161,20 +189,36 @@
 
         }
 
-        public static checkInFile(pageUrl: string, checkinType: string, comment: string = '') {
+        /**
+        * Check in file.
+        * @param pageUrl: string
+        * @param checkinType: string
+        * @param callback: Function
+        * @param comment?: string = ''
+        * @return void
+        */
+        public static checkInFile(pageUrl: string, checkinType: string, callback: Function, comment: string = '') {
             var action = 'http://schemas.microsoft.com/sharepoint/soap/CheckInFile';
             var params = [pageUrl, comment, checkinType];
             var packet = '<?xml version="1.0" encoding="utf-8"?><soap:Envelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/"><soap:Body><CheckInFile xmlns="http://schemas.microsoft.com/sharepoint/soap/"><pageUrl>{0}</pageUrl><comment>{1}</comment><CheckinType>{2}</CheckinType></CheckInFile></soap:Body></soap:Envelope>';
 
-            return this.executeSoapRequest(action, packet, params);
+            return this.executeSoapRequest(action, packet, params, null, callback);
         }
 
-        public static checkOutFile(pageUrl: string, checkoutToLocal: string, lastmodified: string) {
+        /**
+        * Check out file.
+        * @param pageUrl: string
+        * @param checkoutToLocal: string
+        * @param lastmodified: string
+        * @param callback: Function
+        * @return void
+        */
+        public static checkOutFile(pageUrl: string, checkoutToLocal: string, lastmodified: string, callback: Function) {
             var action = 'http://schemas.microsoft.com/sharepoint/soap/CheckOutFile';
             var params = [pageUrl, checkoutToLocal, lastmodified];
             var packet = '<?xml version="1.0" encoding="utf-8"?><soap:Envelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/"><soap:Body><CheckOutFile xmlns="http://schemas.microsoft.com/sharepoint/soap/"><pageUrl>{0}</pageUrl><checkoutToLocal>{1}</checkoutToLocal><lastmodified>{2}</lastmodified></CheckOutFile></soap:Body></soap:Envelope>';
 
-            return this.executeSoapRequest(action, packet, params);
+            return this.executeSoapRequest(action, packet, params, null, callback);
         }
 
         /**
@@ -268,6 +312,13 @@
             SpSoap.executeSoapRequest(action, packet, params, siteUrl, callback);
         }
 
+        /**
+        * People search.
+        * @param term: string
+        * @param callback: Function
+        * @param maxResults?: number = 10
+        * @param principalType?: string = 'User'
+        */
         public static searchPrincipals(term: string, callback: Function, maxResults: number = 10, principalType: string = 'User'): void {
 
             var action = 'http://schemas.microsoft.com/sharepoint/soap/SearchPrincipals';

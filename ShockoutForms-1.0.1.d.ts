@@ -421,6 +421,14 @@ declare module Shockout {
         * @return void
         */
         static getPersonById(id: number, callback: Function): void;
+        /**
+        * General REST request method.
+        * @param url: string
+        * @param callback: Function
+        * @param cache?: boolean = false
+        * @param type?: string = 'GET'
+        * @return void
+        */
         static executeRestRequest(url: string, callback: JQueryPromiseCallback<any>, cache?: boolean, type?: string): void;
         /**
         * Get list item via REST services.
@@ -440,35 +448,108 @@ declare module Shockout {
         * @return void
         */
         static getListItems(listName: string, callback: Function, siteUrl?: string, filter?: string, select?: string, orderby?: string, top?: number, cache?: boolean): void;
+        /**
+        * Insert a list item with REST service.
+        * @param item: ISpItem
+        * @param callback: Function
+        * @param data?: Object<any> = undefined
+        * @return void
+        */
         static insertListItem(url: string, callback: Function, data?: any): void;
+        /**
+        * Update a list item with REST service.
+        * @param item: ISpItem
+        * @param callback: Function
+        * @param data?: Object<any> = undefined
+        * @return void
+        */
         static updateListItem(item: ISpItem, callback: Function, data?: any): void;
         /**
-        * Delete the list item.
+        * Delete the list item with REST service.
         * @param model: IViewModel
         * @param callback?: Function = undefined
         * @return void
         */
         static deleteListItem(item: ISpItem, callback: JQueryPromiseCallback<any>): void;
         /**
-        * Delete an attachment.
+        * Delete an attachment with REST service.
+        * @param att: ISpAttachment
+        * @param callback: Function
+        * @return void
         */
         static deleteAttachment(att: ISpAttachment, callback: Function): void;
     }
 }
 declare module Shockout {
     class SpApi15 {
-        static getCurrentUser(callback: Function): void;
+        /**
+        * Get the current user.
+        * @param callback: Function
+        * @param expandGroups?: boolean = false
+        * @return void
+        */
+        static getCurrentUser(callback: Function, expandGroups?: boolean): void;
+        /**
+        * Get user's groups.
+        * @param iserId: number
+        * @param callback: Function
+        * @return void
+        */
         static getUsersGroups(userId: number, callback: JQueryPromiseCallback<any>): void;
     }
 }
 declare module Shockout {
     class SpSoap {
+        /**
+        * Get the current user via SOAP.
+        * @param callback: Function
+        * @return void
+        */
         static getCurrentUser(callback: Function): void;
+        /**
+        * Get the a user's groups via SOAP.
+        * @param loginName: string (DOMAIN\loginName)
+        * @param callback: Function
+        * @return void
+        */
         static getUsersGroups(loginName: string, callback: Function): void;
+        /**
+        * Get list items via SOAP.
+        * @param siteUrl: string
+        * @param listName: string
+        * @param viewFields: string (XML)
+        * @param query?: string (XML)
+        * @param callback?: Function
+        * @param rowLimit?: number = 25
+        * @return void
+        */
         static getListItems(siteUrl: string, listName: string, viewFields: string, query: string, callback: Function, rowLimit?: number): void;
+        /**
+        * Get list definition
+        * @param siteUrl: string
+        * @param listName: string
+        * @param callback: Function
+        * @return void
+        */
         static getList(siteUrl: string, listName: string, callback: Function): void;
-        static checkInFile(pageUrl: string, checkinType: string, comment?: string): void;
-        static checkOutFile(pageUrl: string, checkoutToLocal: string, lastmodified: string): void;
+        /**
+        * Check in file.
+        * @param pageUrl: string
+        * @param checkinType: string
+        * @param callback: Function
+        * @param comment?: string = ''
+        * @return void
+        */
+        static checkInFile(pageUrl: string, checkinType: string, callback: Function, comment?: string): void;
+        /**
+        * Check out file.
+        * @param pageUrl: string
+        * @param checkoutToLocal: string
+        * @param lastmodified: string
+        * @param callback: Function
+        * @return void
+        */
+        static checkOutFile(pageUrl: string, checkoutToLocal: string, lastmodified: string, callback: Function): void;
         /**
         * Execute SOAP Request
         * @param action: string
@@ -490,6 +571,13 @@ declare module Shockout {
         * @return void
         */
         static updateListItem(itemId: number, listName: string, fields: Array<Array<any>>, isNew?: boolean, siteUrl?: string, callback?: Function): void;
+        /**
+        * People search.
+        * @param term: string
+        * @param callback: Function
+        * @param maxResults?: number = 10
+        * @param principalType?: string = 'User'
+        */
         static searchPrincipals(term: string, callback: Function, maxResults?: number, principalType?: string): void;
     }
 }

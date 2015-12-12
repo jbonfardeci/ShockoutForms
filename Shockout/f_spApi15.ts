@@ -3,10 +3,16 @@ module Shockout {
 
     export class SpApi15 {
 
-        public static getCurrentUser(callback: Function): void {
+        /**
+        * Get the current user.
+        * @param callback: Function
+        * @param expandGroups?: boolean = false
+        * @return void
+        */
+        public static getCurrentUser(callback: Function, expandGroups: boolean = false): void {
 
             var $jqXhr: JQueryXHR = $.ajax({
-                url: '/_api/Web/CurrentUser',
+                url: '/_api/Web/CurrentUser' + (expandGroups ? '?$expand=Groups' : ''),
                 type: 'GET',
                 cache: true,
                 dataType: 'json',
@@ -28,6 +34,14 @@ module Shockout {
                     login: user.LoginName,
                     title: user.Title
                 };
+
+                if (expandGroups) {
+                    var groups: any = data.d.Groups;
+                    $(groups.results).each(function (i: number, group: any) {
+                        currentUser.groups.push({id: group.Id, name: group.Title});
+                    });
+                }
+
                 callback(currentUser);
             });
 
@@ -37,6 +51,12 @@ module Shockout {
             });
         }
 
+        /**
+        * Get user's groups.
+        * @param iserId: number
+        * @param callback: Function
+        * @return void
+        */
         public static getUsersGroups(userId: number, callback: JQueryPromiseCallback<any>): void {
 
             var $jqXhr: JQueryXHR = $.ajax({
