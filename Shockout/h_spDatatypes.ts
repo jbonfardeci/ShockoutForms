@@ -113,7 +113,7 @@
         Name: string;
         Account: string;
         WorkEMail: string;
-        EMail: string; //sp 2013 compat
+        EMail: string; //SP 2013 compat
         AboutMe: string;
         SIPAddress: string;
         IsSiteAdmin: boolean;
@@ -121,6 +121,7 @@
         Picture: string;
         Department: string;
         Title: string;
+        JobTitle: string; //SP 2013 compat
         MobilePhone: string;
         FirstName: string;
         LastName: string;

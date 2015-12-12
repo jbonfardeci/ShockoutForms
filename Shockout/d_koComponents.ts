@@ -187,11 +187,11 @@
                                         '<img data-bind="attr: {src: Picture, alt: Name}" />' +
                                         '<ul>' +
                                             '<li><label>Name</label><span data-bind="text: Name"></span><li>' +
-                                            '<li><label>Title</label><span data-bind="text: Title"></span></li>' +
-                                            '<li><label>Department</label><span data-bind="text: Department"></span></li>' +
+                                            '<li data-bind="visible: !!JobTitle"><label>Job Title</label><span data-bind="text: JobTitle"></span></li>' +
+                                            '<li data-bind="visible: !!Department"><label>Department</label><span data-bind="text: Department"></span></li>' +
                                             '<li><label>Email</label><a data-bind="text: WorkEMail, attr: {href: (\'mailto:\' + WorkEMail)}"></a></li>' +
-                                            '<li><label>Phone</label><span data-bind="text: WorkPhone"></span></li>' +
-                                            '<li><label>Office</label><span data-bind="text: Office"></span></li>' +
+                                            '<li data-bind="visible: !!WorkPhone"><label>Phone</label><span data-bind="text: WorkPhone"></span></li>' +
+                                            '<li data-bind="visible: !!Office"><label>Office</label><span data-bind="text: Office"></span></li>' +
                                         '</ul>' +
                                     '<!-- /ko -->' + 
                                 '</div>'+
