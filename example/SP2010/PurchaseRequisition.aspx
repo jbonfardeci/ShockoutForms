@@ -137,7 +137,6 @@
 </asp:Content>
 
 <asp:Content runat="server" ID="scripts1" ContentPlaceHolderID="scripts">
-<script src="/Forms/ShockoutForms-1.0.0.min.js" type="text/javascript"></script>
 <script type="text/javascript">
 (function(){
 var spForm = new Shockout.SPForm(
@@ -145,7 +144,7 @@ var spForm = new Shockout.SPForm(
     /*formId:*/ 'ShockoutSpForm', 
     /*options:*/ {
         debug: false, 
-        siteUrl: '/media', 
+        siteUrl: '/', 
         confirmationUrl: '/SitePages/Confirmation.aspx',
         preRender: function (spForm, vm) {
 

@@ -963,8 +963,24 @@ module Shockout {
                 }
 
                 // Created Modified
+                var createdBy: any = item.CreatedBy;
+                var modifiedBy: any = item.ModifiedBy;
+
                 item.CreatedBy.Picture = Utils.formatPictureUrl(item.CreatedBy.Picture); //format picture urls
                 item.ModifiedBy.Picture = Utils.formatPictureUrl(item.ModifiedBy.Picture);
+                
+                // Email property name shim for variations among SP 2010 & 2013 and User Info List vs. UPS.
+                item.CreatedBy.WorkEMail = item.CreatedBy.WorkEMail || item.CreatedBy.EMail || '';
+                item.ModifiedBy.WorkEMail = item.ModifiedBy.WorkEMail || item.ModifiedBy.EMail || '';
+
+                // Phone property name shim for variations among SP 2010 & 2013 and User Info List vs. UPS.
+                item.CreatedBy.WorkPhone = item.CreatedBy.WorkPhone || item.CreatedBy.MobilePhone || createdBy.MobileNumber || '';
+                item.ModifiedBy.WorkPhone = item.ModifiedBy.WorkPhone || item.ModifiedBy.MobilePhone || modifiedBy.MobileNumber || '';
+
+                // Office property name shim for variations among SP 2010 & 2013 and User Info List vs. UPS.
+                item.CreatedBy.Office = item.CreatedBy.Office || '';
+                item.ModifiedBy.Office = item.ModifiedBy.Office || '';
+
                 vm.CreatedBy(item.CreatedBy);
                 vm.ModifiedBy(item.ModifiedBy);
                 vm.Created(Utils.parseDate(item.Created));

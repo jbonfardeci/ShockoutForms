@@ -113,6 +113,7 @@
         Name: string;
         Account: string;
         WorkEMail: string;
+        EMail: string; //sp 2013 compat
         AboutMe: string;
         SIPAddress: string;
         IsSiteAdmin: boolean;
