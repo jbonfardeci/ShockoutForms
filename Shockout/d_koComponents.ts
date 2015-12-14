@@ -280,6 +280,7 @@
                 this.options = params.options || koObj._options;
                 this.required = (typeof params.required == 'function') ? params.required : ko.observable(!!params.required || false);
                 this.inline = params.inline || false;
+                this.multiline = params.multiline || false;
 
                 var labelX: number = parseInt(params.labelColWidth || 3); // Bootstrap label column width 1-12
                 var fieldX: number = parseInt(params.fieldColWidth || (12 - (labelX - 0))); // Bootstrap field column width 1-12
@@ -376,7 +377,12 @@
                     '<!-- /ko -->' +
 
                     '<!-- ko ifnot: readOnly() -->' +
-                        '<input type="text" data-bind="value: modelValue, css: {\'so-editable\': editable}, attr: {id: id, placeholder: placeholder, title: title, required: required, maxlength: maxlength, \'ko-name\': koName }" class="form-control" />' +
+                        '<!-- ko if: multiline -->' +
+                            '<textarea data-bind="value: modelValue, css: {\'so-editable\': editable}, attr: {id: id, placeholder: placeholder, title: title, required: required, \'ko-name\': koName }" class="form-control"></textarea>'+
+                        '<!-- /ko -->' +
+                        '<!-- ko ifnot: multiline -->' +
+                            '<input type="text" data-bind="value: modelValue, css: {\'so-editable\': editable}, attr: {id: id, placeholder: placeholder, title: title, required: required, maxlength: maxlength, \'ko-name\': koName }" class="form-control" />' +
+                        '<!-- /ko -->' +
                         '<!-- ko if: !!required() -->' +
                             KoComponents.requiredFeedbackSpan +
                         '<!-- /ko -->' +

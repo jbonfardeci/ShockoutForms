@@ -333,7 +333,7 @@ var Shockout;
                 console.info('Testing for SP 2013 API...');
             }
             // If this is SP 2013, it will return thre current user's account.
-            Shockout.SpApi15.getCurrentUser(/*callback:*/ function (user, error) {
+            Shockout.SpApi15.getCurrentUser(function (user, error) {
                 if (error == 404) {
                     getSp2010User();
                 }
@@ -348,7 +348,7 @@ var Shockout;
                     }
                     self.nextAsync(true, success);
                 }
-            }, /*expandGroups:*/ true);
+            }, true);
             function getSp2010User() {
                 Shockout.SpSoap.getCurrentUser(function (user, error) {
                     if (!!error) {
@@ -2314,6 +2314,7 @@ var Shockout;
                 this.options = params.options || koObj._options;
                 this.required = (typeof params.required == 'function') ? params.required : ko.observable(!!params.required || false);
                 this.inline = params.inline || false;
+                this.multiline = params.multiline || false;
                 var labelX = parseInt(params.labelColWidth || 3); // Bootstrap label column width 1-12
                 var fieldX = parseInt(params.fieldColWidth || (12 - (labelX - 0))); // Bootstrap field column width 1-12
                 this.labelColWidth = 'col-sm-' + labelX;
@@ -2392,7 +2393,12 @@ var Shockout;
             '<div data-bind="text: modelValue"></div>' +
             '<!-- /ko -->' +
             '<!-- ko ifnot: readOnly() -->' +
+            '<!-- ko if: multiline -->' +
+            '<textarea data-bind="value: modelValue, css: {\'so-editable\': editable}, attr: {id: id, placeholder: placeholder, title: title, required: required, \'ko-name\': koName }" class="form-control"></textarea>' +
+            '<!-- /ko -->' +
+            '<!-- ko ifnot: multiline -->' +
             '<input type="text" data-bind="value: modelValue, css: {\'so-editable\': editable}, attr: {id: id, placeholder: placeholder, title: title, required: required, maxlength: maxlength, \'ko-name\': koName }" class="form-control" />' +
+            '<!-- /ko -->' +
             '<!-- ko if: !!required() -->' +
             KoComponents.requiredFeedbackSpan +
             '<!-- /ko -->' +
@@ -3713,11 +3719,7 @@ var Shockout;
             if (typeof val == 'object' && val.constructor == Date) {
                 return val;
             }
-            var rxSlash = /\d{1,2}\/\d{1,2}\/\d{2,4}/, // "09/29/2015" 
-            rxHyphen = /\d{1,2}-\d{1,2}-\d{2,4}/, // "09-29-2015"
-            rxIsoDate = /\d{4}-\d{1,2}-\d{1,2}/, // "2015-09-29"
-            rxTicks = /(\/|)\d{13}(\/|)/, // "/1442769001000/"
-            rxIsoDateTime = /\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z/, tmp, m, d, y, date = null;
+            var rxSlash = /\d{1,2}\/\d{1,2}\/\d{2,4}/, rxHyphen = /\d{1,2}-\d{1,2}-\d{2,4}/, rxIsoDate = /\d{4}-\d{1,2}-\d{1,2}/, rxTicks = /(\/|)\d{13}(\/|)/, rxIsoDateTime = /\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z/, tmp, m, d, y, date = null;
             val = rxIsoDate.test(val) ? val : (val + '').replace(/[^0-9\/\-]/g, '');
             if (val == '') {
                 return null;
@@ -3762,8 +3764,7 @@ var Shockout;
             if (symbol === void 0) { symbol = '$'; }
             if (precision === void 0) { precision = 2; }
             // Clean up number:
-            var num = Utils.unformatNumber(value), format = '%s%v', neg = format.replace('%v', '-%v'), useFormat = num > 0 ? format : num < 0 ? neg : format, // Choose which format to use for this value:
-            numFormat = Utils.formatNumber(Math.abs(num), Utils.checkPrecision(precision));
+            var num = Utils.unformatNumber(value), format = '%s%v', neg = format.replace('%v', '-%v'), useFormat = num > 0 ? format : num < 0 ? neg : format, numFormat = Utils.formatNumber(Math.abs(num), Utils.checkPrecision(precision));
             // Return with currency symbol added:
             return useFormat
                 .replace('%s', symbol)
