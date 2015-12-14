@@ -52,7 +52,7 @@ If you've spent any time implementing rules in InfoPath, you have probably becom
 <script src="//cdnjs.cloudflare.com/ajax/libs/knockout/3.3.0/knockout-min.js" type="text/javascript"></script>
 
 <!-- Shockout SPForms -->
-<script src="ShockoutForms-0.0.1.min.js" type="text/javascript"></script>
+<script src="ShockoutForms-1.0.1.min.js" type="text/javascript"></script>
 
 <!-- Setup your form - this goes at the bottom of your form's page -->
 <script type="text/javascript">
@@ -71,8 +71,21 @@ If you've spent any time implementing rules in InfoPath, you have probably becom
 			allowedExtensions: ['txt', 'rtf', 'zip', 'pdf', 'doc', 'docx', 'jpg', 'gif', 'png', 'ppt', 'tif', 'pptx', 'csv', 'pub', 'msg'],  // the default 
 			attachmentMessage: 'An attachment is required.', // the default
 			confirmationUrl: '/SitePages/Confirmation.aspx', // the default
+            dialogOpts: { width: 400,
+                height: 250,
+                autoOpen: false,
+                show: {
+                    effect: "blind",
+                    duration: 1000
+                },
+                hide: {
+                    effect: "explode",
+                    duration: 1000
+                }
+            }, // the default; see http://api.jqueryui.com/dialog/ for all options
 			enableErrorLog: true, // default true
 			errorLogListName: 'Error Log', // Designated SharePoint list for logging user and form errors; Requires a custom SP list named 'Error Log' on root site with fields: 'Title' and 'Error'
+            errorLogSiteUrl: '/', // the default
 			fileHandlerUrl: '/_layouts/SPFormFileHandler.ashx',  // the default    
 			enableAttachments: true, // default true
 			includeUserProfiles: true, // default true
@@ -88,9 +101,11 @@ If you've spent any time implementing rules in InfoPath, you have probably becom
 ```
 
 ###Attachments
-To enable attachments for your forms, ensure the `enableAttachments` option is `true` (the default) and include at least one element within your form with the class name "attachments". Shockout will place everything inside the element(s).
+To enable attachments for your forms, ensure the `enableAttachments` option is `true` (the default) and include at least one element within your form with the class name "attachments" or attribute "data-sp-attachments". Shockout will replace each element with a template.
 ```
 <section class="attachments"></section>
+    // OR
+<section data-sp-attachments></section>
 ```
 
 I've written a generic handler (.ashx) for attaching documents to your list items. Be sure to copy `SPFormFileHandler.ashx` from the `_layouts` directory of this project to the LAYOUTS directory of your SharePoint front-end server. The URI will be `http://<mysite.com>/_layouts/SPFormFileHandler.ashx`; the server directory is `C:\Program Files\Common Files\microsoft shared\Web Server Extensions\14\TEMPLATE\LAYOUTS\SPFormFileHandler.ashx` - even for SP 2013. My goal for the near future is to eliminate dependency on this generic handler for those using Office 365. It's doubtful that users of Office 365 have permissions to copy files to their LAYOUTS directory. Since modern browsers now convert file uplaods to base64 strings, it's possible to send attachments to list items via SharePoint's SOAP API.
@@ -98,11 +113,13 @@ I've written a generic handler (.ashx) for attaching documents to your list item
 Also ensure your SharePoint list has attachments enabled. Shockout will detect this setting and render attachments based on your SP list settings.
 
 ###Show the User Profiles for Created By and Modified By
-To enable this feature, ensure that `includeUserProfiles` is `true` (the default) include an element with the class name "created-info". 
+To enable this feature, ensure that `includeUserProfiles` is `true` (the default) include an element with the class name "created-info" or attribute "data-sp-created-info". 
 Shockout will query the User Information List or User Profile Service, if you have it, and display user profiles with: picture, full name, job title, email, phone, department, and office.
 If this feature is disabled, Shockout will only show the Created By/Created and Modified By/Modified fields. 
 ```
-<section class="created-info" data-edit-only></section>
+<div class="created-info"></div>
+    //OR
+<div data-sp-created-info></div>
 ```
 
 ###SharePoint Field Variable Names
@@ -126,7 +143,7 @@ Now that you know the variable names, you're ready to create your Shockout form.
 
     * `_koName` - (String) - the Knockout variable name
     * `_name` - (String) the internal name of the SP field
-    * `_choices` - (Array) if the field is a choice or multichoice field, the field's choices 
+    * `_options` - (Array) if the field is a choice or multichoice field, the field's choices 
     * `_description` (String) the decription of the SP field
     * `_required` (Boolean) if the field is required or not
     * `_readOnly` (Boolean) if the field is read-only or not
@@ -140,6 +157,9 @@ KO Components are really amazing. Visit the KO docs to learn more about them htt
 ###SharePoint Fields
 ```
     <so-text-field params="val: MySpField"></so-text-field>
+
+    <!-- Multline Textarea -->
+    <so-text-field params="val: MySpField, multiline: true"></so-text-field>
 
     <so-person-field params="val: MySpField"></so-person-field> // shows user profile names with jQuery UI auto-complete
 
@@ -166,6 +186,7 @@ KO Components are really amazing. Visit the KO docs to learn more about them htt
     * readOnly: boolean | KO observable (default = ko.observable(false))
     * labelColWidth: number (default = 3, Bootstrap grids are up to 12 units wide)
     * fieldColWidth: number (default = 9, if you only provide the labelColWidth, the fieldColWidth will be computed `12 - labelColWidth`)
+    * multiline: boolean (default = false; for so-text-field only)
 
 ###SharePoint Checkbox Field (Boolean)
 ```
@@ -244,7 +265,7 @@ How to display the choices from a SharePoint MultiChoice Field with radio button
     * readOnly: boolean | KO observable (default = ko.observable(false))
 
 ##Required Field Validation
-Simply add the `required` attribute to required fields. Shockout will do the rest!
+Simply add the `required` attribute to required field elements (if not using a standard SO, so-*-field, component). Shockout will do the rest!
 
 ##Knockout SharePoint Field Binding Handlers
 You may use these binding handlers with any HTML element. Shockout will render the apporpriate content whether it's a static element such as a DIV, SPAN, etc. or an input field: INPUT, SELECT, and TEXTAREA.
@@ -302,6 +323,14 @@ Displays integer/whole number. Negative values are displayed in red.
 ####data-author-only
 Restricts element to authors only where `currentUser.id == listItem.CreatedById`. Removes from DOM otherwise.
 Useful for restricting edit fields to the person that created the form.
+
+Shockout will render a Knockout IF containerless control around your element: e.g.
+```
+<!-- ko if: !!$root.isAuthor() -->
+    <div data-author-only></div>
+<!-- /ko -->
+```
+
 ```
 <section data-author-only></section>
 ```
@@ -397,14 +426,16 @@ The option `includeWorkflowHistory` is `true` by default but you may override an
 The option `workflowHistoryListName` is "Workflow History" by default since all SharePoint sites feature this list. You may override this list name if you've created another custom workflow history list but it must be of the same list template.
 
 ##Error Logging
-This feature allows you to track and fix any errors your users experience. The default options are `enableErrorLog: true` and `errorLogListName: 'Error Log'`. 
+This feature allows you to track and fix any errors your users experience. The default options are `enableErrorLog: true`, `errorLogListName: 'Error Log'`, and `errorLogSiteUrl: '/'`. 
 
-Your Error Log list must be hosted on the root site and have 2 fields: "Title" (text) and "Error" (multiple lines of text - rich HTML). 
+Your Error Log list must have 2 fields: "Title" (text) and "Error" (multiple lines of text - rich HTML). 
 
 It's recommended to set a workflow or an alert on this list to notify you as soon as an error is logged.   
 
 ##Browser Compatibility
 Shockout SPForms has been successfully tested with IE 9-11 and the latest versions of Chrome and FireFox.
+
+##Static Data Access Methods
 
 ###Copyright
 
