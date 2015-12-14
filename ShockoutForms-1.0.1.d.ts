@@ -1,336 +1,7 @@
-/// <reference path="typings/knockout.d.ts" />
-/// <reference path="typings/jquery.d.ts" />
-/// <reference path="typings/jquery.ui.datetimepicker.d.ts" />
-/// <reference path="typings/jqueryui.d.ts" />
-/**
-* -----------------
-* Shockout SP Form
-* -----------------
-* By John Bonfardeci <john.bonfardeci@gmail.com>
-*
-* GitHub: https://github.com/jbonfardeci/ShockoutForms
-*
-* A Replacement for InfoPath and XSLT Forms
-* Leverage the power Knockout JS databinding with SharePoint services for modern and dynamic web form development.
-*
-* Minimum Usage:
-* `var spForm = new Shockout.SPForm('My SharePoint List Name', 'my-form-ID', {});`
-*
-* Dependencies: jQuery 1.72+, jQuery UI<any>, KnockoutJS 3.2+
-* Compatible with Bootstrap CSS - http://getbootstrap.com
-*
-*   Copyright (C) 2015  John T. Bonfardeci
-*
-*   This program is free software: you can redistribute it and/or modify
-*   it under the terms of the GNU Affero General Public License as
-*   published by the Free Software Foundation, either version 3 of the
-*   License, or (at your option) any later version.
-*
-*   This program is distributed in the hope that it will be useful,
-*   but WITHOUT ANY WARRANTY; without even the implied warranty of
-*   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-*   GNU Affero General Public License for more details.
-*
-*   You should have received a copy of the GNU Affero General Public License
-*   along with this program.  If not, see <http://www.gnu.org/licenses/>.
-*/
-declare module Shockout {
-    class SPForm {
-        static DEBUG: boolean;
-        formId: string;
-        listName: string;
-        listNameRest: string;
-        static errorLogListName: string;
-        static errorLogSiteUrl: string;
-        static enableErrorLog: boolean;
-        $createdInfo: any;
-        $dialog: any;
-        $form: any;
-        $formAction: any;
-        $formStatus: any;
-        allowDelete: boolean;
-        allowPrint: boolean;
-        allowSave: boolean;
-        allowedExtensions: Array<string>;
-        asyncFns: Array<any>;
-        attachmentMessage: string;
-        confirmationUrl: string;
-        debug: boolean;
-        dialogOpts: any;
-        editableFields: Array<string>;
-        enableAttachments: boolean;
-        enableErrorLog: boolean;
-        errorLogListName: string;
-        errorLogSiteUrl: string;
-        fieldNames: Array<string>;
-        fileHandlerUrl: string;
-        fileUploaderSettings: IFileUploaderSettings;
-        fileUploader: any;
-        includeUserProfiles: boolean;
-        includeWorkflowHistory: boolean;
-        preRender: Function;
-        postRender: Function;
-        preSave: Function;
-        requireAttachments: boolean;
-        siteUrl: string;
-        utils: Utils;
-        viewModel: IViewModel;
-        viewModelIsBound: boolean;
-        workflowHistoryListName: string;
-        /**
-        * Get the current logged in user profile.
-        * @return ICurrentUser
-        */
-        getCurrentUser(): ICurrentUser;
-        private currentUser;
-        /**
-        * Get the default view for the list.
-        * @return string
-        */
-        getDefaultViewUrl(): string;
-        private defaultViewUrl;
-        /**
-        * Get the default mobile view for the list.
-        * @return string
-        */
-        getDefailtMobileViewUrl(): string;
-        private defailtMobileViewUrl;
-        /**
-        * Get a reference to the form element.
-        * @return HTMLElement
-        */
-        getForm(): HTMLElement;
-        private form;
-        /**
-        * Get the SP list item ID number.
-        * @return number
-        */
-        getItemId(): number;
-        private itemId;
-        /**
-        * Get the GUID of the SP list.
-        * @return HTMLElement
-        */
-        getListId(): string;
-        private listId;
-        /**
-        * Get a reference to the original SP list item.
-        * @return ISpItem
-        */
-        getListItem(): ISpItem;
-        private listItem;
-        /**
-        * Requires user to checkout the list item?
-        * @return boolean
-        */
-        private requireCheckout;
-        requiresCheckout(): boolean;
-        /**
-        * Get the SP site root URL
-        * @return string
-        */
-        private rootUrl;
-        getRootUrl(): string;
-        /**
-        * Get the `source` key's value from the querystring.
-        * @return string
-        */
-        private sourceUrl;
-        getSourceUrl(): string;
-        /**
-        * Get a reference to the form's Knockout view model.
-        * @return string
-        */
-        getViewModel(): IViewModel;
-        /**
-        * Get the version number for this framework.
-        * @return string
-        */
-        getVersion(): string;
-        private version;
-        queryStringId: string;
-        isSp2013: Boolean;
-        constructor(listName: string, formId: string, options: Object);
-        /**
-        * Execute the next asynchronous function from `asyncFns`.
-        * @param success?: boolean = undefined
-        * @param msg: string = undefined
-        * @param args: any = undefined
-        * @return void
-        */
-        nextAsync(success?: boolean, msg?: string, args?: any): void;
-        /**
-        * Get the current logged in user's profile.
-        * @param self: SPForm
-        * @param args?: any = undefined
-        * @return void
-        */
-        getCurrentUserAsync(self: SPForm, args?: any): void;
-        /**
-        * Get metadata about an SP list and the fields to build the Knockout model.
-        * Needed to determine the list GUID, if attachments are allowed, and if checkout/in is required.
-        * @param self: SPForm
-        * @param args?: any = undefined
-        * @return void
-        */
-        getListAsync(self: SPForm, args?: any): void;
-        /**
-        * Initialize the form.
-        * @param self: SPForm
-        * @param args?: any = undefined
-        * @return void
-        */
-        initForm(self: SPForm, args?: any): void;
-        /**
-       * Get the SP list item data and build the Knockout view model.
-       * @param self: SPForm
-       * @param args?: any = undefined
-       * @return void
-       */
-        getListItemAsync(self: SPForm, args?: any): void;
-        /**
-        * Get the SP user groups this user is a member of for removing/showing protected form sections.
-        * @param self: SPForm
-        * @param args?: any = undefined
-        * @return void
-        */
-        getUsersGroupsAsync(self: SPForm, args?: any): void;
-        /**
-        * Removes form sections the user doesn't have access to from the DOM.
-        * @param self: SPForm
-        * @param args?: any = undefined
-        * @return void
-        */
-        implementPermissions(self: SPForm, args?: any): void;
-        /**
-        * Get the workflow history for this form, if any.
-        * @param self: SPForm
-        * @param args?: any = undefined
-        * @return void
-        */
-        getHistoryAsync(self: SPForm, args?: any): void;
-        /**
-        * Bind the SP list item values to the view model.
-        * @param self: SPForm
-        * @param args?: any = undefined
-        * @return void
-        */
-        bindListItemValues(self?: SPForm): void;
-        /**
-        * Delete the list item.
-        * @param model: IViewModel
-        * @param callback?: Function = undefined
-        * @return void
-        */
-        deleteListItem(model: IViewModel, callback?: Function, timeout?: number): void;
-        /**
-        * Save list item via SOAP services.
-        * @param vm: IViewModel
-        * @param isSubmit?: boolean = false
-        * @param refresh?: boolean = false
-        * @param customMsg?: string = undefined
-        * @return void
-        */
-        saveListItem(vm: IViewModel, isSubmit?: boolean, refresh?: boolean, customMsg?: string): void;
-        /**
-        * Add a navigation menu to the form based on parent elements with class `nav-section`
-        * @param salef: SPForm
-        * @return void
-        */
-        finalize(self: SPForm): void;
-        /**
-        * Delete an attachment.
-        */
-        deleteAttachment(att: ISpAttachment, event: any): void;
-        /**
-        * Get the form's attachments
-        * @param self: SFForm
-        * @param callback: Function (optional)
-        * @return void
-        */
-        getAttachments(self?: SPForm, callback?: Function): void;
-        /**
-        * Log to console in degug mode.
-        * @param msg: string
-        * @return void
-        */
-        log(msg: any): void;
-        /**
-        * Update the form status to display feedback to the user.
-        * @param msg: string
-        * @param success?: boolean = undefined
-        * @return void
-        */
-        updateStatus(msg: string, success?: boolean): void;
-        /**
-        * Display a message to the user with jQuery UI Dialog.
-        * @param msg: string
-        * @param title?: string = undefined
-        * @param timeout?: number = undefined
-        * @return void
-        */
-        showDialog(msg: string, title?: string, timeout?: number): void;
-        /**
-        * Validate the View Model's required fields
-        * @param model: IViewModel
-        * @param showDialog?: boolean = false
-        * @return bool
-        */
-        formIsValid(model: IViewModel, showDialog?: boolean): boolean;
-        /**
-        * Get a person by their ID from the User Information list.
-        * @param id: number
-        * @param callback: Function
-        * @return void
-        */
-        getPersonById(id: number, koField: KnockoutObservable<string>): void;
-        /**
-        * Keeps track of field names to send back to the server for create and update operations.
-        * Skips field names that:
-        *   - have already been added to `ediableFields` array;
-        *   - begin with an underscore '_' or dollar sign '$';
-        *   - that don't exist in `fieldNames` array which includes both writable and read-only SP list field names;
-        *
-        * @param key: string
-        * @return number: length of array or -1 if not added
-        */
-        pushEditableFieldName(key: string): number;
-        /**
-        * Log errors to designated SP list.
-        * @param msg: string
-        * @param self?: SPForm = undefined
-        * @return void
-        */
-        logError(msg: string, e?: any, self?: SPForm): void;
-        /**
-        * Setup attachments modules.
-        * @param self: SPForm = undefined
-        * @return number
-        */
-        setupAttachments(self?: SPForm): number;
-        /**
-        * Setup Bootstrap validation for required fields.
-        * @return number
-        */
-        setupBootstrapValidation(self?: SPForm): number;
-        /**
-        * Setup form navigation on sections with class '.nav-section'
-        * @return number
-        */
-        setupNavigation(self?: SPForm): number;
-        /**
-        * Setup Datepicker fields.
-        * @return number
-        */
-        setupDatePickers(self?: SPForm): number;
-        /**
-        * Determine if the current user is a member of at least one of list of target SharePoint groups.
-        * @param targetGroups: comma delimited string || Array<string>
-        * @return boolean
-        */
-        currentUserIsMemberOfGroups(targetGroups: any): boolean;
-    }
-}
+/// <reference path="C:/Users/jbonfardeci/Source/Repos/ShockoutForms/typings/knockout.d.ts" />
+/// <reference path="C:/Users/jbonfardeci/Source/Repos/ShockoutForms/typings/jquery.d.ts" />
+/// <reference path="C:/Users/jbonfardeci/Source/Repos/ShockoutForms/typings/jquery.ui.datetimepicker.d.ts" />
+/// <reference path="C:/Users/jbonfardeci/Source/Repos/ShockoutForms/typings/jqueryui.d.ts" />
 declare module Shockout {
     interface IViewModel {
         Id: KnockoutObservable<number>;
@@ -407,177 +78,167 @@ declare module Shockout {
 declare module Shockout {
     class SpApi {
         /**
-        * Search the User Information list.
-        * @param term: string
-        * @param callback: Function
-        * @param take?: number = 10
-        * @return void
-        */
+         * Search the User Information list.
+         * @param {string} term
+         * @param {Function} callback
+         * @param {number = 10} take
+         */
         static peopleSearch(term: string, callback: Function, take?: number): void;
         /**
-        * Get a person by their ID from the User Information list.
-        * @param id: number
-        * @param callback: Function
-        * @return void
-        */
+         * Get a person by their ID from the User Information list.
+         * @param {number} id
+         * @param {Function} callback
+         */
         static getPersonById(id: number, callback: Function): void;
         /**
-        * General REST request method.
-        * @param url: string
-        * @param callback: Function
-        * @param cache?: boolean = false
-        * @param type?: string = 'GET'
-        * @return void
-        */
+         * General REST request method.
+         * @param {string} url
+         * @param {JQueryPromiseCallback<any>} callback
+         * @param {boolean = false} cache
+         * @param {string = 'GET'} type
+         */
         static executeRestRequest(url: string, callback: JQueryPromiseCallback<any>, cache?: boolean, type?: string): void;
         /**
-        * Get list item via REST services.
-        * @param uri: string
-        * @param done: JQueryPromiseCallback<any>
-        * @param fail?: JQueryPromiseCallback<any> = undefined
-        * @param always?: JQueryPromiseCallback<any> = undefined
-        * @return void
-        */
+         * Get list item via REST services.
+         * @param {string} listName
+         * @param {number} itemId
+         * @param {Function} callback
+         * @param {string = '/'} siteUrl
+         * @param {boolean = false} cache
+         * @param {string = null} expand
+         */
         static getListItem(listName: string, itemId: number, callback: Function, siteUrl?: string, cache?: boolean, expand?: string): void;
         /**
-        * Get list item via REST services.
-        * @param uri: string
-        * @param done: JQueryPromiseCallback<any>
-        * @param fail?: JQueryPromiseCallback<any> = undefined
-        * @param always?: JQueryPromiseCallback<any> = undefined
-        * @return void
-        */
+         * Get list item via REST services.
+         * @param {string} listName
+         * @param {Function} callback
+         * @param {string = '/'} siteUrl
+         * @param {string = null} filter
+         * @param {string = null} select
+         * @param {string = null} orderby
+         * @param {number = 10} top
+         * @param {boolean = false} cache
+         */
         static getListItems(listName: string, callback: Function, siteUrl?: string, filter?: string, select?: string, orderby?: string, top?: number, cache?: boolean): void;
         /**
-        * Insert a list item with REST service.
-        * @param item: ISpItem
-        * @param callback: Function
-        * @param data?: Object<any> = undefined
-        * @return void
-        */
+         * Insert a list item with REST service.
+         * @param {string} url
+         * @param {Function} callback
+         * @param {any = undefined} data
+         */
         static insertListItem(url: string, callback: Function, data?: any): void;
         /**
-        * Update a list item with REST service.
-        * @param item: ISpItem
-        * @param callback: Function
-        * @param data?: Object<any> = undefined
-        * @return void
-        */
+         * Update a list item with REST service.
+         * @param {ISpItem} item
+         * @param {Function} callback
+         * @param {any = undefined} data
+         */
         static updateListItem(item: ISpItem, callback: Function, data?: any): void;
         /**
-        * Delete the list item with REST service.
-        * @param model: IViewModel
-        * @param callback?: Function = undefined
-        * @return void
-        */
+         * Delete the list item with REST service.
+         * @param {ISpItem} item
+         * @param {JQueryPromiseCallback<any>} callback
+         */
         static deleteListItem(item: ISpItem, callback: JQueryPromiseCallback<any>): void;
         /**
-        * Delete an attachment with REST service.
-        * @param att: ISpAttachment
-        * @param callback: Function
-        * @return void
-        */
+         * Delete an attachment with REST service.
+         * @param {ISpAttachment} att
+         * @param {Function} callback
+         */
         static deleteAttachment(att: ISpAttachment, callback: Function): void;
     }
 }
 declare module Shockout {
     class SpApi15 {
         /**
-        * Get the current user.
-        * @param callback: Function
-        * @param expandGroups?: boolean = false
-        * @return void
-        */
+         * Get the current user.
+         * @param {Function} callback
+         * @param {boolean = false} expandGroups
+         */
         static getCurrentUser(callback: Function, expandGroups?: boolean): void;
         /**
-        * Get user's groups.
-        * @param iserId: number
-        * @param callback: Function
-        * @return void
-        */
+         * Get user's groups.
+         * @param {number} userId
+         * @param {JQueryPromiseCallback<any>} callback
+         */
         static getUsersGroups(userId: number, callback: JQueryPromiseCallback<any>): void;
     }
 }
 declare module Shockout {
     class SpSoap {
         /**
-        * Get the current user via SOAP.
-        * @param callback: Function
-        * @return void
-        */
+         * Get the current user via SOAP.
+         * @param {Function} callback
+         */
         static getCurrentUser(callback: Function): void;
         /**
-        * Get the a user's groups via SOAP.
-        * @param loginName: string (DOMAIN\loginName)
-        * @param callback: Function
-        * @return void
-        */
+         * Get the a user's groups via SOAP.
+         * @param {string} loginName (DOMAIN\loginName)
+         * @param {Function} callback
+         */
         static getUsersGroups(loginName: string, callback: Function): void;
         /**
-        * Get list items via SOAP.
-        * @param siteUrl: string
-        * @param listName: string
-        * @param viewFields: string (XML)
-        * @param query?: string (XML)
-        * @param callback?: Function
-        * @param rowLimit?: number = 25
-        * @return void
-        */
+         * Get list items via SOAP.
+         * @param {string} siteUrl
+         * @param {string} listName
+         * @param {string} viewFields (XML)
+         * @param {string} query (XML)
+         * @param {Function} callback
+         * @param {number = 25} rowLimit
+         */
         static getListItems(siteUrl: string, listName: string, viewFields: string, query: string, callback: Function, rowLimit?: number): void;
         /**
-        * Get list definition
-        * @param siteUrl: string
-        * @param listName: string
-        * @param callback: Function
-        * @return void
-        */
+         * Get list definition.
+         * @param {string} siteUrl
+         * @param {string} listName
+         * @param {Function} callback
+         */
         static getList(siteUrl: string, listName: string, callback: Function): void;
         /**
-        * Check in file.
-        * @param pageUrl: string
-        * @param checkinType: string
-        * @param callback: Function
-        * @param comment?: string = ''
-        * @return void
-        */
+         * Check in file.
+         * @param {string} pageUrl
+         * @param {string} checkinType
+         * @param {Function} callback
+         * @param {string = ''} comment
+         * @returns
+         */
         static checkInFile(pageUrl: string, checkinType: string, callback: Function, comment?: string): void;
         /**
-        * Check out file.
-        * @param pageUrl: string
-        * @param checkoutToLocal: string
-        * @param lastmodified: string
-        * @param callback: Function
-        * @return void
-        */
+         * Check out file.
+         * @param {string} pageUrl
+         * @param {string} checkoutToLocal
+         * @param {string} lastmodified
+         * @param {Function} callback
+         * @returns
+         */
         static checkOutFile(pageUrl: string, checkoutToLocal: string, lastmodified: string, callback: Function): void;
         /**
-        * Execute SOAP Request
-        * @param action: string
-        * @param packet: string
-        * @param params: Array<any>
-        * param self?: SPForm = undefined
-        * @param callback?: Function = undefined
-        * @param service?: string = 'lists.asmx'
-        * @return void
-        */
+         * Execute SOAP Request
+         * @param {string} action
+         * @param {string} packet
+         * @param {Array<any>} params
+         * @param {string = '/'} siteUrl
+         * @param {Function = undefined} callback
+         * @param {string = 'lists.asmx'} service
+         */
         static executeSoapRequest(action: string, packet: string, params: Array<any>, siteUrl?: string, callback?: Function, service?: string): void;
         /**
-        * Update list item via SOAP services.
-        * @param listName: string
-        * @param fields: Array<Array<any>>
-        * @param isNew?: boolean = true
-        * param callback?: Function = undefined
-        * @param self: SPForm = undefined
-        * @return void
-        */
+         * Update list item via SOAP services.
+         * @param {number} itemId
+         * @param {string} listName
+         * @param {Array<Array<any>>} fields
+         * @param {boolean = true} isNew
+         * @param {string = '/'} siteUrl
+         * @param {Function = undefined} callback
+         */
         static updateListItem(itemId: number, listName: string, fields: Array<Array<any>>, isNew?: boolean, siteUrl?: string, callback?: Function): void;
         /**
-        * People search.
-        * @param term: string
-        * @param callback: Function
-        * @param maxResults?: number = 10
-        * @param principalType?: string = 'User'
-        */
+         * Search for user accounts.
+         * @param {string} term
+         * @param {Function} callback
+         * @param {number = 10} maxResults
+         * @param {string = 'User'} principalType
+         */
         static searchPrincipals(term: string, callback: Function, maxResults?: number, principalType?: string): void;
     }
 }
@@ -984,4 +645,333 @@ declare module Shockout {
      * Licensed under GNU GPL 2 or later, see license.txt.
      */
     var qq: any;
+}
+/**
+* -----------------
+* Shockout SP Form
+* -----------------
+* By John Bonfardeci <john.bonfardeci@gmail.com>
+*
+* GitHub: https://github.com/jbonfardeci/ShockoutForms
+*
+* A Replacement for InfoPath and XSLT Forms
+* Leverage the power Knockout JS databinding with SharePoint services for modern and dynamic web form development.
+*
+* Minimum Usage:
+* `var spForm = new Shockout.SPForm('My SharePoint List Name', 'my-form-ID', {});`
+*
+* Dependencies: jQuery 1.72+, jQuery UI<any>, KnockoutJS 3.2+
+* Compatible with Bootstrap CSS - http://getbootstrap.com
+*
+*   Copyright (C) 2015  John T. Bonfardeci
+*
+*   This program is free software: you can redistribute it and/or modify
+*   it under the terms of the GNU Affero General Public License as
+*   published by the Free Software Foundation, either version 3 of the
+*   License, or (at your option) any later version.
+*
+*   This program is distributed in the hope that it will be useful,
+*   but WITHOUT ANY WARRANTY; without even the implied warranty of
+*   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+*   GNU Affero General Public License for more details.
+*
+*   You should have received a copy of the GNU Affero General Public License
+*   along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/
+declare module Shockout {
+    class SPForm {
+        static DEBUG: boolean;
+        formId: string;
+        listName: string;
+        listNameRest: string;
+        static errorLogListName: string;
+        static errorLogSiteUrl: string;
+        static enableErrorLog: boolean;
+        $createdInfo: any;
+        $dialog: any;
+        $form: any;
+        $formAction: any;
+        $formStatus: any;
+        allowDelete: boolean;
+        allowPrint: boolean;
+        allowSave: boolean;
+        allowedExtensions: Array<string>;
+        asyncFns: Array<any>;
+        attachmentMessage: string;
+        confirmationUrl: string;
+        debug: boolean;
+        dialogOpts: any;
+        editableFields: Array<string>;
+        enableAttachments: boolean;
+        enableErrorLog: boolean;
+        errorLogListName: string;
+        errorLogSiteUrl: string;
+        fieldNames: Array<string>;
+        fileHandlerUrl: string;
+        fileUploaderSettings: IFileUploaderSettings;
+        fileUploader: any;
+        includeUserProfiles: boolean;
+        includeWorkflowHistory: boolean;
+        preRender: Function;
+        postRender: Function;
+        preSave: Function;
+        requireAttachments: boolean;
+        siteUrl: string;
+        utils: Utils;
+        viewModel: IViewModel;
+        viewModelIsBound: boolean;
+        workflowHistoryListName: string;
+        /**
+        * Get the current logged in user profile.
+        * @return ICurrentUser
+        */
+        getCurrentUser(): ICurrentUser;
+        private currentUser;
+        /**
+        * Get the default view for the list.
+        * @return string
+        */
+        getDefaultViewUrl(): string;
+        private defaultViewUrl;
+        /**
+        * Get the default mobile view for the list.
+        * @return string
+        */
+        getDefailtMobileViewUrl(): string;
+        private defailtMobileViewUrl;
+        /**
+        * Get a reference to the form element.
+        * @return HTMLElement
+        */
+        getForm(): HTMLElement;
+        private form;
+        /**
+        * Get the SP list item ID number.
+        * @return number
+        */
+        getItemId(): number;
+        private itemId;
+        /**
+        * Get the GUID of the SP list.
+        * @return HTMLElement
+        */
+        getListId(): string;
+        private listId;
+        /**
+        * Get a reference to the original SP list item.
+        * @return ISpItem
+        */
+        getListItem(): ISpItem;
+        private listItem;
+        /**
+        * Requires user to checkout the list item?
+        * @return boolean
+        */
+        private requireCheckout;
+        requiresCheckout(): boolean;
+        /**
+        * Get the SP site root URL
+        * @return string
+        */
+        private rootUrl;
+        getRootUrl(): string;
+        /**
+        * Get the `source` key's value from the querystring.
+        * @return string
+        */
+        private sourceUrl;
+        getSourceUrl(): string;
+        /**
+        * Get a reference to the form's Knockout view model.
+        * @return string
+        */
+        getViewModel(): IViewModel;
+        /**
+        * Get the version number for this framework.
+        * @return string
+        */
+        getVersion(): string;
+        private version;
+        queryStringId: string;
+        isSp2013: Boolean;
+        constructor(listName: string, formId: string, options: Object);
+        /**
+        * Execute the next asynchronous function from `asyncFns`.
+        * @param success?: boolean = undefined
+        * @param msg: string = undefined
+        * @param args: any = undefined
+        * @return void
+        */
+        nextAsync(success?: boolean, msg?: string, args?: any): void;
+        /**
+        * Get the current logged in user's profile.
+        * @param self: SPForm
+        * @param args?: any = undefined
+        * @return void
+        */
+        getCurrentUserAsync(self: SPForm, args?: any): void;
+        /**
+        * Get metadata about an SP list and the fields to build the Knockout model.
+        * Needed to determine the list GUID, if attachments are allowed, and if checkout/in is required.
+        * @param self: SPForm
+        * @param args?: any = undefined
+        * @return void
+        */
+        getListAsync(self: SPForm, args?: any): void;
+        /**
+        * Initialize the form.
+        * @param self: SPForm
+        * @param args?: any = undefined
+        * @return void
+        */
+        initForm(self: SPForm, args?: any): void;
+        /**
+       * Get the SP list item data and build the Knockout view model.
+       * @param self: SPForm
+       * @param args?: any = undefined
+       * @return void
+       */
+        getListItemAsync(self: SPForm, args?: any): void;
+        /**
+        * Get the SP user groups this user is a member of for removing/showing protected form sections.
+        * @param self: SPForm
+        * @param args?: any = undefined
+        * @return void
+        */
+        getUsersGroupsAsync(self: SPForm, args?: any): void;
+        /**
+        * Removes form sections the user doesn't have access to from the DOM.
+        * @param self: SPForm
+        * @param args?: any = undefined
+        * @return void
+        */
+        implementPermissions(self: SPForm, args?: any): void;
+        /**
+        * Get the workflow history for this form, if any.
+        * @param self: SPForm
+        * @param args?: any = undefined
+        * @return void
+        */
+        getHistoryAsync(self: SPForm, args?: any): void;
+        /**
+        * Bind the SP list item values to the view model.
+        * @param self: SPForm
+        * @param args?: any = undefined
+        * @return void
+        */
+        bindListItemValues(self?: SPForm): void;
+        /**
+        * Delete the list item.
+        * @param model: IViewModel
+        * @param callback?: Function = undefined
+        * @return void
+        */
+        deleteListItem(model: IViewModel, callback?: Function, timeout?: number): void;
+        /**
+        * Save list item via SOAP services.
+        * @param vm: IViewModel
+        * @param isSubmit?: boolean = false
+        * @param refresh?: boolean = false
+        * @param customMsg?: string = undefined
+        * @return void
+        */
+        saveListItem(vm: IViewModel, isSubmit?: boolean, refresh?: boolean, customMsg?: string): void;
+        /**
+        * Add a navigation menu to the form based on parent elements with class `nav-section`
+        * @param salef: SPForm
+        * @return void
+        */
+        finalize(self: SPForm): void;
+        /**
+        * Delete an attachment.
+        */
+        deleteAttachment(att: ISpAttachment, event: any): void;
+        /**
+        * Get the form's attachments
+        * @param self: SFForm
+        * @param callback: Function (optional)
+        * @return void
+        */
+        getAttachments(self?: SPForm, callback?: Function): void;
+        /**
+        * Log to console in degug mode.
+        * @param msg: string
+        * @return void
+        */
+        log(msg: any): void;
+        /**
+        * Update the form status to display feedback to the user.
+        * @param msg: string
+        * @param success?: boolean = undefined
+        * @return void
+        */
+        updateStatus(msg: string, success?: boolean): void;
+        /**
+        * Display a message to the user with jQuery UI Dialog.
+        * @param msg: string
+        * @param title?: string = undefined
+        * @param timeout?: number = undefined
+        * @return void
+        */
+        showDialog(msg: string, title?: string, timeout?: number): void;
+        /**
+        * Validate the View Model's required fields
+        * @param model: IViewModel
+        * @param showDialog?: boolean = false
+        * @return bool
+        */
+        formIsValid(model: IViewModel, showDialog?: boolean): boolean;
+        /**
+        * Get a person by their ID from the User Information list.
+        * @param id: number
+        * @param callback: Function
+        * @return void
+        */
+        getPersonById(id: number, koField: KnockoutObservable<string>): void;
+        /**
+        * Keeps track of field names to send back to the server for create and update operations.
+        * Skips field names that:
+        *   - have already been added to `ediableFields` array;
+        *   - begin with an underscore '_' or dollar sign '$';
+        *   - that don't exist in `fieldNames` array which includes both writable and read-only SP list field names;
+        *
+        * @param key: string
+        * @return number: length of array or -1 if not added
+        */
+        pushEditableFieldName(key: string): number;
+        /**
+        * Log errors to designated SP list.
+        * @param msg: string
+        * @param self?: SPForm = undefined
+        * @return void
+        */
+        logError(msg: string, e?: any, self?: SPForm): void;
+        /**
+        * Setup attachments modules.
+        * @param self: SPForm = undefined
+        * @return number
+        */
+        setupAttachments(self?: SPForm): number;
+        /**
+        * Setup Bootstrap validation for required fields.
+        * @return number
+        */
+        setupBootstrapValidation(self?: SPForm): number;
+        /**
+        * Setup form navigation on sections with class '.nav-section'
+        * @return number
+        */
+        setupNavigation(self?: SPForm): number;
+        /**
+        * Setup Datepicker fields.
+        * @return number
+        */
+        setupDatePickers(self?: SPForm): number;
+        /**
+        * Determine if the current user is a member of at least one of list of target SharePoint groups.
+        * @param targetGroups: comma delimited string || Array<string>
+        * @return boolean
+        */
+        currentUserIsMemberOfGroups(targetGroups: any): boolean;
+    }
 }

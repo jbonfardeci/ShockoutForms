@@ -436,6 +436,10 @@ It's recommended to set a workflow or an alert on this list to notify you as soo
 Shockout SPForms has been successfully tested with IE 9-11 and the latest versions of Chrome and FireFox.
 
 ##Static Data Access Methods
+ * Read the JavaDoc comments above each method for usage.
+  * SharePoint 2010/13 REST methods: /blob/master/Shockout/e_spApi.ts
+  * SharePoint 2013 REST API methods: /blob/master/Shockout/f_spApi15.ts
+  * SharePoint SOAP methods: /blob/master/Shockout/g_spSoap.ts
 
 ###Copyright
 

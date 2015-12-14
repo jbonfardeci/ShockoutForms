@@ -4,11 +4,10 @@ module Shockout {
     export class SpApi15 {
 
         /**
-        * Get the current user.
-        * @param callback: Function
-        * @param expandGroups?: boolean = false
-        * @return void
-        */
+         * Get the current user.
+         * @param {Function} callback
+         * @param {boolean = false} expandGroups
+         */
         public static getCurrentUser(callback: Function, expandGroups: boolean = false): void {
 
             var $jqXhr: JQueryXHR = $.ajax({
@@ -52,11 +51,10 @@ module Shockout {
         }
 
         /**
-        * Get user's groups.
-        * @param iserId: number
-        * @param callback: Function
-        * @return void
-        */
+         * Get user's groups.
+         * @param {number} userId
+         * @param {JQueryPromiseCallback<any>} callback
+         */
         public static getUsersGroups(userId: number, callback: JQueryPromiseCallback<any>): void {
 
             var $jqXhr: JQueryXHR = $.ajax({

@@ -3,12 +3,11 @@
     export class SpApi{
 
         /**
-        * Search the User Information list.
-        * @param term: string
-        * @param callback: Function
-        * @param take?: number = 10
-        * @return void
-        */
+         * Search the User Information list.
+         * @param {string} term
+         * @param {Function} callback
+         * @param {number = 10} take
+         */
         public static peopleSearch(term: string, callback: Function, take: number = 10): void {
 
             var filter: string  = "startswith(Name,'{0}')".replace(/\{0\}/g, term);
@@ -30,11 +29,10 @@
         }
 
         /**
-        * Get a person by their ID from the User Information list.
-        * @param id: number
-        * @param callback: Function
-        * @return void
-        */
+         * Get a person by their ID from the User Information list.
+         * @param {number} id
+         * @param {Function} callback
+         */
         public static getPersonById(id: number, callback: Function): void {
             SpApi.getListItem('UserInformationList', id, function (data: ISpPerson, error: string) {
                 if (!!error) {
@@ -45,13 +43,12 @@
         }
 
         /**
-        * General REST request method.
-        * @param url: string
-        * @param callback: Function
-        * @param cache?: boolean = false
-        * @param type?: string = 'GET'
-        * @return void
-        */
+         * General REST request method.
+         * @param {string} url
+         * @param {JQueryPromiseCallback<any>} callback
+         * @param {boolean = false} cache
+         * @param {string = 'GET'} type
+         */
         public static executeRestRequest(url: string, callback: JQueryPromiseCallback<any>, cache: boolean = false, type: string = 'GET'): void {
 
             var $jqXhr: JQueryXHR = $.ajax({
@@ -82,13 +79,14 @@
         }
 
         /**
-        * Get list item via REST services.
-        * @param uri: string
-        * @param done: JQueryPromiseCallback<any>
-        * @param fail?: JQueryPromiseCallback<any> = undefined
-        * @param always?: JQueryPromiseCallback<any> = undefined
-        * @return void 
-        */
+         * Get list item via REST services.
+         * @param {string} listName
+         * @param {number} itemId
+         * @param {Function} callback
+         * @param {string = '/'} siteUrl
+         * @param {boolean = false} cache
+         * @param {string = null} expand
+         */
         public static getListItem(listName: string, itemId: number, callback: Function, siteUrl: string = '/', cache: boolean = false, expand: string = null): void {
 
             siteUrl = Utils.formatSubsiteUrl(siteUrl);
@@ -114,13 +112,16 @@
         }
 
         /**
-        * Get list item via REST services.
-        * @param uri: string
-        * @param done: JQueryPromiseCallback<any>
-        * @param fail?: JQueryPromiseCallback<any> = undefined
-        * @param always?: JQueryPromiseCallback<any> = undefined
-        * @return void 
-        */
+         * Get list item via REST services.
+         * @param {string} listName
+         * @param {Function} callback
+         * @param {string = '/'} siteUrl
+         * @param {string = null} filter
+         * @param {string = null} select
+         * @param {string = null} orderby
+         * @param {number = 10} top
+         * @param {boolean = false} cache
+         */
         public static getListItems(listName: string, callback: Function, siteUrl: string = '/', filter: string = null, select: string = null, orderby: string = null, top: number = 10, cache: boolean = false): void {
 
             siteUrl = Utils.formatSubsiteUrl(siteUrl);
@@ -149,12 +150,11 @@
         }
 
         /**
-        * Insert a list item with REST service.
-        * @param item: ISpItem
-        * @param callback: Function
-        * @param data?: Object<any> = undefined
-        * @return void
-        */
+         * Insert a list item with REST service.
+         * @param {string} url
+         * @param {Function} callback
+         * @param {any = undefined} data
+         */
         public static insertListItem(url: string, callback: Function, data: any = undefined): void {
 
             var $jqXhr: JQueryXHR = $.ajax({
@@ -178,12 +178,11 @@
         }
 
         /**
-        * Update a list item with REST service.
-        * @param item: ISpItem
-        * @param callback: Function
-        * @param data?: Object<any> = undefined
-        * @return void
-        */
+         * Update a list item with REST service.
+         * @param {ISpItem} item
+         * @param {Function} callback
+         * @param {any = undefined} data
+         */
         public static updateListItem(item: ISpItem, callback: Function, data: any = undefined): void {
 
             var $jqXhr: JQueryXHR = $.ajax({
@@ -208,11 +207,10 @@
         }
 
         /**
-        * Delete the list item with REST service.
-        * @param model: IViewModel 
-        * @param callback?: Function = undefined
-        * @return void
-        */
+         * Delete the list item with REST service.
+         * @param {ISpItem} item
+         * @param {JQueryPromiseCallback<any>} callback
+         */
         public static deleteListItem(item: ISpItem, callback: JQueryPromiseCallback<any>): void {
 
             var $jqXhr: JQueryXHR = $.ajax({
@@ -235,11 +233,10 @@
         }
 
         /**
-        * Delete an attachment with REST service.
-        * @param att: ISpAttachment
-        * @param callback: Function
-        * @return void
-        */
+         * Delete an attachment with REST service.
+         * @param {ISpAttachment} att
+         * @param {Function} callback
+         */
         public static deleteAttachment(att: ISpAttachment, callback: Function): void {
 
             var $jqXhr: JQueryXHR = $.ajax({

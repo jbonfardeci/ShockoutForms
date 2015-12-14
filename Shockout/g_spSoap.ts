@@ -3,10 +3,9 @@
     export class SpSoap {
 
         /**
-        * Get the current user via SOAP.
-        * @param callback: Function
-        * @return void
-        */
+         * Get the current user via SOAP.
+         * @param {Function} callback
+         */
         public static getCurrentUser(callback: Function): void {
 
             var user: ICurrentUser = <ICurrentUser>{};
@@ -53,11 +52,10 @@
         }
 
         /**
-        * Get the a user's groups via SOAP.
-        * @param loginName: string (DOMAIN\loginName)
-        * @param callback: Function
-        * @return void
-        */
+         * Get the a user's groups via SOAP.
+         * @param {string} loginName (DOMAIN\loginName)
+         * @param {Function} callback
+         */
         public static getUsersGroups(loginName: string, callback: Function) {
             var packet = '<soap:Envelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">' +
                 '<soap:Body>' +
@@ -103,15 +101,14 @@
         }
 
         /**
-        * Get list items via SOAP.
-        * @param siteUrl: string
-        * @param listName: string
-        * @param viewFields: string (XML)
-        * @param query?: string (XML)
-        * @param callback?: Function
-        * @param rowLimit?: number = 25
-        * @return void
-        */
+         * Get list items via SOAP.
+         * @param {string} siteUrl
+         * @param {string} listName
+         * @param {string} viewFields (XML)
+         * @param {string} query (XML)
+         * @param {Function} callback
+         * @param {number = 25} rowLimit
+         */
         public static getListItems(siteUrl: string, listName: string, viewFields: string, query: string, callback: Function, rowLimit: number = 25): void {
 
             siteUrl = Utils.formatSubsiteUrl(siteUrl);
@@ -154,12 +151,11 @@
         }
 
         /**
-        * Get list definition
-        * @param siteUrl: string
-        * @param listName: string
-        * @param callback: Function
-        * @return void
-        */
+         * Get list definition.
+         * @param {string} siteUrl
+         * @param {string} listName
+         * @param {Function} callback
+         */
         public static getList(siteUrl: string, listName: string, callback: Function): void {
 
             siteUrl = Utils.formatSubsiteUrl(siteUrl);
@@ -190,13 +186,13 @@
         }
 
         /**
-        * Check in file.
-        * @param pageUrl: string
-        * @param checkinType: string
-        * @param callback: Function
-        * @param comment?: string = ''
-        * @return void
-        */
+         * Check in file.
+         * @param {string} pageUrl
+         * @param {string} checkinType
+         * @param {Function} callback
+         * @param {string = ''} comment
+         * @returns
+         */
         public static checkInFile(pageUrl: string, checkinType: string, callback: Function, comment: string = '') {
             var action = 'http://schemas.microsoft.com/sharepoint/soap/CheckInFile';
             var params = [pageUrl, comment, checkinType];
@@ -206,13 +202,13 @@
         }
 
         /**
-        * Check out file.
-        * @param pageUrl: string
-        * @param checkoutToLocal: string
-        * @param lastmodified: string
-        * @param callback: Function
-        * @return void
-        */
+         * Check out file.
+         * @param {string} pageUrl
+         * @param {string} checkoutToLocal
+         * @param {string} lastmodified
+         * @param {Function} callback
+         * @returns
+         */
         public static checkOutFile(pageUrl: string, checkoutToLocal: string, lastmodified: string, callback: Function) {
             var action = 'http://schemas.microsoft.com/sharepoint/soap/CheckOutFile';
             var params = [pageUrl, checkoutToLocal, lastmodified];
@@ -222,15 +218,14 @@
         }
 
         /**
-        * Execute SOAP Request
-        * @param action: string
-        * @param packet: string
-        * @param params: Array<any>
-        * param self?: SPForm = undefined
-        * @param callback?: Function = undefined
-        * @param service?: string = 'lists.asmx'
-        * @return void
-        */
+         * Execute SOAP Request
+         * @param {string} action
+         * @param {string} packet
+         * @param {Array<any>} params
+         * @param {string = '/'} siteUrl
+         * @param {Function = undefined} callback
+         * @param {string = 'lists.asmx'} service
+         */
         public static executeSoapRequest(action: string, packet: string, params: Array<any>, siteUrl: string = '/', callback: Function = undefined, service: string = 'lists.asmx'): void {
 
             siteUrl = Utils.formatSubsiteUrl(siteUrl);
@@ -272,14 +267,14 @@
         }
 
         /**
-        * Update list item via SOAP services. 
-        * @param listName: string
-        * @param fields: Array<Array<any>>
-        * @param isNew?: boolean = true
-        * param callback?: Function = undefined
-        * @param self: SPForm = undefined
-        * @return void
-        */
+         * Update list item via SOAP services.
+         * @param {number} itemId
+         * @param {string} listName
+         * @param {Array<Array<any>>} fields
+         * @param {boolean = true} isNew
+         * @param {string = '/'} siteUrl
+         * @param {Function = undefined} callback
+         */
         public static updateListItem(itemId: number, listName: string, fields: Array<Array<any>>, isNew: boolean = true, siteUrl: string = '/', callback: Function = undefined): void {
 
             var action = 'http://schemas.microsoft.com/sharepoint/soap/UpdateListItems';
@@ -313,12 +308,12 @@
         }
 
         /**
-        * People search.
-        * @param term: string
-        * @param callback: Function
-        * @param maxResults?: number = 10
-        * @param principalType?: string = 'User'
-        */
+         * Search for user accounts.
+         * @param {string} term
+         * @param {Function} callback
+         * @param {number = 10} maxResults
+         * @param {string = 'User'} principalType
+         */
         public static searchPrincipals(term: string, callback: Function, maxResults: number = 10, principalType: string = 'User'): void {
 
             var action = 'http://schemas.microsoft.com/sharepoint/soap/SearchPrincipals';
