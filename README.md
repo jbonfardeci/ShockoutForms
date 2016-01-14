@@ -101,11 +101,12 @@ If you've spent any time implementing rules in InfoPath, you have probably becom
 ```
 
 ###Attachments
-To enable attachments for your forms, ensure the `enableAttachments` option is `true` (the default) and include at least one element within your form with the class name "attachments" or attribute "data-sp-attachments". Shockout will replace each element with a template.
+To enable attachments for your forms, include at least one `so-attachments` element within your form. Shockout will replace each element with a template.
+    * `val` - ViewModel.attachments (KnockoutObservableArray<IViewModelAttachments>) 
+    * `readOnly` (Boolean | KnockoutObservable<Boolean>)
+
 ```
-<section class="attachments"></section>
-    // OR
-<section data-sp-attachments></section>
+<so-attachments params="val: attahcments, readOnly: readOnly"></so-attachments>
 ```
 
 I've written a generic handler (.ashx) for attaching documents to your list items. Be sure to copy `SPFormFileHandler.ashx` from the `_layouts` directory of this project to the LAYOUTS directory of your SharePoint front-end server. The URI will be `http://<mysite.com>/_layouts/SPFormFileHandler.ashx`; the server directory is `C:\Program Files\Common Files\microsoft shared\Web Server Extensions\14\TEMPLATE\LAYOUTS\SPFormFileHandler.ashx` - even for SP 2013. My goal for the near future is to eliminate dependency on this generic handler for those using Office 365. It's doubtful that users of Office 365 have permissions to copy files to their LAYOUTS directory. Since modern browsers now convert file uplaods to base64 strings, it's possible to send attachments to list items via SharePoint's SOAP API.
