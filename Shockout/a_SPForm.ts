@@ -129,11 +129,8 @@ module Shockout {
         // The relative URL of the Handler that attaches fiel uploads to list items.
         public fileHandlerUrl: string = '/_layouts/SPFormFileHandler.ashx';
 
-        // The setting sobject for File Uploader
-        public fileUploaderSettings: IFileUploaderSettings;
-
         // The File Uploader object
-        public fileUploader: any;
+        public fileUploaders: Array<any> = [];
                 
         // Display the user profiles of the users that created and last modified a form. Includes photos. See `Shockout.Templates.getUserProfileTemplate()` in `templates.ts`.
         public includeUserProfiles: boolean = true;
@@ -216,6 +213,9 @@ module Shockout {
         * @return number
         */
         public getItemId(): number { return this.itemId; }
+        public setItemId(id: number): void {
+            this.itemId = id;
+        }
         private itemId: number = null;
 
         /**
@@ -1034,10 +1034,10 @@ module Shockout {
 
                     SpApi.executeRestRequest(item[key].__deferred.uri, function (data: ISpCollectionWrapper<ISpPerson>, status: string, jqXhr: any) {
 
-                        if (self.debug) {
-                            console.info('Retrieved UserMulti data for ' + key + '...');
-                            console.info(data);
-                        }
+                        //if (self.debug) {
+                        //    console.info('Retrieved UserMulti data for ' + key + '...');
+                        //    console.info(data);
+                        //}
 
                         var values: Array<any> = [];
                         $.each(data.d.results, function (i: number, p: ISpPerson) {
@@ -1213,8 +1213,8 @@ module Shockout {
                     return;
                 }
 
-                $(xmlDoc).find('*').filter(function(): boolean {
-                    return this.nodeName == 'z:row';
+                $(xmlDoc).find('*').filter(function (): boolean {
+                    return Utils.isZrow(this);
                 }).each(function (i: number, el: any): void {
                     itemId = parseInt($(el).attr('ows_ID'));
 
@@ -1226,7 +1226,6 @@ module Shockout {
                         console.info('Item ID returned...');
                         console.info(itemId);
                     }
-
                 });       
                 
                 if (Utils.getIdFromHash() == null && self.itemId != null) {
@@ -1273,7 +1272,7 @@ module Shockout {
                 self.setupDatePickers(self);
 
                 // Setup Bootstrap validation.
-                //self.setupBootstrapValidation(self);
+                self.setupBootstrapValidation(self);
 
                 self.nextAsync(true, 'Finalized form controls.');
             }
@@ -1554,52 +1553,12 @@ module Shockout {
                 var fileHandlerUrl = self.fileHandlerUrl.replace(/^\//, '');
                 self.fileHandlerUrl = self.rootUrl + subsiteUrl + fileHandlerUrl;
 
-                // file uploader default settings
-                self.fileUploaderSettings = {
-                    element: null,
-                    action: self.fileHandlerUrl,
-                    debug: self.debug,
-                    multiple: false,
-                    maxConnections: 3,
-                    allowedExtensions: self.allowedExtensions,
-                    params: {
-                        listId: self.listId,
-                        itemId: self.itemId
-                    },
-                    onSubmit: function (id, fileName) { },
-                    onComplete: function (id, fileName, json) {
-
-                        if (self.debug) {
-                            console.info('Response from SpForm.fileUploaderSettings.onComplete()');
-                            console.info(json);
-                        }
-
-                        if (json.error != null && json.error != "") {
-                            self.logError(json.error);
-                            if (self.debug) {
-                                console.warn(json.error);
-                            }
-                            return;
-                        }
-
-                        if (self.itemId == null && json.itemId != null) {
-                            self.itemId = json.itemId;
-                            self.viewModel.Id(json.itemId);
-                            self.saveListItem(vm, false);
-                        }
-
-                        // push a new SP attachment instance to the view model's `attachments` collection
-                        self.viewModel.attachments().push(new SpAttachment(self.rootUrl, self.siteUrl, self.listName, self.itemId, fileName));
-                        self.viewModel.attachments.valueHasMutated(); // tell KO the array has been updated
-                    },
-                    template: Templates.getFileUploadTemplate()
-                }
-
                 self.$form.find(".attachments, [data-sp-attachments]").each(function (i: number, att: HTMLElement) {
                     var id = 'so-qq-fileuploader_' + i;
                     $(att).replaceWith(Templates.getAttachmentsTemplate(id));
-                    self.fileUploaderSettings.element = document.getElementById(id);
-                    self.fileUploader = new Shockout.qq.FileUploader(self.fileUploaderSettings);
+                    var settings: IFileUploaderSettings = new FileUploaderSettings(self, id, self.allowedExtensions);
+                    var uploader = new Shockout.qq.FileUploader(settings);
+                    self.fileUploaders.push(uploader);
                     count++;
                 });
 
@@ -1721,9 +1680,10 @@ module Shockout {
         }
 
         /**
-        * Setup Datepicker fields.
-        * @return number
-        */
+         * Setup Datepicker fields.
+         * @param {SPForm = undefined} self
+         * @returns
+         */
         setupDatePickers(self: SPForm = undefined): number {
             self = self || this;
 
@@ -1738,45 +1698,6 @@ module Shockout {
             return $datepickers.length;
 
         }
-
-        // obsolete
-        //setupHtmlFields(self: SPForm = undefined): number {
-        //    self = self || this;
-        //    var count: number = 0;
-        //    try {
-        //        // set up HTML editors in the form
-        //        // This isn't necessary for the Shockout KO Components fields, but included for when a developer creates their own fields.
-        //        self.$form.find(".rte, [data-bind*='spHtml'], [data-sp-html]").each(function (i: number, el: HTMLElement) {
-        //            var $el = $(el);
-        //            var koName = Utils.observableNameFromControl(el, self.viewModel);
-
-        //            var $rte = $('<div>', {
-        //                'data-bind': 'spHtmlEditor: ' + koName,
-        //                'class': 'form-control content-editable',
-        //                'contenteditable': 'true'
-        //            });
-
-        //            if (!!$el.attr('required') || !!$el.hasClass('required')) {
-        //                $rte.attr('required', 'required');
-        //                $rte.addClass('required');
-        //            }
-
-        //            $rte.insertBefore($el);
-        //            if (!self.debug) {
-        //                $el.hide();
-        //            }
-        //            count++;
-        //            if (self.debug) {
-        //                console.info('initFormAsync: Created spHtml field: ' + koName);
-        //            }
-        //        });
-        //    }
-        //    catch (e) {
-        //        if (self.debug) { throw e; }
-        //        self.logError('Error in SPForm.setupHtmlFields(): ', e);
-        //    }
-        //    return count;
-        //}
 
         /**
         * Determine if the current user is a member of at least one of list of target SharePoint groups.

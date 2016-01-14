@@ -7,16 +7,13 @@
          * @param {Function} callback
          */
         public static getCurrentUser(callback: Function): void {
-
             var user: ICurrentUser = <ICurrentUser>{};
             var query = '<Query><Where><Eq><FieldRef Name="ID" /><Value Type="Counter"><UserID /></Value></Eq></Where></Query>';
             var viewFields = '<ViewFields><FieldRef Name="ID" /><FieldRef Name="Name" /><FieldRef Name="EMail" /><FieldRef Name="Department" /><FieldRef Name="JobTitle" /><FieldRef Name="UserName" /><FieldRef Name="Office" /></ViewFields>';
 
-            SpSoap.getListItems('', 'User Information List', viewFields, query, function (xmlDoc: XMLDocument, status: string, jqXhr: JQueryXHR) {
-                    
+            SpSoap.getListItems('', 'User Information List', viewFields, query, function (xmlDoc: XMLDocument, status: string, jqXhr: JQueryXHR) {                  
                 $(xmlDoc).find('*').filter(function () {
-                    return this.nodeName == 'z:row';
-
+                    return Utils.isZrow(this);
                 }).each(function (i: number, node: any) {
                     user.id = parseInt($(node).attr('ows_ID'));
                     user.title = $(node).attr('ows_Title');
@@ -29,7 +26,6 @@
                 });
 
                 callback(user);
-
             });
 
             /*

@@ -1,11 +1,211 @@
 ﻿module Shockout {
 
     export class KoHandlers {
-
         public static bindKoHandlers() {
             bindKoHandlers(ko);
         }
+    }
 
+    interface IDateTimeModel{
+        $element: JQuery;
+        $parent: JQuery;
+        $hh: JQuery;
+        $mm: JQuery;
+        $tt: JQuery;
+        $display: JQuery;
+        $error: JQuery;
+        $reset: JQuery;
+        required: Boolean;
+        koName: string;
+        setModelValue: Function;
+        setDisplayValue: Function;
+        toString: Function;
+    }
+
+    class DateTimeModel implements IDateTimeModel {
+        public $element: JQuery;
+        public $parent: JQuery;
+        public $hh: JQuery;
+        public $mm: JQuery;
+        public $tt: JQuery;
+        public $display: JQuery;
+        public $error: JQuery;
+        public $reset: JQuery;
+        public required: Boolean;
+        public koName: string;
+
+        constructor(element: HTMLElement, modelValue: KnockoutObservable<Date>) {
+            var self = this;
+            var date = ko.unwrap(modelValue);
+            this.$element = $(element);
+            this.$parent = this.$element.parent();
+
+            if (Utils.isJsonDateTicks(date)) {
+                modelValue(Utils.parseJsonDate(date));
+            }
+
+            this.required = this.$element.hasClass('required') || this.$element.attr('required') != null;
+            this.$element.attr({
+                'placeholder': 'MM/DD/YYYY',
+                'maxlength': 10,
+                'class': 'datepicker med form-control'
+            }).css('display', 'inline-block')
+                .on('change', onChange)
+                .datepicker({
+                    changeMonth: true,
+                    changeYear: true
+                })
+            ;
+
+            if (this.required) {
+                this.$element.attr('required', '');
+            }
+
+            var hrsOpts = [];
+            for (var i = 1; i <= 12; i++) {
+                hrsOpts.push('<option value="' + i + '">' + (i < 10 ? '0' + i : i) + '</option>');
+            }
+
+            var mmOpts = [];
+            for (var i = 0; i < 60; i++) {
+                mmOpts.push('<option value="' + i + '">' + (i < 10 ? '0' + i : i) + '</option>');
+            }
+
+            var timeHtml: string = `<span class="glyphicon glyphicon-calendar"></span>
+                <select class="form-control so-select-hours" style="margin-left:1em; max-width:5em; display:inline-block;">${hrsOpts.join('')}</select>
+                <span> : </span>
+                <select class="form-control so-select-minutes" style="width:5em; display:inline-block;">${mmOpts.join('')}</select>
+                <select class="form-control so-select-tt" style="margin-left:1em; max-width:5em; display:inline-block;"><option value="AM">AM</option><option value="PM">PM</option></select>
+                <button class="btn btn-sm btn-default reset" style="margin-left:1em;">Reset</button>
+                <span class="error no-print" style="display:none;">Invalid Date-time</span>
+                <span class="so-datetime-display no-print" style="margin-left:1em;"></span>`;
+
+            this.$display = this.$parent.find('.so-datetime-display');
+            this.$error = this.$parent.find('.error');
+            this.$hh = this.$parent.find('.so-select-hours').val('12').on('change', onChange);
+            this.$mm = this.$parent.find('.so-select-minutes').val('0').on('change', onChange);
+            this.$tt = this.$parent.find('.so-select-tt').val('AM').on('change', onChange);
+            this.$reset = this.$parent.find('.btn.reset')
+                .on('click', function () {
+                    try {
+                        self.$element.val('');
+                        self.$hh.val('12');
+                        self.$mm.val('0');
+                        self.$tt.val('AM');
+                        self.$display.html('');
+                        modelValue(null);
+                    }
+                    catch (e) {
+                        console.warn(e);
+                    }
+                    return false;
+                });
+
+            function onChange() {
+                self.setModelValue(modelValue);
+            }
+        }
+
+        public setModelValue(modelValue: KnockoutObservable<Date>): void {
+            try {
+
+                if (!!!$.trim(this.$element.val())) {
+                    return;
+                }
+
+                var date: Date = Utils.parseDate(this.$element.val());
+                var hrs: number = parseInt(this.$hh.val());
+                var min: number = parseInt(this.$mm.val());
+                var tt: string = this.$tt.val();
+
+                if (tt == 'PM' && hrs < 12) {
+                    hrs += 12;
+                }
+                else if (tt == 'AM' && hrs > 11) {
+                    hrs -= 12;
+                }
+
+                // SP saves date/time in UTC
+                var curDateTime: Date = new Date();
+                curDateTime.setUTCFullYear(date.getFullYear());
+                curDateTime.setUTCMonth(date.getMonth());
+                curDateTime.setUTCDate(date.getDate());
+                curDateTime.setUTCHours(hrs, min, 0, 0);
+                modelValue(curDateTime);
+            }
+            catch (e) {
+                if (SPForm.DEBUG) {
+                    throw e;
+                }
+            }
+        }
+
+        public setDisplayValue(modelValue: KnockoutObservable<Date>): void {
+            try {
+                var date = ko.unwrap(modelValue);
+
+                if (!!!date || date.constructor != Date) { return; }
+
+                var date = ko.unwrap(modelValue);
+                var hrs: number = date.getUTCHours(); // converts UTC hours to locale hours
+                var min: number = date.getUTCMinutes(); 
+
+                this.$element.val((date.getUTCMonth() + 1) + '/' + date.getUTCDate() + '/' + date.getUTCFullYear());
+
+                // set TT based on military hours
+                if (hrs > 12) {
+                    hrs -= 12;
+                    this.$tt.val('PM');
+                }
+                else if (hrs == 0) {
+                    hrs = 12;
+                    this.$tt.val('AM');
+                }
+                else if (hrs == 12) {
+                    this.$tt.val('PM');
+                }
+                else {
+                    this.$tt.val('AM');
+                }
+
+                this.$hh.val(hrs.toString());
+                this.$mm.val(min.toString());
+                this.$display.html(this.toString(modelValue));
+            }
+            catch (e) {
+                if (SPForm.DEBUG) {
+                    throw e;
+                }
+            }
+        }
+
+        public toString(modelValue: KnockoutObservable<Date>): string {
+            return DateTimeModel.toString(modelValue);
+        }
+
+        public static toString(modelValue: KnockoutObservable<Date>): string {
+            // convert from UTC to locale
+            try {
+                var date = ko.unwrap(modelValue);
+                if (date == null || date.constructor != Date) { return; }
+                var dateTimeStr: string = Utils.toDateTimeLocaleString(date);
+                // add time zone
+                var timeZone = /\b\s\(\w+\s\w+\s\w+\)/i.exec(date.toString());
+                if (!!timeZone) {
+                    // e.g. convert '(Central Daylight Time)' to '(CDT)'
+                    dateTimeStr += ' ' + timeZone[0].replace(/\b\w+/g, function (x) {
+                        return x[0];
+                    }).replace(/\s/g, '');
+                }
+                return dateTimeStr;
+            }
+            catch (e) {
+                if (SPForm.DEBUG) {
+                    throw e;
+                }
+            }
+            return null;
+        }
     }
 
     /* Knockout Custom handlers */
@@ -336,215 +536,39 @@
         ko.bindingHandlers['spDateTime'] = {
             after: ['attr'],
             init: function (element, valueAccessor, allBindings, viewModel: IViewModel, bindingContext) {
-
-                if (element.tagName.toLowerCase() != 'input' || $(element).attr('type') == 'hidden') { return; }// stop if not an editable field
-
-                var modelValue: KnockoutObservable<Date> = valueAccessor()
-                    , required
-                    , $hh: JQuery
-                    , $mm: JQuery
-                    , $tt: JQuery
-                    , $display
-                    , $error
-                    , $element: JQuery = $(element)
-                    , $parent: JQuery = $element.parent()
-                    , $reset: JQuery
-                    ;
+                // stop if not an editable field
+                if (element.tagName.toLowerCase() != 'input' || $(element).attr('type') == 'hidden'){ return; }
 
                 try {
-
-                    var currentVal: Date = Utils.parseDate(modelValue());
-                    modelValue(currentVal); // just in case it was a string date
-                    var koName = Utils.koNameFromControl(element);
-
-                    $display = $('<span>', { 'class': 'no-print', 'style': 'margin-left:1em;' }).insertAfter($element);
-                    $error = $('<span>', { 'class': 'error', 'html': 'Invalid Date-time', 'style': 'display:none;' }).insertAfter($element);
-                    element.$display = $display;
-                    element.$error = $error;
-
-                    required = $element.hasClass('required') || $element.attr('required') != null;
-
-                    $element.attr({
-                        'placeholder': 'MM/DD/YYYY',
-                        'maxlength': 10,
-                        'class': 'datepicker med form-control'
-                    }).css('display', 'inline-block')
-                        .on('change', setDateTime)
-                        .before('<br />');
-
-                    if (required) {
-                        $element.attr('required', 'required');
-                    }
-
-                    $element.datepicker({
-                        changeMonth: true,
-                        changeYear: true
-                    });
-
-                    var timeHtml: Array<string> = ['<span class="glyphicon glyphicon-calendar"></span>'];
-
-                    // Hours 
-                    timeHtml.push('<select class="form-control select-hours" style="margin-left:1em;width:5em;display:inline-block;">');
-                    for (var i = 1; i <= 12; i++) {
-                        timeHtml.push('<option value="' + i + '">' + (i < 10 ? '0' + i : i) + '</option>');
-                    }
-                    timeHtml.push('</select>');
-
-                    timeHtml.push('<span> : </span>');
-                    
-                    // Minutes     
-                    timeHtml.push('<select class="form-control select-minutes" style="width:5em;display:inline-block;">');
-                    for (var i = 0; i < 60; i++) {
-                        timeHtml.push('<option value="' + i +'">' + (i < 10 ? '0'+i : i) + '</option>');
-                    }
-                    timeHtml.push('</select>');
-                         
-                    // TT: AM/PM
-                    timeHtml.push('<select class="form-control select-tt" style="margin-left:1em;width:5em;display:inline-block;"><option value="AM">AM</option><option value="PM">PM</option></select>');
-
-                    timeHtml.push('&nbsp;<button class="btn btn-sm btn-default reset">Reset</button>');
-
-                    $element.after(timeHtml.join(''));
-
-                    $hh = $parent.find('.select-hours');
-                    $mm = $parent.find('.select-minutes');
-                    $tt = $parent.find('.select-tt');
-                    $reset = $parent.find('.btn.reset');
-
-                    $hh.on('change', setDateTime); //.on('keydown', onKeyDown);
-                    $mm.on('change', setDateTime); //.on('keydown', onKeyDown);
-                    $tt.on('change', setDateTime);
-                    $reset.on('click', function () {
-                        try {
-                            modelValue(null);
-                            $element.val('');
-                            $hh.val('12');
-                            $mm.val('0');
-                            $tt.val('AM');
-                            $display.html('');
-                        }
-                        catch (e) {
-                            console.warn(e);
-                        }
-                        return false;
-                    });
-
-                    element.$hh = $hh;
-                    element.$mm = $mm;
-                    element.$tt = $tt;
-
-                    // set default time
-                    if (!!currentVal) {
-                        setDateTime();
-                    }
-                    else {
-                        $element.val('');
-                        $hh.val('12');
-                        $mm.val('0');
-                        $tt.val('AM');
-                    }
-
+                    var modelValue: KnockoutObservable<Date> = valueAccessor();
+                    var model = new DateTimeModel(element, modelValue); 
+                    element['$$model'] = model;           
                 }
                 catch (e) {
                     if (SPForm.DEBUG) {
                         console.warn('Error in Knockout handler spDateTime init()...');
-                        console.warn(e);
+                        throw e;
                     }
                 }
-
-                // must convert user's locale date/time to UTC for SP
-                function setDateTime(): void {
-                    try {
-                        var date: Date = Utils.parseDate($element.val());
-                        if (!!!date) {
-                            date = new Date();
-                        }
-                        var hrs: number = parseInt($hh.val());
-                        var min: number = parseInt($mm.val());
-                        var tt: string = $tt.val();
-
-                        if (tt == 'PM' && hrs < 12) {
-                            hrs += 12;
-                        }
-                        else if (tt == 'AM' && hrs > 11) {
-                            hrs -= 12;
-                        }
-
-                        // SP saves date/time in UTC
-                        var curDateTime: Date = new Date();
-                        curDateTime.setUTCFullYear(date.getFullYear());
-                        curDateTime.setUTCMonth(date.getMonth());
-                        curDateTime.setUTCDate(date.getDate());
-                        curDateTime.setUTCHours(hrs, min, 0, 0);
-                        modelValue(curDateTime);
-                    }
-                    catch (e) {
-                        if (SPForm.DEBUG) {
-                            console.warn(e);
-                        }
-                    }
-                }
-
-                function onKeyDown() {
-                    var val = $(this).val().replace(/\d/g, '');
-                    $(this).val(val);
-                };
             },
             update: function (element, valueAccessor, allBindings, viewModel: IViewModel, bindingContext) {
-
                 try {
                     var modelValue: KnockoutObservable<Date> = valueAccessor();
                     var date: Date = Utils.parseDate(ko.unwrap(modelValue));
-
-                    if (typeof modelValue == 'function') {
-                        modelValue(date); // just in case it was a string date 
-                    }
-
-                    if (!!date) {
-                        var dateTimeStr: string = Utils.toDateTimeLocaleString(date); // convert from UTC to locale
-                        // add time zone
-                        var timeZone = /\b\s\(\w+\s\w+\s\w+\)/i.exec(date.toString());
-                        if (!!timeZone) {
-                            // e.g. convert '(Central Daylight Time)' to '(CDT)'
-                            dateTimeStr += ' ' + timeZone[0].replace(/\b\w+/g, function (x) {
-                                return x[0];
-                            }).replace(/\s/g, '');
-                        }
-                        
-                        if (element.tagName.toLowerCase() == 'input') {
-                            $(element).val( (date.getUTCMonth()+1) + '/' + date.getUTCDate() + '/' + date.getUTCFullYear() );
-                            var hrs: number = date.getUTCHours(); // converts UTC hours to locale hours
-                            var min: number = date.getUTCMinutes(); 
-
-                            // set TT based on military hours
-                            if (hrs > 12) {
-                                hrs -= 12;
-                                element.$tt.val('PM');
-                            }
-                            else if (hrs == 0) {
-                                hrs = 12;
-                                element.$tt.val('AM');
-                            }
-                            else if (hrs == 12) {
-                                element.$tt.val('PM');
-                            }
-                            else {
-                                element.$tt.val('AM');
-                            }
-
-                            element.$hh.val(hrs);
-                            element.$mm.val(min);
-                            element.$display.html(dateTimeStr);
-                        }
-                        else {
-                            $(element).text(dateTimeStr);
+                    if (element.tagName.toLowerCase() == 'input') {
+                        var model: IDateTimeModel = element['$$model'];
+                        if (!!model && model.constructor == DateTimeModel) {
+                            model.setDisplayValue(modelValue);
                         }
                     }
+                    else {
+                        $(element).text(DateTimeModel.toString(modelValue));
+                    }   
                 }
                 catch (e) {
                     if (SPForm.DEBUG) {
                         console.warn('Error in Knockout handler spDateTime update()...s');
-                        console.warn(e);
+                        throw e;
                     }
                 }
             }

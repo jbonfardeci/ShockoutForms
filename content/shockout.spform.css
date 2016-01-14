@@ -105,8 +105,9 @@
       outline: 0 none;
       box-shadow: 0 1px 1px rgba(0, 0, 0, 0.075) inset, 0 0 8px rgba(102, 175, 233, 0.6); }
     .sp-form .breadcrumbs {
-      padding: 10px 0 0 10px;
-      float: left; }
+      position: absolute;
+      top: .6em;
+      z-index: 0; }
     .sp-form .form-status {
       color: #fff;
       position: fixed;
@@ -352,6 +353,9 @@
       display: block; }
 
   /*.sp-form*/ }
+@media (max-width: 600px) {
+  .sp-form .breadcrumbs {
+    display: none; } }
 @media print {
   body {
     background-color: #fff;

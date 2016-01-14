@@ -1,4 +1,9 @@
 ﻿module Shockout {
+
+    export interface IViewModelAttachments extends KnockoutObservable<Array<ISpAttachment>> {
+        getViewModel: Function;
+        getSpForm: Function;
+    }
     
     export interface IViewModel {
         // SP List Item Fields
@@ -13,7 +18,7 @@
         allowSave: KnockoutObservable<boolean>;
         allowPrint: KnockoutObservable<boolean>;
         allowDelete: KnockoutObservable<boolean>;
-        attachments: KnockoutObservable<Array<any>>;
+        attachments: IViewModelAttachments;
         currentUser: KnockoutObservable<any>;
         historyItems: KnockoutObservable<Array<IHistoryItem>>;       
         isValid: KnockoutComputed<boolean>;
@@ -47,7 +52,7 @@
         public allowSave: KnockoutObservable<boolean> = ko.observable(false);
         public allowPrint: KnockoutObservable<boolean> = ko.observable(false);
         public allowDelete: KnockoutObservable<boolean> = ko.observable(false);
-        public attachments: KnockoutObservableArray<any> = ko.observableArray();
+        public attachments: IViewModelAttachments = <any>ko.observableArray();
         public currentUser: KnockoutObservable<ICurrentUser>;
         public historyItems: KnockoutObservable<Array<any>> = ko.observableArray();
         public isValid: KnockoutComputed<boolean>;
@@ -66,6 +71,12 @@
 
             this.deleteAttachment = instance.deleteAttachment;
             this.currentUser = ko.observable(instance.getCurrentUser());
+            this.attachments.getViewModel = function(){
+                return self;
+            };
+            this.attachments.getSpForm = function(){
+                return self.parent;
+            }
         }
 
         public isAuthor(): boolean {

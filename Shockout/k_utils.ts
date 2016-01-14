@@ -624,5 +624,9 @@
                     : pictureUrl;
         }
 
+        public static isZrow(node: any): boolean {
+            return node.nodeName.toLowerCase() == 'z:row';
+        }
+
     }
 }

@@ -475,6 +475,7 @@
      * @inherits qq.FileUploaderBasic
      */
     qq.FileUploader = function (o) {
+        var self = this;
         // call parent constructor
         qq.FileUploaderBasic.apply(this, arguments);
     
@@ -520,16 +521,33 @@
         // overwrite options with user supplied    
         qq.extend(this._options, o);
 
-        this._element = this._options.element;
-        this._element.innerHTML = this._options.template;
-        this._listElement = this._options.listElement || this._find(this._element, 'list');
+        // allow element to be an element ID or HTML element
+        this._element = Utils.isString(this._options.element) ? document.getElementById(this._options.element) : this._options.element;
 
-        this._classes = this._options.classes;
+        // JB 2016-01-13
+        // element isn't loaded into the DOM yet, wait for it...
+        if(this._element == null && Utils.isString(this._options.element)){
+            var timer;
+            timer = setInterval(function(){
+                self._element = document.getElementById(self._options.element);
+                if(self._element != null){                 
+                    clearInterval(timer);
+                    setup();
+                }              
+            }, 50);  
 
-        this._button = this._createUploadButton(this._find(this._element, 'button'));
+        } else{
+            setup();
+        }
 
-        this._bindCancelEvent();
-        this._setupDragDrop();
+        function setup(){
+            self._element.innerHTML = self._options.template;
+            self._listElement = self._options.listElement || self._find(self._element, 'list');
+            self._classes = self._options.classes;
+            self._button = self._createUploadButton(self._find(self._element, 'button'));
+            self._bindCancelEvent();
+            self._setupDragDrop();
+        };
     };
 
     // inherit from Basic Uploader
