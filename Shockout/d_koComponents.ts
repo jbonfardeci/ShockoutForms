@@ -119,13 +119,14 @@
             ko.components.register('so-attachments', {
                 viewModel: function (params) {
                     var self = this;
-                    if (!params) {
+                    if (!!!params) {
                         throw 'params is undefined in so-attachments';
                         return;
                     }
 
-                    if (!params.val) {
+                    if (!!!params.val) {
                         throw "Parameter `val` for so-attachments is required!";
+                        return;
                     }
 
                     this.attachments = <IViewModelAttachments>params.val;
@@ -136,7 +137,7 @@
                     var spForm: Shockout.SPForm = params.val.getSpForm();
 
                     // allow for static bool or ko observable
-                    this.readOnly = (typeof params.readOnly == 'function') ? params.readOnly : ko.observable(!!params.readOnly || false);
+                    this.readOnly = (typeof params.readOnly == 'function') ? params.readOnly : ko.observable(params.readOnly || false);
 
                     if (!this.readOnly()) {
                         // instantiate the file uploader instance
@@ -155,11 +156,15 @@
                             attachments.remove(att);
                         });
                     };
+
+                    this.length = ko.pureComputed(function () {
+                        return self.attachments().length;
+                    });
                 },
                 template: 
                 `<section>
-                    <h4 data-bind="text: title">Attachments (<span data-bind="text: attachments().length"></span>)</h4>
-                    <div data-bind="attr:{id: id}"></div>
+                    <h4><span data-bind="text: title"></span> <span data-bind="text: length" class="badge"></span></h4>
+                    <div data-bind="visible: !!!readOnly(), attr:{id: id}"></div>
                     <div data-bind="foreach: attachments">
                         <div>
                             <a href="" data-bind="attr: {href: __metadata.media_src}"><span class="glyphicon glyphicon-paperclip"></span> <span data-bind="text: Name"></span></a>
@@ -168,6 +173,9 @@
                             <!-- /ko -->
                         </div>
                     </div>
+                    <!-- ko if: length() == 0 && readOnly() -->
+                    <p>No attachments have been included.</p>
+                    <!-- /ko -->
                     <!-- ko if: description -->
                     <div data-bind="text: description"></div>
                     <!-- /ko -->
@@ -465,9 +473,7 @@
         public static soCheckboxFieldTemplate: string =
         `<div class="form-group">
             <div class="row">
-                <!-- ko if: !!label -->
-                    <div class="col-sm-3" data-bind="attr:{\'class\': labelColWidth}"><label data-bind="html: label"></label></div>
-                <!-- /ko -->
+                <div class="col-sm-3" data-bind="attr:{\'class\': labelColWidth}"></div>
                 <div class="col-sm-9" data-bind="attr:{\'class\': fieldColWidth}">
                     <!-- ko if: readOnly() -->
                         <div data-bind="text: !!modelValue() ? \'Yes\' : \'No\'"></div>
@@ -475,7 +481,7 @@
                     <!-- ko ifnot: readOnly() -->
                         <label class="checkbox">
                             <input type="checkbox" data-bind="checked: modelValue, css: {\'so-editable\': editable}, attr: {id: id, \'ko-name\': koName}, valueUpdate: valueUpdate" />
-                            <span data-bind="html: label"></span>
+                            <span data-bind="html: label" style="margin-left:1em;"></span>
                         </label>
                     <!-- /ko -->
                 </div>

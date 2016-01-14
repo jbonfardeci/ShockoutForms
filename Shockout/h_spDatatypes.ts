@@ -71,7 +71,7 @@
         public onComplete(id, fileName, json) {
             if (this.spForm.debug) {
                 console.info('Response from SpForm.fileUploaderSettings.onComplete()');
-                console.info(json);
+                console.info(arguments);
             }
 
             if (json.error != null && json.error != "") {
@@ -93,7 +93,8 @@
                 this.spForm.siteUrl,
                 this.spForm.listName,
                 this.spForm.getItemId(),
-                fileName);
+                json.fileName);
+
             this.spForm.viewModel.attachments().push(att);
             this.spForm.viewModel.attachments.valueHasMutated(); // tell KO the array has been updated
         };
