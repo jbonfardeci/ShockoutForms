@@ -102,8 +102,9 @@ If you've spent any time implementing rules in InfoPath, you have probably becom
 
 ###Attachments
 To enable attachments for your forms, include at least one `so-attachments` element within your form. Shockout will replace each element with a template.
-    * `val` - ViewModel.attachments (KnockoutObservableArray<IViewModelAttachments>) 
-    * `readOnly` (Boolean | KnockoutObservable<Boolean>)
+    
+`val` - ViewModel.attachments (KnockoutObservableArray<IViewModelAttachments>) 
+`readOnly` - (Boolean | KnockoutObservable<Boolean>)
 
 ```
 <so-attachments params="val: attahcments, readOnly: readOnly"></so-attachments>
