@@ -176,6 +176,8 @@ KO Components are really amazing. Visit the KO docs to learn more about them htt
     <so-date-field params="val: MySpField"></so-date-field> // with jQuery Datepicker
 
     <so-datetime-field params="val: MySpField"></so-datetime-field> // jQuery Datepicker plus Time controls
+
+    <so-attachments params="val: attahcments, readOnly: readOnly"></so-attachments> // Attachments
 ```
 * Optional Parameters
     * label: string (default is the field's display name defined in the SharePoint field; can pass HTML)
