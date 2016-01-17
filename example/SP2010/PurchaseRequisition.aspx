@@ -128,7 +128,7 @@
 
             <section class="nav-section">
                 <h4>Routing</h4>
-                <so-person-field params="val: YourSupervisor, , readOnly: readOnly, required: true"></so-person-field>
+                <so-person-field params="val: YourSupervisor, readOnly: readOnly, required: true"></so-person-field>
             </section>
 			
             <section data-edit-only="">
