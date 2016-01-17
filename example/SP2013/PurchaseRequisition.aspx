@@ -1,5 +1,5 @@
-﻿<%@ Page Language="C#" masterpagefile="/_catalogs/masterpage/Shockout.SpForms.master" title="Purchase Requisition" %>
-<%@ Register tagprefix="SharePoint" namespace="Microsoft.SharePoint.WebControls" assembly="Microsoft.SharePoint, Version=15.0.0.0, Culture=neutral, PublicKeyToken=71e9bce111e9429c" %>
+﻿<%@ Page Language="C#" masterpagefile="/_catalogs/masterpage/Shockout.SpForms.master" title="Purchase Requisition" inherits="Microsoft.SharePoint.WebPartPages.WebPartPage, Microsoft.SharePoint, Version=14.0.0.0, Culture=neutral, PublicKeyToken=71e9bce111e9429c" meta:progid="SharePoint.WebPartPage.Document" %>
+<%@ Register Tagprefix="SharePoint" Namespace="Microsoft.SharePoint.WebControls" Assembly="Microsoft.SharePoint, Version=14.0.0.0, Culture=neutral, PublicKeyToken=71e9bce111e9429c" %>
 
 <asp:Content runat="server" ID="main1" ContentPlaceHolderID="main">
 	
@@ -15,18 +15,28 @@
 			<input type="hidden" data-bind="value: ItemData" />
 			<input type="hidden" data-bind="value: TotalCost" />
 		
-			<section class="created-info" data-edit-only=""></section>
+			<!-- Display Created/Modified By info with Profile photos-->
+			<section data-sp-created-info></section>
 			
-			<section class="attachments nav-section"></section>
+			<!-- File Attachments: pass the view model observable `val: attachments` and optional `readOnly: readOnly` computed -->
+			<so-attachments params="val: attachments, readOnly: readOnly" class="nav-section"></so-attachments>
 		
 			<section class="nav-section">
 				<h4>Vendor Information</h4>
 				
-                <so-text-field params="val: Title, required: true"></so-text-field>
+                <so-text-field params="val: Title, required: true, readOnly: readOnly"></so-text-field>
+                
+                <so-text-field params="val: QuoteNumber, readOnly: readOnly"></so-text-field>
 
-                <so-text-field params="val: VendorName, required: true"></so-text-field>
+                <so-text-field params="val: VendorName, required: true, readOnly: readOnly"></so-text-field>
 				
-                <so-html-field params="val: VendorAddress"></so-html-field>
+                <so-html-field params="val: VendorAddress, required: true, readOnly: readOnly"></so-html-field>
+                
+                <so-html-field params="val: DeliveryAddress, required: true, readOnly: readOnly"></so-html-field>
+                
+                <so-html-field params="val: Comments, readOnly: readOnly"></so-html-field>
+                
+                <so-date-field params="val: DateRequired, readOnly: readOnly"></so-date-field>
 								
 			</section>
 
@@ -123,8 +133,10 @@
 			
             <section data-edit-only="">
                 <h4>Supervisor Approval Section</h4>
+                
                 <so-radio-group params="val: SupervisorApproval, readOnly: !isSupervisor()"></so-radio-group>
-            </section>
+                
+             </section>
 
 		</div>
 	
@@ -137,7 +149,6 @@
 </asp:Content>
 
 <asp:Content runat="server" ID="scripts1" ContentPlaceHolderID="scripts">
-<script src="/Forms/ShockoutForms-1.0.0.min.js" type="text/javascript"></script>
 <script type="text/javascript">
 (function(){
 var spForm = new Shockout.SPForm(
@@ -145,7 +156,7 @@ var spForm = new Shockout.SPForm(
     /*formId:*/ 'ShockoutSpForm', 
     /*options:*/ {
         debug: false, 
-        siteUrl: '/media', 
+        siteUrl: '/', 
         confirmationUrl: '/SitePages/Confirmation.aspx',
         preRender: function (spForm, vm) {
 
@@ -156,8 +167,13 @@ var spForm = new Shockout.SPForm(
                 vm.shipping = ko.observable(0);
                 vm.tax = ko.observable('0.000%');
                 vm.items = ko.observableArray([]);
+                
+                // Convert the KO components to read-only mode when the user isn't the author or the request has been approved/denied by the supervisor.
+                vm.readOnly = ko.pureComputed(function(){
+                	return !vm.isAuthor() || (vm.IsSubmitted() && /(approved|denied)/i.test(vm.SupervisorApproval()))
+                });
 
-                vm.subtotal = ko.computed(function () {
+                vm.subtotal = ko.pureComputed(function () {
                     var subtotal = 0;
                     for (var i = 0; i < vm.items().length; i++) {
                         var r = vm.items()[i];
@@ -166,7 +182,7 @@ var spForm = new Shockout.SPForm(
                     return subtotal;
                 }, vm);
 
-                vm.total_tax = ko.computed(function () {
+                vm.total_tax = ko.pureComputed(function () {
                     var tax = vm.tax().toString().replace(/[^\d\%\.]/g, '');
                     var subtotal = vm.subtotal();
 
@@ -180,7 +196,7 @@ var spForm = new Shockout.SPForm(
                     return tax;
                 }, vm);
 
-                vm.total = ko.computed(function () {
+                vm.total = ko.pureComputed(function () {
                     var total = vm.subtotal() + vm.total_tax() + vm.shipping();
                     return total;
                 }, vm);
@@ -202,9 +218,13 @@ var spForm = new Shockout.SPForm(
                     return false;
                 };
 
-                vm.isSupervisor = function () {
+                vm.isSupervisor = ko.pureComputed(function () {
                     return vm.YourSupervisor() == vm.currentUser().account && vm.IsSubmitted();
-                };
+                });
+                
+                vm.isApproved = ko.pureComputed(function () {
+                    return vm.SupervisorApproval() == 'Approved';
+                });
             }
             catch (e) {
                 spForm.logError(e);

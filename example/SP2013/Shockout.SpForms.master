@@ -50,7 +50,7 @@
     <script src="//cdnjs.cloudflare.com/ajax/libs/knockout/3.3.0/knockout-min.js" type="text/javascript"></script>
 
     <!-- Shockout SPForms - change directory path to the path you store your scripts in SharePoint -->
-    <script src="/Forms/ShockoutForms-1.0.1.min.js" type="text/javascript"></script>	
+    <script src="/Forms/ShockoutForms-1.0.2.min.js" type="text/javascript"></script>	
 	
 	<asp:ContentPlaceHolder ID="scripts" runat="server">
 		<!-- placeholder for page-specific scripts -->

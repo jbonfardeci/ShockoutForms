@@ -44,6 +44,7 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="content\shockout.spform.scss" />
+    <Content Include="Docs\ShockoutForm.png" />
     <Content Include="example\SP2010\PurchaseRequisition.aspx" />
     <Content Include="example\SP2013\PurchaseRequisition.aspx" />
     <Content Include="README.md" />
