@@ -1574,6 +1574,7 @@ var Shockout;
                 mmOpts.push('<option value="' + i + '">' + (i < 10 ? '0' + i : i) + '</option>');
             }
             var timeHtml = "<span class=\"glyphicon glyphicon-calendar\"></span>\n                <select class=\"form-control so-select-hours\" style=\"margin-left:1em; max-width:5em; display:inline-block;\">" + hrsOpts.join('') + "</select>\n                <span> : </span>\n                <select class=\"form-control so-select-minutes\" style=\"width:5em; display:inline-block;\">" + mmOpts.join('') + "</select>\n                <select class=\"form-control so-select-tt\" style=\"margin-left:1em; max-width:5em; display:inline-block;\"><option value=\"AM\">AM</option><option value=\"PM\">PM</option></select>\n                <button class=\"btn btn-sm btn-default reset\" style=\"margin-left:1em;\">Reset</button>\n                <span class=\"error no-print\" style=\"display:none;\">Invalid Date-time</span>\n                <span class=\"so-datetime-display no-print\" style=\"margin-left:1em;\"></span>";
+            this.$element.after(timeHtml);
             this.$display = this.$parent.find('.so-datetime-display');
             this.$error = this.$parent.find('.error');
             this.$hh = this.$parent.find('.so-select-hours').val('12').on('change', onChange);

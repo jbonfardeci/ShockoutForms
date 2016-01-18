@@ -80,6 +80,7 @@
                 <span class="error no-print" style="display:none;">Invalid Date-time</span>
                 <span class="so-datetime-display no-print" style="margin-left:1em;"></span>`;
 
+            this.$element.after(timeHtml);
             this.$display = this.$parent.find('.so-datetime-display');
             this.$error = this.$parent.find('.error');
             this.$hh = this.$parent.find('.so-select-hours').val('12').on('change', onChange);
