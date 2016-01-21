@@ -11,7 +11,6 @@
 		
 		<div class="panel-body" id="ShockoutSpForm">
 		
-			<input type="hidden" data-bind="value: IsSubmitted" />
 			<input type="hidden" data-bind="value: ItemData" />
 			<input type="hidden" data-bind="value: TotalCost" />
 		

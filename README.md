@@ -86,9 +86,7 @@ If you've spent any time implementing rules in InfoPath, you have probably becom
 			allowDelete: false, // default false
 			allowPrint: true, // default true
 			allowSave: true, // default true
-			allowedExtensions: ['txt', 'rtf', 'zip', 'pdf', 'doc', 'docx', 'jpg', 'gif', 'png', 'ppt', 'tif', 'pptx', 'csv', 'pub', 'msg'],  // the default 
-			attachmentMessage: 'An attachment is required.', // the default
-			confirmationUrl: '/SitePages/Confirmation.aspx', // the default
+			confirmationUrl: '<siteUrl>', // the default
             dialogOpts: { width: 400,
                 height: 250,
                 autoOpen: false,
@@ -104,8 +102,9 @@ If you've spent any time implementing rules in InfoPath, you have probably becom
 			enableErrorLog: true, // default true
 			errorLogListName: 'Error Log', // Designated SharePoint list for logging user and form errors; Requires a custom SP list named 'Error Log' on root site with fields: 'Title' and 'Error'
             errorLogSiteUrl: '/', // the default
-			fileHandlerUrl: '/_layouts/SPFormFileHandler.ashx',  // use for IE 9. You don't need this for IE 10+.    
-			enableAttachments: true, // default true
+            allowedExtensions: ['txt', 'rtf', 'zip', 'pdf', 'doc', 'docx', 'jpg', 'gif', 'png', 'ppt', 'tif', 'pptx', 'csv', 'pub', 'msg'],  // the default 
+			attachmentMessage: 'An attachment is required.', // the default    
+			enableAttachments: true, // default true, will be overridden by the SP list settings if attachments are disabled
             requireAttachments: false, // default false
 			includeUserProfiles: true, // default true
 			includeWorkflowHistory: true, // default true        
@@ -115,20 +114,24 @@ If you've spent any time implementing rules in InfoPath, you have probably becom
 </script>
 ```
 
-###Attachments
-To enable attachments for your forms, include at least one `so-attachments` element within your form. Shockout will replace each element with a template.
+###Attachments - SP 2010 and 2013
+To enable attachments for your forms, include at least one `so-attachments` element within your form and ensure attachments are enabled on your list. An error message will be displayed if the browser doesn't suppor tthe FileReader class for uplaoding base64 strings to the lists.asmx/AddAttachment SOAP service.
     
-`val` - ViewModel.attachments (KnockoutObservableArray<IViewModelAttachments>) 
-`readOnly` - (Boolean | KnockoutObservable<Boolean>)
+    * Parameters:
+     * `val` - ViewModel.attachments (KnockoutObservableArray<IViewModelAttachments>) 
+     * `readOnly` - (Boolean | KnockoutObservable<Boolean>)
+     * `title` - (string) display title to show in the module header
+     * `label` - (string) label to show in the attachment button; default is "Attach Files"
+     * `drop` - (Boolean) show a drag and drop zone; default is true
+     * `dropLabel` - (string) default is "OR Drag and Drop Files Here"
+     * `description` - (string) an optional descriptio to display under the control
+     * `className` - (string) default is Bootstrap's "btn btn-primary" but you can override this class.
 
 ```
 <so-attachments params="val: attahcments, readOnly: readOnly"></so-attachments>
 ```
-### For IE 9
-Shockout uploads base64 encoded attachments to the SharePoint services. But older browsers such as IE9 don't implement the FileReader object.
-If you need to support IE9 users, I've written a generic handler (.ashx) for attaching documents to your list items. Be sure to copy `SPFormFileHandler.ashx` from the `_layouts` directory of this project to `LAYOUTS\` for SP 2010 and 'LAYOUTS\14\` for SP 2013. The URI will be `http://<mysite.com>/_layouts/SPFormFileHandler.ashx`; the server directory is `C:\Program Files\Common Files\microsoft shared\Web Server Extensions\14\TEMPLATE\LAYOUTS\SPFormFileHandler.ashx` - even for SP 2013. My goal for the near future is to eliminate dependency on this generic handler for those using Office 365. It's doubtful that users of Office 365 have permissions to copy files to their LAYOUTS directory. Since modern browsers now convert file uplaods to base64 strings, it's possible to send attachments to list items via SharePoint's SOAP API.
+![Attachment Component](Docs/soAttachments.png "Attachment Component")
 
-Also ensure your SharePoint list has attachments enabled. Shockout will detect this setting and render attachments based on your SP list settings.
 
 ###Show the User Profiles for Created By and Modified By
 To enable this feature, ensure that `includeUserProfiles` is `true` (the default) include an element with the class name "created-info" or attribute "data-sp-created-info". 
@@ -472,19 +475,18 @@ Shockout SPForms has been successfully tested with IE 9-11 and the latest versio
   * SharePoint SOAP methods: <https://github.com/jbonfardeci/ShockoutForms/blob/master/Shockout/g_spSoap.ts>
 
 ###Copyright
+The MIT License (MIT)
+    
+<https://tldrlegal.com/license/mit-license>
 
-Copyright (C) 2015  John T. Bonfardeci
+Copyright (c) 2015 John T. Bonfardeci
+     
+Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+ 
+The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
 
-This program is free software: you can redistribute it and/or modify
-it under the terms of the GNU Affero General Public License as
-published by the Free Software Foundation, either version 3 of the
-License, or (at your option) any later version.
-
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU Affero General Public License for more details.
-
-You should have received a copy of the GNU Affero General Public License
-along with this program.  If not, see <http://www.gnu.org/licenses/>.
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, 
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER 
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER 
+DEALINGS IN THE SOFTWARE.
 

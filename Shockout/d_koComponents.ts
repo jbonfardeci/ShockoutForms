@@ -139,8 +139,8 @@
 
                     this.attachments = <IViewModelAttachments>params.val;
                     this.label = params.label || 'Attach Files';
-                    this.drop = params.drop || false;
-                    this.dropLabel = params.dropLabel || 'Drag and Drop Files Here';
+                    this.drop = params.drop || true;
+                    this.dropLabel = params.dropLabel || 'OR Drag and Drop Files Here';
                     this.className = params.className || 'btn btn-primary';
                     this.title = params.title || 'Attachments';
                     this.description = params.description;
@@ -151,14 +151,19 @@
                     //check for compatibility
                     this.hasFileReader = ko.observable(w.File && w.FileReader && w.FileList && w.Blob);
 
+                    if (!this.hasFileReader) {
+                        this.errorMsg('This browser does not support the FileReader class required for uplaoding files. You may be using IE 9 or another unsupported browser.');
+                    }
+
                     this.id = params.id || 'so_fileUploader_' + uniqueId();
 
-                    if (!this.hasFileReader()) {
-                        // instantiate the qq file uploader instance
-                        this.qqFileUploaderId = 'so_qq_fileUploader_' + uniqueId();
-                        var settings: IFileUploaderSettings = new FileUploaderSettings(spForm, this.qqFileUploaderId, spForm.allowedExtensions);
-                        var uploader = new Shockout.qq.FileUploader(settings);
-                    }
+                    // dropped support for IE9 uploader
+                    //if (!this.hasFileReader()) {
+                    //    // instantiate the qq file uploader instance
+                    //    this.qqFileUploaderId = 'so_qq_fileUploader_' + uniqueId();
+                    //    var settings: IFileUploaderSettings = new FileUploaderSettings(spForm, this.qqFileUploaderId, spForm.allowedExtensions);
+                    //    var uploader = new Shockout.qq.FileUploader(settings);
+                    //}
 
                     this.deleteAttachment = function (att, event) {
                         if (!confirm('Are you sure you want to delete ' + att.Name + '? This can\'t be undone.')) {
@@ -194,12 +199,18 @@
                     };
 
                     // WIP
-                    this.onDrop = function (e) {
+                    this.onDrop = function (localViewModel, e) {
                         cancel(e);
-                        var dt = e.dataTransfer;
+
+                        if (spForm.debug) {
+                            console.info('dropped files over dropzone, arguments are...');
+                            console.info(arguments);
+                        }
+
+                        var dt = (e.originalEvent || e).dataTransfer;
                         var files = dt.files;
                         if (!!!files) {
-                            console.warn('files is ' + typeof files);
+                            console.warn('Error in so-attachments - event.dataTransfer.files is ' + typeof files);
                             return false;
                         }
                         else{
@@ -350,6 +361,11 @@
                         }
                         return false;
                     };
+
+                    if (!spForm.enableAttachments) {
+                        this.errorMsg('Attachments are disabled for this form or SharePoint list.');
+                        this.readOnly(true);
+                    }
                 },
                 template: 
                 `<section>
@@ -361,7 +377,7 @@
                     <!-- ko if: !readOnly() && hasFileReader() -->
                         <input type="file" data-bind="attr: {'id': id}, event: {'change': fileHandler}" multiple class="form-control" style="display:none;" /> 
                         <div data-bind="attr:{'class': className}, event: {'click': onSelect}"><span class="glyphicon glyphicon-paperclip"></span>&nbsp;<span data-bind="text: label"></span></div> 
-                        <!-- ko if: drop --> 
+                        <!-- ko if: drop -->
                             <div class="so-file-dropzone" data-bind="event: {'dragenter': onDragenter, 'dragover': onDragover, 'drop': onDrop}"><div data-bind="text: dropLabel"></div></div>
                         <!-- /ko -->
                         <!-- ko foreach: fileUploads -->
