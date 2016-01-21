@@ -104,7 +104,7 @@ If you've spent any time implementing rules in InfoPath, you have probably becom
 			enableErrorLog: true, // default true
 			errorLogListName: 'Error Log', // Designated SharePoint list for logging user and form errors; Requires a custom SP list named 'Error Log' on root site with fields: 'Title' and 'Error'
             errorLogSiteUrl: '/', // the default
-			fileHandlerUrl: '/_layouts/SPFormFileHandler.ashx',  // the default    
+			fileHandlerUrl: '/_layouts/SPFormFileHandler.ashx',  // use for IE 9. You don't need this for IE 10+.    
 			enableAttachments: true, // default true
             requireAttachments: false, // default false
 			includeUserProfiles: true, // default true
