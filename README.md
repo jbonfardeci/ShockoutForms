@@ -6,10 +6,6 @@ Forget the frustrations of legacy InfoPath and XSL SharePoint form development. 
 ###Compatibilty
 Compatible with SharePoint 2010 and 2013, Foundation, Standard, and Enterprise.
 
-![Example Form built in Shockout](Docs/ShockoutForm.png "Purchase Requisition Form Built with Shockout")
-
-[View the source for this sample Purchase Requisition form.](https://github.com/jbonfardeci/ShockoutForms/blob/master/example/SP2013/PurchaseRequisition.aspx)
-
 ####Dependencies: 
 jQuery 1.72+, jQuery UI<any>, KnockoutJS 3.2+
 
@@ -60,12 +56,27 @@ If you've spent any time implementing rules in InfoPath, you have probably becom
 
 <!-- Setup your form - this goes at the bottom of your form's page -->
 <script type="text/javascript">
+
+/////////////////
+// Minimum Usage
+/////////////////
+(function(){
+    var spForm = new Shockout.SPForm(
+		/*listName:*/ 'My SharePoint List Name', 
+		/*formId:*/ 'my-form-ID'
+    );
+})());
+
+////////////////////
+// With All Options
+////////////////////
 (function(){
 	var spForm = new Shockout.SPForm(
 		/*listName:*/ 'My SharePoint List Name', 
 		/*formId:*/ 'my-form-ID', 
 		/*options:*/ {
 			debug: false, // default false
+            siteUrl: '', // default  
 			preRender: function(spForm){}, // default undefined
 			postRender: function(spForm){}, // default undefined
 			preSave: function(spForm){}, // default undefined	
@@ -92,14 +103,11 @@ If you've spent any time implementing rules in InfoPath, you have probably becom
             errorLogSiteUrl: '/', // the default
 			fileHandlerUrl: '/_layouts/SPFormFileHandler.ashx',  // the default    
 			enableAttachments: true, // default true
+            requireAttachments: false, // default false
 			includeUserProfiles: true, // default true
 			includeWorkflowHistory: true, // default true        
-			requireAttachments: false, // default false
-			siteUrl: '', // default       
-			workflowHistoryListName: 'Workflow History', // the default
-            errorLogSiteUrl: '/' // the default
+			workflowHistoryListName: 'Workflow History' // the default
 		});
-
 })();
 </script>
 ```
@@ -162,26 +170,38 @@ KO Components are really amazing. Visit the KO docs to learn more about them htt
 
 ###SharePoint Fields
 ```
+    <!-- Single line of text -->
     <so-text-field params="val: MySpField"></so-text-field>
 
     <!-- Multline Textarea -->
     <so-text-field params="val: MySpField, multiline: true"></so-text-field>
 
-    <so-person-field params="val: MySpField"></so-person-field> // shows user profile names with jQuery UI auto-complete
+    <!-- Shows user profile names with jQuery UI auto-complete. -->
+    <so-person-field params="val: MySpField"></so-person-field>
 
-    <so-number-field params="val: MySpField"></so-number-field> // show integer
+    <!-- Show integer. -->
+    <so-number-field params="val: MySpField"></so-number-field>
 
-    <so-decimal-field params="val: MySpField"></so-decimal-field> //show decimal points; 2 places by default, pass 'precision: <num>' to override 
+    <!-- Show decimal points; 2 places by default, pass 'precision: <num>' to override. -->
+    <so-decimal-field params="val: MySpField"></so-decimal-field>
 
-    <so-money-field params="val: MySpField"></so-money-field> // show currency
+    <!-- Show currency. -->
+    <so-money-field params="val: MySpField"></so-money-field>
 
-    <so-html-field params="val: MySpField"></so-html-field> // for rich text fields
+    <!-- For rich text fields. -->
+    <so-html-field params="val: MySpField"></so-html-field>
 
-    <so-date-field params="val: MySpField"></so-date-field> // with jQuery Datepicker
+    <!-- With jQuery Datepicker. -->
+    <so-date-field params="val: MySpField"></so-date-field>
 
-    <so-datetime-field params="val: MySpField"></so-datetime-field> // jQuery Datepicker plus Time controls
+    <!-- JQuery Datepicker plus Time controls. -->
+    <so-datetime-field params="val: MySpField"></so-datetime-field>
 
-    <so-attachments params="val: attahcments, readOnly: readOnly"></so-attachments> // Attachments
+    <!-- Attachments -->
+    <so-attachments params="val: attahcments, readOnly: readOnly"></so-attachments>
+
+    <!-- HTML5 Attachment control comming soon. Will keep so-attachments for IE 9 compatibility. -->
+    <so-html5-attachments params="val: attahcments, drop: true, dropLabel: 'Drop Files Here', readOnly: readOnly"></so-html5-attachments>
 ```
 * Optional Parameters
     * label: string (default is the field's display name defined in the SharePoint field; can pass HTML)
@@ -451,17 +471,18 @@ Shockout SPForms has been successfully tested with IE 9-11 and the latest versio
 
 ###Copyright
 
-The MIT License (MIT) - https://tldrlegal.com/license/mit-license
-Copyright (c) 2015 John T. Bonfardeci
+Copyright (C) 2015  John T. Bonfardeci
 
-Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
- 
-The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
-     
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, 
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER 
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER 
-DEALINGS IN THE SOFTWARE.
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU Affero General Public License as
+published by the Free Software Foundation, either version 3 of the
+License, or (at your option) any later version.
 
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU Affero General Public License for more details.
 
+You should have received a copy of the GNU Affero General Public License
+along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
