@@ -1,0 +1,142 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+    <title></title>
+    <meta charset="utf-8" />
+    <style type="text/css">
+        #progress_bar {
+            margin: 10px 0;
+            padding: 3px;
+            border: 1px solid #000;
+            font-size: 14px;
+            clear: both;
+            opacity: 0;
+            -moz-transition: opacity 1s linear;
+            -o-transition: opacity 1s linear;
+            -webkit-transition: opacity 1s linear;
+        }
+
+            #progress_bar.loading {
+                opacity: 1.0;
+            }
+
+            #progress_bar .percent {
+                background-color: #99ccff;
+                height: auto;
+                width: 0;
+            }
+    </style>
+</head>
+<body>
+
+    <input type="file" id="files" name="file" multiple style="display: none;" />
+    <button id="btn-attach-file">Attach File</button>
+    <div id="dropzone"></div>
+    <div id="progress-bar"><div class="percent">0%</div></div>
+
+    <script type="text/javascript">
+(function () {
+    var reader;
+    var progress = document.querySelector('.percent');
+    var progressBar = document.getElementById('progress-bar');
+    var fileInput = document.getElementById('files');
+    var btnAttach = document.getElementById('btn-attach-file');
+
+    fileInput.addEventListener('change', onSelect, false);
+    btnAttach.addEventListener('click', function () {
+        fileInput.click();
+    }, false);
+
+    function onSelect() {
+        Array.prototype.slice.call(fileInput.files, 0).map(readFile);
+    };
+
+    function readFile(file) {
+        //console.log(file);
+        // File { name: "test.txt", lastModified: 1298926910000, lastModifiedDate: Date 2011-02-28T21:01:50.000Z, size: 23, type: "text/plain" }
+        // Reset progress indicator on new file selection.
+        progress.style.width = '0%';
+        progress.textContent = '0%';
+        reader = new FileReader();
+        reader.onerror = errorHandler;
+        reader.onprogress = updateProgress;
+        reader.onabort = function (e) {
+            alert('File read cancelled');
+        };
+        reader.onloadstart = function (e) {
+            progressBar.className = 'loading';
+        };
+        reader.onload = function (e) {
+            // Ensure that the progress bar displays 100% at the end.
+            progress.style.width = '100%';
+            progress.textContent = '100%';
+            setTimeout(function () { progressBar.className = ''; }, 2000);
+            //console.info(e.target.result);
+            console.info(e.target.result);
+            // call service here
+        }
+
+        reader.onloadend = function (loadend) {
+            /*loadend = {
+                target: FileReader,
+                isTrusted: true,
+                lengthComputable: true,
+                loaded: 1972,
+                total: 1972,
+                eventPhase: 0,
+                bubbles: false,
+                cancelable: false,
+                defaultPrevented: false,
+                timeStamp: 1453336901529000,
+                originalTarget: FileReader
+            }*/
+            //console.info(loadend.originalTarget);
+            //console.info('loaded ' +  + (loadend.loaded/1024).toFixed(2) + ' KB.');
+        };
+
+        // base64 string
+        reader.readAsDataURL(file);
+        //reader.readAsArrayBuffer(file);
+
+
+        // Read file as binary string.
+        //reader.readAsBinaryString(file);
+    };
+
+    function abortRead() {
+        reader.abort();
+    };
+
+    function errorHandler(evt) {
+        switch (evt.target.error.code) {
+            case evt.target.error.NOT_FOUND_ERR:
+                alert('File Not Found!');
+                break;
+            case evt.target.error.NOT_READABLE_ERR:
+                alert('File is not readable');
+                break;
+            case evt.target.error.ABORT_ERR:
+                break; // noop
+            default:
+                alert('An error occurred reading this file.');
+        };
+    };
+
+    function updateProgress(evt) {
+        // evt is an ProgressEvent.
+        if (evt.lengthComputable) {
+            var percentLoaded = Math.round((evt.loaded / evt.total) * 100);
+            // Increase the progress bar length.
+            if (percentLoaded < 100) {
+                progress.style.width = percentLoaded + '%';
+                progress.textContent = percentLoaded + '%';
+            }
+        }
+    };
+
+})();
+
+    </script>
+
+</body>
+</html>

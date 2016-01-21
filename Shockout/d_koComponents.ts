@@ -119,65 +119,249 @@
             ko.components.register('so-attachments', {
                 viewModel: function (params) {
                     var self = this;
+                    var w: any = window;
+                    this.errorMsg = ko.observable(null);
                     if (!!!params) {
-                        throw 'params is undefined in so-attachments';
+                        this.errorMsg('params is undefined in so-html5-attachments');
+                        throw this.errorMsg();
                         return;
                     }
-
                     if (!!!params.val) {
-                        throw "Parameter `val` for so-attachments is required!";
+                        this.errorMsg('Parameter `val` for so-html5-attachments is required!');
+                        throw this.errorMsg();
                         return;
                     }
 
-                    this.attachments = <IViewModelAttachments>params.val;
+                    var spForm: SPForm = params.val.getSpForm();
+                    var vm: IViewModel = spForm.getViewModel();
+                    var allowedExtensions: Array<string> = params.allowedExtensions || spForm.allowedExtensions;
+                    var reader: FileReader;
+
+                    this.attachments = params.val;
+                    this.label = params.label || 'Attach Files';
+                    this.drop = params.drop || false;
+                    this.dropLabel = params.dropLabel || 'Drag and Drop Files Here';
+                    this.className = params.className || 'btn btn-primary';
                     this.title = params.title || 'Attachments';
-                    this.id = params.id || 'fileUploader_' + uniqueId();
                     this.description = params.description;
+                    this.readOnly = (typeof params.readOnly == 'function') ? params.readOnly : ko.observable(params.readOnly || false); // allow for static bool or ko observable
+                    this.length = ko.pureComputed(function () { return self.attachments().length; });
+                    this.fileUploads = <KnockoutObservableArray<any>>ko.observableArray();
 
-                    var spForm: Shockout.SPForm = params.val.getSpForm();
+                    //check for compatibility
+                    this.hasFileReader = ko.observable(w.File && w.FileReader && w.FileList && w.Blob);
 
-                    // allow for static bool or ko observable
-                    this.readOnly = (typeof params.readOnly == 'function') ? params.readOnly : ko.observable(params.readOnly || false);
+                    this.id = params.id || 'so_fileUploader_' + uniqueId();
+                    this.qqFileUploaderId = 'so_qq_fileUploader_' + uniqueId();
 
-                    if (!this.readOnly()) {
+                    if (!this.hasFileReader()) {
+                        //this.errorMsg('FileReader is not supported by this browser.');
                         // instantiate the file uploader instance
-                        var settings: IFileUploaderSettings = new FileUploaderSettings(spForm, this.id, spForm.allowedExtensions);
+                        var settings: IFileUploaderSettings = new FileUploaderSettings(spForm, this.qqFileUploaderId, spForm.allowedExtensions);
                         var uploader = new Shockout.qq.FileUploader(settings);
                     }
 
-                    this.deleteAttachment = function (att: ISpAttachment, event: any): void {
-                        if (!confirm('Are you sure you want to delete ' + att.Name + '? This can\'t be undone.')) { return; }
-                        SpApi.deleteAttachment(att, function (data, error) {
+                    this.deleteAttachment = function (att, event) {
+                        if (!confirm('Are you sure you want to delete ' + att.Name + '? This can\'t be undone.')) {
+                            return;
+                        }
+                        Shockout.SpApi.deleteAttachment(att, function (data, error) {
                             if (!!error) {
                                 alert("Failed to delete attachment: " + error);
                                 return;
                             }
-                            var attachments: any = self.attachments;
-                            attachments.remove(att);
+                            self.attachments.remove(att);
                         });
                     };
 
-                    this.length = ko.pureComputed(function () {
-                        return self.attachments().length;
-                    });
+                    // HTML 5 methods
+                    this.fileHandler = function (e) { 
+                        if (vm.Id() == null) {
+                            spForm.saveListItem(vm, false, undefined, function (itemId) {
+                                setTimeout(function () {
+                                    readFiles();
+                                }, 1000);
+                            });
+                            return;
+                        }          
+                        readFiles();             
+                    };
+
+                    this.onSelect = function (e) {
+                        cancel(e);
+                        //trigger click on the input file control
+                        document.getElementById(self.id).click();
+                    };
+
+                    this.onDrop = function (e) {
+                        cancel(e);
+                        var dt = e.dataTransfer;
+                        var files = dt.files;
+                        if (!!!files) {
+                            console.warn('files is ' + typeof files);
+                            return false;
+                        }
+                        else{
+                            Array.prototype.slice.call(files, 0).map(readFile);
+                        }
+                    };
+
+                    function readFiles() {
+                        Array.prototype.slice.call(document.getElementById(self.id)['files'], 0).map(readFile);
+                    };
+
+                    function readFile(file: File) {       
+
+                        if (spForm.debug) {
+                            console.info('uploading file...');
+                            console.info(file);
+                        }
+                                           
+                        var fileName = file.name.replace(/[^a-zA-Z0-9_\-\.]/g, ''); // clean the filename
+                        var allowedExtension = new RegExp("\\b.(" + allowedExtensions.join('|') + ")$").test(fileName);
+                        if (!allowedExtension) {
+                            self.errorMsg('Only files with the extensions: ' + allowedExtensions.join(', ') + ' are allowed.'); 
+                            return;
+                        }
+                                                               
+                        var fileUpload = new FileUpload(fileName, file.size);
+                        self.fileUploads().push(fileUpload);
+                        self.fileUploads.valueHasMutated();
+
+                        reader = new FileReader();
+                        reader.onerror = errorHandler;
+                        reader.onprogress = function (e) {
+                            updateProgress(e, fileUpload);
+                        };
+                        reader.onabort = function (e) {
+                            self.errorMsg('File read cancelled');
+                        };
+                        reader.onloadstart = function (e) {
+                            fileUpload.progress(0);
+                        };
+                        reader.onload = function (e) {
+                            var event: any = e;
+                            // Ensure that the progress bar displays 100% at the end.
+                            fileUpload.progress(100);
+                            // Send the base64 string to the AddAttachment service for upload.
+                            Shockout.SpSoap.addAttachment(event.target.result, fileName, spForm.listName, spForm.viewModel.Id(), spForm.siteUrl, callback);
+                        }
+                        reader.onloadend = function (loadend) {
+                            /*loadend = { 
+                                target: FileReader, 
+                                isTrusted: true, 
+                                lengthComputable: true, 
+                                loaded: 1972, 
+                                total: 1972, 
+                                eventPhase: 0, 
+                                bubbles: false, 
+                                cancelable: false, 
+                                defaultPrevented: false, 
+                                timeStamp: 1453336901529000, 
+                                originalTarget: FileReader 
+                            }*/
+                            //console.info('loaded ' +  + (loadend.loaded/1024).toFixed(2) + ' KB.');
+                        };
+
+                        // read as base64 string
+                        reader.readAsDataURL(file);
+
+                        function callback(xmlDoc: any, status: string, jqXhr: any) {
+                            if (spForm.debug) {
+                                console.info('so-html5-attachments.onFileUploadComplete()...');
+                                console.info(arguments);
+                            }
+                            
+                            // push a new SP attachment instance to the view model's `attachments` collection
+                            var att: ISpAttachment = new SpAttachment(spForm.getRootUrl(), spForm.siteUrl, spForm.listName, spForm.getItemId(), fileName);
+                            spForm.viewModel.attachments().push(att);
+                            spForm.viewModel.attachments.valueHasMutated(); // tell KO the array has been updated
+
+                            setTimeout(function () {
+                                self.fileUploads.remove(fileUpload);
+                            }, 1000);
+                        }
+                    };
+
+                    function FileUpload(filename: string, bytes: number) {
+                        this.label = ko.observable();
+                        this.progress = ko.observable(0);
+                        this.filename = ko.observable(filename);
+                        this.kb = ko.observable((bytes / 1024).toFixed(1));
+                    };
+
+                    this.onDragenter = cancel;
+                    this.onDragover = cancel;
+
+                    function errorHandler(evt) {
+                        switch (evt.target.error.code) {
+                            case evt.target.error.NOT_FOUND_ERR:
+                                self.errorMsg = 'File Not Found!';
+                                break;
+                            case evt.target.error.NOT_READABLE_ERR:
+                                self.errorMsg = 'File is not readable.';
+                                break;
+                            case evt.target.error.ABORT_ERR:
+                                break; // noop
+                            default:
+                                self.errorMsg = 'An error occurred reading this file.';
+                        };
+                    };
+
+                    function updateProgress(e, fileUpload) {
+                        // e is a ProgressEvent.
+                        if (e.lengthComputable) {
+                            var percentLoaded = Math.round((e.loaded / e.total) * 100);
+                            // Increase the progress bar length.
+                            if (percentLoaded < 100) {
+                                fileUpload.label(fileUpload.filename() + ' ' + percentLoaded + '% Complete');
+                                fileUpload.progess(percentLoaded);
+                            }
+                        }
+                    };
+
+                    function cancel(e) {
+                        if (e.preventDefault) {
+                            e.preventDefault();
+                        }
+                        if (e.stopPropagation) {
+                            e.stopPropagation();
+                        }
+                        return false;
+                    };
                 },
                 template: 
                 `<section>
-                    <h4><span data-bind="text: title"></span> <span data-bind="text: length" class="badge"></span></h4>
-                    <div data-bind="visible: !!!readOnly(), attr:{id: id}"></div>
-                    <div data-bind="foreach: attachments">
-                        <div>
-                            <a href="" data-bind="attr: {href: __metadata.media_src}"><span class="glyphicon glyphicon-paperclip"></span> <span data-bind="text: Name"></span></a>
+                    <h4><span data-bind="text: title"></span><span data-bind="text: length" class="badge"></span></h4>
+                    <div data-bind="visible: !!errorMsg()" class="alert alert-danger"><span class="glyphicon glyphicon-exclamation-sign"></span>&nbsp;<span data-bind="text: errorMsg"></span></div> 
+                    <!-- ko ifnot: hasFileReader() -->
+                    <div data-bind="visible: !!!readOnly(), attr: {id: this.qqFileUploaderId}"></div>
+                    <!-- /ko -->
+                    <!-- ko if: !readOnly() && hasFileReader() -->
+                        <input type="file" data-bind="attr: {'id': id}, event: {'change': fileHandler}" multiple class="form-control" style="display:none;" /> 
+                        <div data-bind="attr:{'class': className}, event: {'click': onSelect}"><span class="glyphicon glyphicon-paperclip"></span>&nbsp;<span data-bind="text: label"></span></div> 
+                        <!-- ko if: drop --> 
+                            <div class="so-file-dropzone" data-bind="event: {'dragenter': onDragenter, 'dragover': onDragover, 'drop': onDrop}"><div data-bind="text: dropLabel"></div></div>
+                        <!-- /ko -->
+                        <!-- ko foreach: fileUploads -->
+                            <div class="progress"> 
+                                <div data-bind="text: label, attr: {'aria-valuenow': progress(), 'style': 'width:' + progress() + '%;' }" class="progress-bar progress-bar-success progress-bar-striped active" role="progressbar" aria-valuemin="0" aria-valuemax="100"></div>  
+                            </div>
+                        <!-- /ko -->
+                    <!-- /ko -->
+                    <div data-bind="foreach: attachments" style="margin:1em auto;">
+                        <div>      
+                            <a href="" data-bind="attr: {href: __metadata.media_src}"><span class="glyphicon glyphicon-paperclip"></span>&nbsp;<span data-bind="text: Name"></span></a>
                             <!-- ko ifnot: $parent.readOnly() -->
                             <button data-bind="event: {click: $parent.deleteAttachment}" class="btn btn-sm btn-danger" title="Delete Attachment"><span class="glyphicon glyphicon-remove"></span></button>
                             <!-- /ko -->
                         </div>
                     </div>
                     <!-- ko if: length() == 0 && readOnly() -->
-                    <p>No attachments have been included.</p>
+                        <p>No attachments have been included.</p> 
                     <!-- /ko -->
                     <!-- ko if: description -->
-                    <div data-bind="text: description"></div>
+                        <div data-bind="text: description"></div>
                     <!-- /ko -->
                 </section>`
             });

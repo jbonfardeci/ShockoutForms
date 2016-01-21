@@ -345,6 +345,33 @@
                 callback(results);
             }
         }
+
+        /**
+         * Add Attachment
+         * @param base64Data
+         * @param fileName
+         * @param listName
+         * @param listItemId
+         * @param siteUrl
+         * @param callback
+         */
+        public static addAttachment = function (base64Data: string, fileName: string, listName: string, listItemId: number, siteUrl: string, callback: Function) {
+            // remove browser data file header, get base64 string after the comma... 'data:application/pdf;base64,<base64string>'
+            var strData = base64Data.indexOf(',') > -1 ? base64Data.split(',')[1] : base64Data;
+            var action = 'http://schemas.microsoft.com/sharepoint/soap/AddAttachment';
+            var packet = '<?xml version="1.0" encoding="utf-8"?>' +
+                '<soap:Envelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">' +
+                '<soap:Body>' +
+                '<AddAttachment xmlns="http://schemas.microsoft.com/sharepoint/soap/">' +
+                '<listName>{0}</listName>' +
+                '<listItemID>{1}</listItemID>' +
+                '<fileName>{2}</fileName>' +
+                '<attachment>{3}</attachment>' +
+                '</AddAttachment>' +
+                '</soap:Body>' +
+                '</soap:Envelope>';
+            this.executeSoapRequest(action, packet, [listName, listItemId, fileName, strData], siteUrl, callback, 'lists.asmx');
+        }
     }
 
 }

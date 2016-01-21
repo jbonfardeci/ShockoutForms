@@ -1089,11 +1089,10 @@ module Shockout {
         * Save list item via SOAP services.
         * @param vm: IViewModel
         * @param isSubmit?: boolean = false
-        * @param refresh?: boolean = false
         * @param customMsg?: string = undefined
         * @return void
         */
-        saveListItem(vm: IViewModel, isSubmit: boolean = false, refresh: boolean = false, customMsg: string = undefined): void {
+        saveListItem(vm: IViewModel, isSubmit: boolean = false, customMsg: string = undefined, callback: Function = undefined): void {
             var self: SPForm = vm.parent;
             var isNew = !!(self.itemId == null)
                 , data = []
@@ -1167,7 +1166,7 @@ module Shockout {
                     fields.push([vm[key]._name, val]);
                 });
 
-                SpSoap.updateListItem(self.itemId, self.listName, fields, isNew, self.siteUrl, callback);
+                SpSoap.updateListItem(self.itemId, self.listName, fields, isNew, self.siteUrl, cb);
                  
             }
             catch (e) {
@@ -1175,7 +1174,7 @@ module Shockout {
                 self.logError('Error in SpForm.saveListItem(): ', e);                             
             }
 
-            function callback(xmlDoc: any, status: string, jqXhr: any): void {
+            function cb(xmlDoc: any, status: string, jqXhr: any): void {
 
                 var itemId: number;
 
@@ -1218,6 +1217,7 @@ module Shockout {
 
                     if (self.itemId == null) {
                         self.itemId = itemId;
+                        vm.Id(itemId);
                     }
 
                     if (self.debug) {
@@ -1232,6 +1232,9 @@ module Shockout {
 
                 if (isSubmit) {//submitting form
                     self.showDialog('<p>Your form has been submitted. You will be redirected in ' + timeout / 1000 + ' seconds.</p>', 'Form Submission Successful');
+                    if (callback) {
+                        callback(self.itemId);
+                    }
                     if (self.debug) {
                         console.warn('DEBUG MODE: Would normally redirect user to confirmation page: ' + self.confirmationUrl);
                     } else {
@@ -1245,6 +1248,10 @@ module Shockout {
 
                     // refresh data from the server
                     self.getListItemAsync(self);
+
+                    if (callback) {
+                        callback(self.itemId);
+                    }
 
                     //give WF History list 5 seconds to update
                     if (self.includeWorkflowHistory) {

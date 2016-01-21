@@ -311,6 +311,20 @@ $aliceblue: aliceblue;
 
         }/*.user-profile-card*/
 
+         .so-file-dropzone{
+             text-align:center;
+             color: $dk-grey;
+             border:1px solid $dk-grey;
+             padding:.5em;
+             margin:1em auto;
+             height:auto;
+             > div{
+                 padding:1.5em;
+                 border:1px dashed $dk-grey;
+                 height:auto;
+             }
+         }
+
         /*Valum's QQ File Uploader*/
 	    .qq-uploader { position:relative; width: 100%;}	
 	    .qq-upload-button {}

@@ -233,6 +233,17 @@
         font-weight: bold;
         color: #777;
         margin-right: .8em; }
+    .sp-form .so-file-dropzone {
+      text-align: center;
+      color: #333;
+      border: 1px solid #333;
+      padding: .5em;
+      margin: 1em auto;
+      height: auto; }
+      .sp-form .so-file-dropzone > div {
+        padding: 1.5em;
+        border: 1px dashed #333;
+        height: auto; }
     .sp-form .qq-uploader {
       position: relative;
       width: 100%; }

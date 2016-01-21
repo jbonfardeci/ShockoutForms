@@ -124,8 +124,9 @@ To enable attachments for your forms, include at least one `so-attachments` elem
 ```
 <so-attachments params="val: attahcments, readOnly: readOnly"></so-attachments>
 ```
-
-I've written a generic handler (.ashx) for attaching documents to your list items. Be sure to copy `SPFormFileHandler.ashx` from the `_layouts` directory of this project to the LAYOUTS directory of your SharePoint front-end server. The URI will be `http://<mysite.com>/_layouts/SPFormFileHandler.ashx`; the server directory is `C:\Program Files\Common Files\microsoft shared\Web Server Extensions\14\TEMPLATE\LAYOUTS\SPFormFileHandler.ashx` - even for SP 2013. My goal for the near future is to eliminate dependency on this generic handler for those using Office 365. It's doubtful that users of Office 365 have permissions to copy files to their LAYOUTS directory. Since modern browsers now convert file uplaods to base64 strings, it's possible to send attachments to list items via SharePoint's SOAP API.
+### For IE 9
+Shockout uploads base64 encoded attachments to the SharePoint services. But older browsers such as IE9 don't implement the FileReader object.
+If you need to support IE9 users, I've written a generic handler (.ashx) for attaching documents to your list items. Be sure to copy `SPFormFileHandler.ashx` from the `_layouts` directory of this project to the LAYOUTS directory of your SharePoint front-end server. The URI will be `http://<mysite.com>/_layouts/SPFormFileHandler.ashx`; the server directory is `C:\Program Files\Common Files\microsoft shared\Web Server Extensions\14\TEMPLATE\LAYOUTS\SPFormFileHandler.ashx` - even for SP 2013. My goal for the near future is to eliminate dependency on this generic handler for those using Office 365. It's doubtful that users of Office 365 have permissions to copy files to their LAYOUTS directory. Since modern browsers now convert file uplaods to base64 strings, it's possible to send attachments to list items via SharePoint's SOAP API.
 
 Also ensure your SharePoint list has attachments enabled. Shockout will detect this setting and render attachments based on your SP list settings.
 
@@ -203,8 +204,6 @@ KO Components are really amazing. Visit the KO docs to learn more about them htt
     <!-- Attachments -->
     <so-attachments params="val: attahcments, readOnly: readOnly"></so-attachments>
 
-    <!-- HTML5 Attachment control comming soon. Will keep so-attachments for IE 9 compatibility. -->
-    <so-html5-attachments params="val: attahcments, drop: true, dropLabel: 'Drop Files Here', readOnly: readOnly"></so-html5-attachments>
 ```
 * Optional Parameters
     * label: string (default is the field's display name defined in the SharePoint field; can pass HTML)
