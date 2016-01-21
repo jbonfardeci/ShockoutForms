@@ -2,14 +2,6 @@
 
     export class Templates {
 
-        // dropped support for qq fileuploader
-        //public static fileuploadTemplate: string = `
-        //<div class="qq-uploader" data-author-only>
-        //    <div class="qq-upload-drop-area"><span>Drop files here to upload</span></div>
-        //    <div class="btn btn-primary qq-upload-button"><span class="glyphicon glyphicon-paperclip"></span> Attach File</div>
-        //    <ul class="qq-upload-list"></ul>
-        //</div>`;
-
         public static actionTemplate: string = 
         `<div class="row">
             <div class="col-sm-8 col-sm-offset-4 text-right">

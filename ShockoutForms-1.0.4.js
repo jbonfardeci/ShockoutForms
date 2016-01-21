@@ -2021,6 +2021,17 @@ var Shockout;
 })(Shockout || (Shockout = {}));
 var Shockout;
 (function (Shockout) {
+    var FileUpload = (function () {
+        function FileUpload(fileName, bytes) {
+            this.label = ko.observable(null);
+            this.progress = ko.observable(0);
+            this.fileName = ko.observable(fileName);
+            this.kb = ko.observable((bytes / 1024));
+            this.className = ko.observable('progress-bar progress-bar-success progress-bar-striped active');
+        }
+        return FileUpload;
+    })();
+    Shockout.FileUpload = FileUpload;
     var KoComponents = (function () {
         function KoComponents() {
         }
@@ -2150,13 +2161,6 @@ var Shockout;
                         this.errorMsg('This browser does not support the FileReader class required for uplaoding files. You may be using IE 9 or another unsupported browser.');
                     }
                     this.id = params.id || 'so_fileUploader_' + uniqueId();
-                    // dropped support for IE9 uploader
-                    //if (!this.hasFileReader()) {
-                    //    // instantiate the qq file uploader instance
-                    //    this.qqFileUploaderId = 'so_qq_fileUploader_' + uniqueId();
-                    //    var settings: IFileUploaderSettings = new FileUploaderSettings(spForm, this.qqFileUploaderId, spForm.allowedExtensions);
-                    //    var uploader = new Shockout.qq.FileUploader(settings);
-                    //}
                     this.deleteAttachment = function (att, event) {
                         if (!confirm('Are you sure you want to delete ' + att.Name + '? This can\'t be undone.')) {
                             return;
@@ -2169,25 +2173,18 @@ var Shockout;
                             self.attachments.remove(att);
                         });
                     };
-                    // HTML 5 methods
+                    // event handler for input[type='file']
                     this.fileHandler = function (e) {
-                        // If this is a new form, save it first; you can't attach a file unless the list item already exists.
-                        if (vm.Id() == null) {
-                            spForm.saveListItem(vm, false, undefined, function (itemId) {
-                                setTimeout(function () {
-                                    readFiles();
-                                }, 1000);
-                            });
-                            return;
-                        }
-                        readFiles();
+                        var files = document.getElementById(self.id)['files'];
+                        readFiles(files);
                     };
+                    // event handler for Attach button
                     this.onSelect = function (e) {
                         cancel(e);
                         //trigger click on the input file control
                         document.getElementById(self.id).click();
                     };
-                    // WIP
+                    // event handler for Drag adn Drop Zone
                     this.onDrop = function (localViewModel, e) {
                         cancel(e);
                         if (spForm.debug) {
@@ -2201,42 +2198,72 @@ var Shockout;
                             return false;
                         }
                         else {
-                            Array.prototype.slice.call(files, 0).map(readFile);
+                            readFiles(files);
                         }
                     };
-                    function readFiles() {
-                        Array.prototype.slice.call(document.getElementById(self.id)['files'], 0).map(readFile);
+                    // read files array
+                    function readFiles(files) {
+                        // If this is a new form, save it first; you can't attach a file unless the list item already exists.
+                        if (vm.Id() == null) {
+                            spForm.saveListItem(vm, false, undefined, function (itemId) {
+                                // catch-all if for some reason vm.Id is still null or lost reference of vm and we're referencing a local copy of the actual view model?
+                                if (vm.Id() == null && !!itemId && itemId.toFixed) {
+                                    vm.Id(itemId);
+                                }
+                                setTimeout(function () {
+                                    Array.prototype.slice.call(files, 0).map(readFile);
+                                }, 1000);
+                            });
+                        }
+                        else {
+                            Array.prototype.slice.call(files, 0).map(readFile);
+                        }
                     }
                     ;
+                    // upload a File object
                     function readFile(file) {
                         if (spForm.debug) {
                             console.info('uploading file...');
                             console.info(file);
                         }
                         var fileName = file.name.replace(/[^a-zA-Z0-9_\-\.]/g, ''); // clean the filename
-                        var allowedExtension = new RegExp("\\b.(" + allowedExtensions.join('|') + ")$").test(fileName);
+                        var ext = /\.\w{2,4}$/.exec(fileName)[0]; //extract extension from filename, e.g. '.docx'
+                        var rootName = fileName.replace(new RegExp(ext + '$'), ''); // e.g. 'test.docx' becomes 'test'
+                        // Is the extension of the fileName in the array of allowed extensions? 
+                        var allowedExtension = new RegExp("^(\\.|)(" + allowedExtensions.join('|') + ")$", "i").test(ext);
                         if (!allowedExtension) {
                             self.errorMsg('Only files with the extensions: ' + allowedExtensions.join(', ') + ' are allowed.');
                             return;
                         }
-                        //var extension: Array<string> = /\.\w{3,4}$/.exec(fileName); //extract extension from filename
                         // Check for duplicate filename. If found, append a number.
-                        var duplicateCt = self.attachments().filter(function (file) {
-                            return fileName == file.Name;
-                        }).length;
-                        if (spForm.debug && duplicateCt > 0) {
-                            console.warn(duplicateCt + ' duplicate files found in Attachments Array');
-                        }
-                        if (duplicateCt > 0) {
-                            var ext = fileName.split('.').slice(-1); // e.g. 'txt'
-                            var rootName = fileName.split('.').slice(0, -1).join('.'); //if they have more than one period in the filename - e.g. 'test.2016.01.20'
-                            fileName = rootName + '-' + duplicateCt + '.' + ext;
+                        for (var i = 0; i < self.attachments().length; i++) {
+                            if (new RegExp(fileName, 'i').test(self.attachments()[i].Name)) {
+                                fileName = rootName + '-1' + ext;
+                                break;
+                            }
                         }
                         var fileUpload = new FileUpload(fileName, file.size);
                         self.fileUploads().push(fileUpload);
                         self.fileUploads.valueHasMutated();
                         reader = new FileReader();
-                        reader.onerror = errorHandler;
+                        reader.onerror = function errorHandler(e) {
+                            var evt = e;
+                            var className = fileUpload.className();
+                            fileUpload.className(className.replace('-success', '-danger'));
+                            switch (evt.target.error.code) {
+                                case evt.target.error.NOT_FOUND_ERR:
+                                    self.errorMsg = 'File Not Found!';
+                                    break;
+                                case evt.target.error.NOT_READABLE_ERR:
+                                    self.errorMsg = 'File is not readable.';
+                                    break;
+                                case evt.target.error.ABORT_ERR:
+                                    break; // noop
+                                default:
+                                    self.errorMsg = 'An error occurred reading this file.';
+                            }
+                            ;
+                        };
                         reader.onprogress = function (e) {
                             updateProgress(e, fileUpload);
                         };
@@ -2271,18 +2298,43 @@ var Shockout;
                         };
                         // read as base64 string
                         reader.readAsDataURL(file);
-                        function callback(xmlDoc, status, jqXhr) {
+                        function callback() {
+                            // on error: jqXhr: JQueryXHR, status: string, error: string
+                            // success: xmlDoc: any, status: string, jqXhr: JQueryXHR
+                            var status = arguments[1];
                             if (spForm.debug) {
                                 console.info('so-html5-attachments.onFileUploadComplete()...');
                                 console.info(arguments);
                             }
-                            if (!!!status || status != 'success') {
-                                spForm.$dialog.html('Error on file upload. Please ensure you upload unique filenames to this form.').dialog('open');
+                            /* error XML:
+                            <?xml version="1.0" encoding="utf-8"?>
+                            <soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+                                <soap:Body>
+                                    <soap:Fault>
+                                        <faultcode>soap:Server</faultcode>
+                                        <faultstring>Exception of type 'Microsoft.SharePoint.SoapServer.SoapServerException' was thrown.</faultstring>
+                                        <detail>
+                                            <errorstring xmlns="http://schemas.microsoft.com/sharepoint/soap/">Parameter listItemID is missing or invalid.</errorstring>
+                                            <errorcode xmlns="http://schemas.microsoft.com/sharepoint/soap/">0x82000001</errorcode>
+                                        </detail>
+                                    </soap:Fault>
+                                </soap:Body>
+                            </soap:Envelope>
+                            */
+                            if (!!!status && status == 'error') {
+                                var jqXhr = arguments[0];
+                                var responseXml = jqXhr.responseXML;
+                                var errorString = $(jqXhr.responseXML).find('*').filter(function () {
+                                    return this.nodeName.toLowerCase() == 'errorstring';
+                                });
+                                spForm.$dialog.html('Error on file upload. Message from server: ' + (errorString || jqXhr.statusText)).dialog('open');
+                                fileUpload.className(fileUpload.className().replace('-success', '-danger'));
                             }
                             else if (status == 'success') {
                                 // push a new SP attachment instance to the view model's `attachments` collection
                                 var att = new Shockout.SpAttachment(spForm.getRootUrl(), spForm.siteUrl, spForm.listName, spForm.getItemId(), fileName);
-                                self.attachments.push(att);
+                                self.attachments().push(att);
+                                self.attachments.valueHasMutated();
                             }
                             setTimeout(function () {
                                 self.fileUploads.remove(fileUpload);
@@ -2290,39 +2342,16 @@ var Shockout;
                         }
                     }
                     ;
-                    function FileUpload(filename, bytes) {
-                        this.label = ko.observable();
-                        this.progress = ko.observable(0);
-                        this.filename = ko.observable(filename);
-                        this.kb = ko.observable((bytes / 1024).toFixed(1));
-                    }
-                    ;
                     this.onDragenter = cancel;
                     this.onDragover = cancel;
-                    function errorHandler(evt) {
-                        switch (evt.target.error.code) {
-                            case evt.target.error.NOT_FOUND_ERR:
-                                self.errorMsg = 'File Not Found!';
-                                break;
-                            case evt.target.error.NOT_READABLE_ERR:
-                                self.errorMsg = 'File is not readable.';
-                                break;
-                            case evt.target.error.ABORT_ERR:
-                                break; // noop
-                            default:
-                                self.errorMsg = 'An error occurred reading this file.';
-                        }
-                        ;
-                    }
-                    ;
                     function updateProgress(e, fileUpload) {
                         // e is a ProgressEvent.
                         if (e.lengthComputable) {
                             var percentLoaded = Math.round((e.loaded / e.total) * 100);
                             // Increase the progress bar length.
                             if (percentLoaded < 100) {
-                                fileUpload.label(fileUpload.filename() + ' ' + percentLoaded + '% Complete');
-                                fileUpload.progess(percentLoaded);
+                                fileUpload.label(fileUpload.fileName() + ' ' + percentLoaded + '% Complete');
+                                fileUpload.progress(percentLoaded);
                             }
                         }
                     }
@@ -2334,7 +2363,6 @@ var Shockout;
                         if (e.stopPropagation) {
                             e.stopPropagation();
                         }
-                        return false;
                     }
                     ;
                     if (!spForm.enableAttachments) {
@@ -2342,7 +2370,7 @@ var Shockout;
                         this.readOnly(true);
                     }
                 },
-                template: "<section>\n                    <h4><span data-bind=\"text: title\"></span><span data-bind=\"text: length\" class=\"badge\"></span></h4>\n                    <div data-bind=\"visible: !!errorMsg()\" class=\"alert alert-danger\"><span class=\"glyphicon glyphicon-exclamation-sign\"></span>&nbsp;<span data-bind=\"text: errorMsg\"></span></div> \n                    <!-- ko ifnot: hasFileReader() -->\n                    <div data-bind=\"visible: !!!readOnly(), attr: {id: this.qqFileUploaderId}\"></div>\n                    <!-- /ko -->\n                    <!-- ko if: !readOnly() && hasFileReader() -->\n                        <input type=\"file\" data-bind=\"attr: {'id': id}, event: {'change': fileHandler}\" multiple class=\"form-control\" style=\"display:none;\" /> \n                        <div data-bind=\"attr:{'class': className}, event: {'click': onSelect}\"><span class=\"glyphicon glyphicon-paperclip\"></span>&nbsp;<span data-bind=\"text: label\"></span></div> \n                        <!-- ko if: drop -->\n                            <div class=\"so-file-dropzone\" data-bind=\"event: {'dragenter': onDragenter, 'dragover': onDragover, 'drop': onDrop}\"><div data-bind=\"text: dropLabel\"></div></div>\n                        <!-- /ko -->\n                        <!-- ko foreach: fileUploads -->\n                            <div class=\"progress\"> \n                                <div data-bind=\"text: label, attr: {'aria-valuenow': progress(), 'style': 'width:' + progress() + '%;' }\" class=\"progress-bar progress-bar-success progress-bar-striped active\" role=\"progressbar\" aria-valuemin=\"0\" aria-valuemax=\"100\"></div>  \n                            </div>\n                        <!-- /ko -->\n                    <!-- /ko -->\n                    <div data-bind=\"foreach: attachments\" style=\"margin:1em auto;\">\n                        <div>      \n                            <a href=\"\" data-bind=\"attr: {href: __metadata.media_src}\"><span class=\"glyphicon glyphicon-paperclip\"></span>&nbsp;<span data-bind=\"text: Name\"></span></a>\n                            <!-- ko ifnot: $parent.readOnly() -->\n                            <button data-bind=\"event: {click: $parent.deleteAttachment}\" class=\"btn btn-sm btn-danger\" title=\"Delete Attachment\"><span class=\"glyphicon glyphicon-remove\"></span></button>\n                            <!-- /ko -->\n                        </div>\n                    </div>\n                    <!-- ko if: length() == 0 && readOnly() -->\n                        <p>No attachments have been included.</p> \n                    <!-- /ko -->\n                    <!-- ko if: description -->\n                        <div data-bind=\"text: description\"></div>\n                    <!-- /ko -->\n                </section>"
+                template: "<section>\n                    <h4><span data-bind=\"text: title\"></span><span data-bind=\"text: length\" class=\"badge\"></span></h4>\n                    <div data-bind=\"visible: !!errorMsg()\" class=\"alert alert-danger\"><span class=\"glyphicon glyphicon-exclamation-sign\"></span>&nbsp;<span data-bind=\"text: errorMsg\"></span></div> \n                    <!-- ko ifnot: hasFileReader() -->\n                    <div data-bind=\"visible: !!!readOnly(), attr: {id: this.qqFileUploaderId}\"></div>\n                    <!-- /ko -->\n                    <!-- ko if: !readOnly() && hasFileReader() -->\n                        <input type=\"file\" data-bind=\"attr: {'id': id}, event: {'change': fileHandler}\" multiple class=\"form-control\" style=\"display:none;\" /> \n                        <div data-bind=\"attr:{'class': className}, event: {'click': onSelect}\"><span class=\"glyphicon glyphicon-paperclip\"></span>&nbsp;<span data-bind=\"text: label\"></span></div> \n                        <!-- ko if: drop -->\n                            <div class=\"so-file-dropzone\" data-bind=\"event: {'dragenter': onDragenter, 'dragover': onDragover, 'drop': onDrop}\"><div data-bind=\"text: dropLabel\"></div></div>\n                        <!-- /ko -->\n                        <!-- ko foreach: fileUploads -->\n                            <div class=\"progress\"> \n                                <div data-bind=\"text: label, attr: {'aria-valuenow': progress(), 'style': 'width:' + progress() + '%;', 'class': className() }\" role=\"progressbar\" aria-valuemin=\"0\" aria-valuemax=\"100\"></div>  \n                            </div>\n                        <!-- /ko -->\n                    <!-- /ko -->\n                    <div data-bind=\"foreach: attachments\" style=\"margin:1em auto;\">\n                        <div>      \n                            <a href=\"\" data-bind=\"attr: {href: __metadata.media_src}\"><span class=\"glyphicon glyphicon-paperclip\"></span>&nbsp;<span data-bind=\"text: Name\"></span></a>\n                            <!-- ko ifnot: $parent.readOnly() -->\n                            <button data-bind=\"event: {click: $parent.deleteAttachment}\" class=\"btn btn-sm btn-danger\" title=\"Delete Attachment\"><span class=\"glyphicon glyphicon-remove\"></span></button>\n                            <!-- /ko -->\n                        </div>\n                    </div>\n                    <!-- ko if: length() == 0 && readOnly() -->\n                        <p>No attachments have been included.</p> \n                    <!-- /ko -->\n                    <!-- ko if: description -->\n                        <div data-bind=\"text: description\"></div>\n                    <!-- /ko -->\n                </section>"
             });
             ko.components.register('so-created-modified-info', {
                 viewModel: function (params) {
@@ -3071,9 +3099,12 @@ var Shockout;
                 }
                 $jqXhr.fail(function (jqXhr, status, error) {
                     var msg = 'Error in SpSoap.executeSoapRequest. ' + status + ': ' + error + ' ';
-                    Shockout.Utils.logError(msg, Shockout.SPForm.errorLogListName);
-                    callback(arguments);
-                    //console.warn(msg);
+                    if (Shockout.SPForm.enableErrorLog && !Shockout.SPForm.DEBUG) {
+                        Shockout.Utils.logError(msg, Shockout.SPForm.errorLogListName);
+                    }
+                    if (callback) {
+                        callback(jqXhr, status, error);
+                    }
                 });
             }
             catch (e) {
@@ -3237,13 +3268,6 @@ var Shockout;
             div.innerHTML = Templates.actionTemplate;
             return div;
         };
-        // dropped support for qq fileuploader
-        //public static fileuploadTemplate: string = `
-        //<div class="qq-uploader" data-author-only>
-        //    <div class="qq-upload-drop-area"><span>Drop files here to upload</span></div>
-        //    <div class="btn btn-primary qq-upload-button"><span class="glyphicon glyphicon-paperclip"></span> Attach File</div>
-        //    <ul class="qq-upload-list"></ul>
-        //</div>`;
         Templates.actionTemplate = "<div class=\"row\">\n            <div class=\"col-sm-8 col-sm-offset-4 text-right\">\n                <label>Logged in as:</label><span data-bind=\"text: currentUser().title\" class=\"current-user\"></span>\n                <button class=\"btn btn-default cancel\" data-bind=\"event: { click: cancel }\" title=\"Close\"><span class=\"glyphicon glyphicon-remove\"></span><span class=\"hidden-xs\">Close</span></button>\n                <!-- ko if: allowPrint() -->\n                    <button class=\"btn btn-primary print\" data-bind=\"event: {click: print}\" title=\"Print\"><span class=\"glyphicon glyphicon-print\"></span><span class=\"hidden-xs\">Print</span></button>\n                <!-- /ko -->\n                <!-- ko if: allowDelete() && Id() != null -->\n                    <button class=\"btn btn-warning delete\" data-bind=\"event: {click: deleteItem}\" title=\"Delete\"><span class=\"glyphicon glyphicon-remove\"></span><span class=\"hidden-xs\">Delete</span></button>\n                <!-- /ko -->\n                <!-- ko if: allowSave() -->\n                    <button class=\"btn btn-success save\" data-bind=\"event: { click: save }\" title=\"Save your work.\"><span class=\"glyphicon glyphicon-floppy-disk\"></span><span class=\"hidden-xs\">Save</span></button>\n                <!-- /ko -->\n                <button class=\"btn btn-danger submit\" data-bind=\"event: { click: submit }\" title=\"Submit for routing.\"><span class=\"glyphicon glyphicon-floppy-open\"></span><span class=\"hidden-xs\">Submit</span></button>\n            </div>\n        </div>";
         return Templates;
     })();

@@ -388,6 +388,21 @@ declare module Shockout {
     }
 }
 declare module Shockout {
+    interface IFileUpload {
+        label: KnockoutObservable<string>;
+        progress: KnockoutObservable<number>;
+        fileName: KnockoutObservable<string>;
+        kb: KnockoutObservable<number>;
+        className: KnockoutObservable<string>;
+    }
+    class FileUpload implements IFileUpload {
+        label: KnockoutObservable<string>;
+        progress: KnockoutObservable<number>;
+        fileName: KnockoutObservable<string>;
+        kb: KnockoutObservable<number>;
+        className: KnockoutObservable<string>;
+        constructor(fileName: string, bytes: number);
+    }
     class KoComponents {
         static registerKoComponents(): void;
         private static hasErrorCssDiv;

@@ -1,4 +1,29 @@
 ﻿module Shockout {
+
+    export interface IFileUpload {
+        label: KnockoutObservable<string>;
+        progress: KnockoutObservable<number>;
+        fileName: KnockoutObservable<string>;
+        kb: KnockoutObservable<number>;
+        className: KnockoutObservable<string>;
+    }
+
+    export class FileUpload implements IFileUpload {
+
+        public label: KnockoutObservable<string>;
+        public progress: KnockoutObservable<number>;
+        public fileName: KnockoutObservable<string>;
+        public kb: KnockoutObservable<number>;
+        public className: KnockoutObservable<string>;
+
+        constructor(fileName: string, bytes: number) {
+            this.label = ko.observable(null);
+            this.progress = ko.observable(0);
+            this.fileName = ko.observable(fileName);
+            this.kb = ko.observable((bytes / 1024));
+            this.className = ko.observable('progress-bar progress-bar-success progress-bar-striped active');
+        }
+    }
     
     export class KoComponents {
 
@@ -157,14 +182,6 @@
 
                     this.id = params.id || 'so_fileUploader_' + uniqueId();
 
-                    // dropped support for IE9 uploader
-                    //if (!this.hasFileReader()) {
-                    //    // instantiate the qq file uploader instance
-                    //    this.qqFileUploaderId = 'so_qq_fileUploader_' + uniqueId();
-                    //    var settings: IFileUploaderSettings = new FileUploaderSettings(spForm, this.qqFileUploaderId, spForm.allowedExtensions);
-                    //    var uploader = new Shockout.qq.FileUploader(settings);
-                    //}
-
                     this.deleteAttachment = function (att, event) {
                         if (!confirm('Are you sure you want to delete ' + att.Name + '? This can\'t be undone.')) {
                             return;
@@ -178,28 +195,21 @@
                         });
                     };
 
-                    // HTML 5 methods
+                    // event handler for input[type='file']
                     this.fileHandler = function (e) { 
-                        // If this is a new form, save it first; you can't attach a file unless the list item already exists.
-                        if (vm.Id() == null) {
-                            spForm.saveListItem(vm, false, undefined, function (itemId) {
-                                setTimeout(function () {
-                                    readFiles();
-                                }, 1000);
-                            });
-                            return;
-                        }          
-                        readFiles();             
+                        var files: Array<File> = document.getElementById(self.id)['files'];
+                        readFiles(files);          
                     };
 
+                    // event handler for Attach button
                     this.onSelect = function (e) {
                         cancel(e);
                         //trigger click on the input file control
                         document.getElementById(self.id).click();
                     };
 
-                    // WIP
-                    this.onDrop = function (localViewModel, e) {
+                    // event handler for Drag adn Drop Zone
+                    this.onDrop = function (localViewModel: any, e: any) {
                         cancel(e);
 
                         if (spForm.debug) {
@@ -208,56 +218,82 @@
                         }
 
                         var dt = (e.originalEvent || e).dataTransfer;
-                        var files = dt.files;
+                        var files: Array<File> = dt.files;
                         if (!!!files) {
                             console.warn('Error in so-attachments - event.dataTransfer.files is ' + typeof files);
                             return false;
                         }
-                        else{
+                        else {
+                            readFiles(files);
+                        }
+                    };
+
+                    // read files array
+                    function readFiles(files: Array<File>): void {
+                        // If this is a new form, save it first; you can't attach a file unless the list item already exists.
+                        if (vm.Id() == null) {
+                            spForm.saveListItem(vm, false, undefined, function (itemId: number) {
+                                // catch-all if for some reason vm.Id is still null or lost reference of vm and we're referencing a local copy of the actual view model?
+                                if (vm.Id() == null && !!itemId && itemId.toFixed) {
+                                    vm.Id(itemId);
+                                }
+                                setTimeout(function () {
+                                    Array.prototype.slice.call(files, 0).map(readFile);
+                                }, 1000);
+                            });
+                        } else {
                             Array.prototype.slice.call(files, 0).map(readFile);
                         }
                     };
 
-                    function readFiles() {
-                        Array.prototype.slice.call(document.getElementById(self.id)['files'], 0).map(readFile);
-                    };
-
-                    function readFile(file: File) {       
-
+                    // upload a File object
+                    function readFile(file: File): void {     
+                        
                         if (spForm.debug) {
                             console.info('uploading file...');
                             console.info(file);
                         }
                                            
                         var fileName: string = file.name.replace(/[^a-zA-Z0-9_\-\.]/g, ''); // clean the filename
-                        var allowedExtension: boolean = new RegExp("\\b.(" + allowedExtensions.join('|') + ")$").test(fileName);
+                        var ext: string = /\.\w{2,4}$/.exec(fileName)[0]; //extract extension from filename, e.g. '.docx'
+                        var rootName = fileName.replace(new RegExp(ext + '$'), ''); // e.g. 'test.docx' becomes 'test'
+                        // Is the extension of the fileName in the array of allowed extensions? 
+                        var allowedExtension: boolean = new RegExp("^(\\.|)(" + allowedExtensions.join('|') + ")$", "i").test(ext);
                         if (!allowedExtension) {
                             self.errorMsg('Only files with the extensions: ' + allowedExtensions.join(', ') + ' are allowed.'); 
                             return;
                         }
 
-                        //var extension: Array<string> = /\.\w{3,4}$/.exec(fileName); //extract extension from filename
                         // Check for duplicate filename. If found, append a number.
-                        var duplicateCt: number = self.attachments().filter(function (file: ISpAttachment): boolean {
-                            return fileName == file.Name;
-                        }).length;
-
-                        if (spForm.debug && duplicateCt > 0) {
-                            console.warn(duplicateCt + ' duplicate files found in Attachments Array');
+                        for (var i = 0; i < self.attachments().length; i++) {
+                            if (new RegExp(fileName, 'i').test( self.attachments()[i].Name) ) {
+                                fileName = rootName + '-1' + ext;
+                                break;
+                            }
                         }
 
-                        if (duplicateCt > 0) {
-                            var ext = fileName.split('.').slice(-1); // e.g. 'txt'
-                            var rootName = fileName.split('.').slice(0, -1).join('.'); //if they have more than one period in the filename - e.g. 'test.2016.01.20'
-                            fileName = rootName + '-' + duplicateCt + '.' + ext;                      
-                        }
-                                                               
-                        var fileUpload = new FileUpload(fileName, file.size);
+                        var fileUpload: IFileUpload = new FileUpload(fileName, file.size);
                         self.fileUploads().push(fileUpload);
                         self.fileUploads.valueHasMutated();
 
                         reader = new FileReader();
-                        reader.onerror = errorHandler;
+                        reader.onerror = function errorHandler(e) {
+                            var evt: any = e;
+                            var className = fileUpload.className();
+                            fileUpload.className(className.replace('-success', '-danger'));
+                            switch (evt.target.error.code) {
+                                case evt.target.error.NOT_FOUND_ERR:
+                                    self.errorMsg = 'File Not Found!';
+                                    break;
+                                case evt.target.error.NOT_READABLE_ERR:
+                                    self.errorMsg = 'File is not readable.';
+                                    break;
+                                case evt.target.error.ABORT_ERR:
+                                    break; // noop
+                                default:
+                                    self.errorMsg = 'An error occurred reading this file.';
+                            };
+                        };
                         reader.onprogress = function (e) {
                             updateProgress(e, fileUpload);
                         };
@@ -294,19 +330,46 @@
                         // read as base64 string
                         reader.readAsDataURL(file);
 
-                        function callback(xmlDoc: any, status: string, jqXhr: JQueryXHR) {
+                        function callback() {
+
+                            // on error: jqXhr: JQueryXHR, status: string, error: string
+                            // success: xmlDoc: any, status: string, jqXhr: JQueryXHR
+                            var status: string = arguments[1];
+
                             if (spForm.debug) {
                                 console.info('so-html5-attachments.onFileUploadComplete()...');
                                 console.info(arguments);
                             }
 
-                            if (!!!status || status != 'success') {
-                                spForm.$dialog.html('Error on file upload. Please ensure you upload unique filenames to this form.').dialog('open');
+                            /* error XML: 
+                            <?xml version="1.0" encoding="utf-8"?>
+                            <soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+                                <soap:Body>
+                                    <soap:Fault>
+                                        <faultcode>soap:Server</faultcode>
+                                        <faultstring>Exception of type 'Microsoft.SharePoint.SoapServer.SoapServerException' was thrown.</faultstring>
+                                        <detail>
+                                            <errorstring xmlns="http://schemas.microsoft.com/sharepoint/soap/">Parameter listItemID is missing or invalid.</errorstring>
+                                            <errorcode xmlns="http://schemas.microsoft.com/sharepoint/soap/">0x82000001</errorcode>
+                                        </detail>
+                                    </soap:Fault>
+                                </soap:Body>
+                            </soap:Envelope>                       
+                            */
+                            if (!!!status && status == 'error') {
+                                var jqXhr: JQueryXHR = arguments[0];
+                                var responseXml: Document = jqXhr.responseXML;
+                                var errorString = $(jqXhr.responseXML).find('*').filter(function () {
+                                    return this.nodeName.toLowerCase() == 'errorstring';
+                                });
+                                spForm.$dialog.html('Error on file upload. Message from server: ' + (errorString || jqXhr.statusText)).dialog('open');
+                                fileUpload.className(fileUpload.className().replace('-success', '-danger'));
                             }
                             else if (status == 'success') {
                                 // push a new SP attachment instance to the view model's `attachments` collection
                                 var att: ISpAttachment = new SpAttachment(spForm.getRootUrl(), spForm.siteUrl, spForm.listName, spForm.getItemId(), fileName);
-                                self.attachments.push(att);
+                                self.attachments().push(att);
+                                self.attachments.valueHasMutated();
                             }
 
                             setTimeout(function () {
@@ -315,51 +378,28 @@
                         }
                     };
 
-                    function FileUpload(filename: string, bytes: number) {
-                        this.label = ko.observable();
-                        this.progress = ko.observable(0);
-                        this.filename = ko.observable(filename);
-                        this.kb = ko.observable((bytes / 1024).toFixed(1));
-                    };
-
                     this.onDragenter = cancel;
                     this.onDragover = cancel;
 
-                    function errorHandler(evt) {
-                        switch (evt.target.error.code) {
-                            case evt.target.error.NOT_FOUND_ERR:
-                                self.errorMsg = 'File Not Found!';
-                                break;
-                            case evt.target.error.NOT_READABLE_ERR:
-                                self.errorMsg = 'File is not readable.';
-                                break;
-                            case evt.target.error.ABORT_ERR:
-                                break; // noop
-                            default:
-                                self.errorMsg = 'An error occurred reading this file.';
-                        };
-                    };
-
-                    function updateProgress(e, fileUpload) {
+                    function updateProgress(e, fileUpload: IFileUpload): void {
                         // e is a ProgressEvent.
                         if (e.lengthComputable) {
                             var percentLoaded = Math.round((e.loaded / e.total) * 100);
                             // Increase the progress bar length.
                             if (percentLoaded < 100) {
-                                fileUpload.label(fileUpload.filename() + ' ' + percentLoaded + '% Complete');
-                                fileUpload.progess(percentLoaded);
+                                fileUpload.label(fileUpload.fileName() + ' ' + percentLoaded + '% Complete');
+                                fileUpload.progress(percentLoaded);
                             }
                         }
                     };
 
-                    function cancel(e) {
+                    function cancel(e: Event): void {
                         if (e.preventDefault) {
                             e.preventDefault();
                         }
                         if (e.stopPropagation) {
                             e.stopPropagation();
                         }
-                        return false;
                     };
 
                     if (!spForm.enableAttachments) {
@@ -382,7 +422,7 @@
                         <!-- /ko -->
                         <!-- ko foreach: fileUploads -->
                             <div class="progress"> 
-                                <div data-bind="text: label, attr: {'aria-valuenow': progress(), 'style': 'width:' + progress() + '%;' }" class="progress-bar progress-bar-success progress-bar-striped active" role="progressbar" aria-valuemin="0" aria-valuemax="100"></div>  
+                                <div data-bind="text: label, attr: {'aria-valuenow': progress(), 'style': 'width:' + progress() + '%;', 'class': className() }" role="progressbar" aria-valuemin="0" aria-valuemax="100"></div>  
                             </div>
                         <!-- /ko -->
                     <!-- /ko -->

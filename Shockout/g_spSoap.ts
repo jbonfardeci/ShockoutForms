@@ -250,11 +250,14 @@
                     $jqXhr.done(<JQueryPromiseCallback<any>>callback);
                 }
 
-                $jqXhr.fail(function (jqXhr: any, status: string, error: string) {
+                $jqXhr.fail(function (jqXhr: JQueryXHR, status: string, error: string) {
                     var msg = 'Error in SpSoap.executeSoapRequest. ' + status + ': ' + error + ' ';
-                    Utils.logError(msg, SPForm.errorLogListName);
-                    callback(arguments);
-                    //console.warn(msg);
+                    if (SPForm.enableErrorLog && !SPForm.DEBUG) {
+                        Utils.logError(msg, SPForm.errorLogListName);
+                    }
+                    if (callback) {
+                        callback(jqXhr, status, error);
+                    }
                 });
             }
             catch (e) {
