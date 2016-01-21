@@ -67,9 +67,8 @@ If you've spent any time implementing rules in InfoPath, you have probably becom
 (function(){
     var spForm = new Shockout.SPForm(
 		/*listName:*/ 'My SharePoint List Name', 
-		/*formId:*/ 'my-form-ID'
-    );
-})());
+		/*formId:*/ 'my-form-ID');
+})();
 
 ////////////////////
 // With All Options
