@@ -61,8 +61,6 @@ declare module Shockout {
         errorLogListName: string;
         errorLogSiteUrl: string;
         fieldNames: Array<string>;
-        fileHandlerUrl: string;
-        fileUploaders: Array<any>;
         includeUserProfiles: boolean;
         includeWorkflowHistory: boolean;
         preRender: Function;
@@ -607,32 +605,6 @@ declare module Shockout {
         _dateOccurred: Date;
         constructor(d: string, date: Date);
     }
-    interface IFileUploaderSettings {
-        element: HTMLElement | string;
-        action: string;
-        debug: boolean;
-        multiple: boolean;
-        maxConnections: number;
-        allowedExtensions: Array<string>;
-        params: any;
-        onSubmit(id: any, fileName: any): any;
-        onComplete(id: any, fileName: any, json: any): any;
-        template: string;
-    }
-    class FileUploaderSettings implements IFileUploaderSettings {
-        private spForm;
-        element: HTMLElement | string;
-        action: string;
-        debug: boolean;
-        multiple: boolean;
-        maxConnections: number;
-        allowedExtensions: Array<string>;
-        params: any;
-        template: string;
-        constructor(spForm: SPForm, element: HTMLElement | string, allowedExtensions: Array<string>, maxConnections?: number);
-        onSubmit(id: any, fileName: any): void;
-        onComplete(id: any, fileName: any, json: any): void;
-    }
     interface ISpGroup {
         id: number;
         name: string;
@@ -837,12 +809,8 @@ declare module Shockout {
 }
 declare module Shockout {
     class Templates {
-        static attachmentsTemplate: string;
-        static fileuploadTemplate: string;
         static actionTemplate: string;
-        static getFileUploadTemplate(): string;
         static getFormAction(): HTMLDivElement;
-        static getAttachmentsTemplate(fileuploaderId: string): HTMLElement;
     }
 }
 declare module Shockout {
@@ -990,15 +958,4 @@ declare module Shockout {
         static formatPictureUrl(pictureUrl: any): string;
         static isZrow(node: any): boolean;
     }
-}
-declare module Shockout {
-    /**
-     * http://github.com/valums/file-uploader
-     *
-     * Multiple file upload component with progress-bar, drag-and-drop.
-     * © 2010 Andrew Valums ( andrew(at)valums.com )
-     *
-     * Licensed under GNU GPL 2 or later, see license.txt.
-     */
-    var qq: any;
 }

@@ -124,12 +124,6 @@ module Shockout {
 
         public fieldNames: Array<string> = [];
 
-        // The relative URL of the Handler that attaches fiel uploads to list items.
-        public fileHandlerUrl: string = '/_layouts/SPFormFileHandler.ashx';
-
-        // The File Uploader object
-        public fileUploaders: Array<any> = [];
-                
         // Display the user profiles of the users that created and last modified a form. Includes photos. See `Shockout.Templates.getUserProfileTemplate()` in `templates.ts`.
         public includeUserProfiles: boolean = true;
 
@@ -1553,18 +1547,9 @@ module Shockout {
             if (!self.enableAttachments) { return count; }
 
             try {
-                // set the absolute URI for the file handler 
-                var subsiteUrl = Utils.formatSubsiteUrl(self.siteUrl); // ensure site url is or ends with '/'
-                var fileHandlerUrl = self.fileHandlerUrl.replace(/^\//, '');
-                self.fileHandlerUrl = self.rootUrl + subsiteUrl + fileHandlerUrl;
-
+                // update deprecated attachments elements with new so-attachments KO component
                 self.$form.find(".attachments, [data-sp-attachments]").each(function (i: number, att: HTMLElement) {
-                    var id = 'so-qq-fileuploader_' + i;
-                    $(att).replaceWith(Templates.getAttachmentsTemplate(id));
-                    var settings: IFileUploaderSettings = new FileUploaderSettings(self, id, self.allowedExtensions);
-                    var uploader = new Shockout.qq.FileUploader(settings);
-                    self.fileUploaders.push(uploader);
-                    count++;
+                    $(att).replaceWith('<so-attachments params="val: attachments"></so-attachments>');
                 });
 
                 if (self.debug) {

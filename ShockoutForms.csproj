@@ -28,7 +28,6 @@
     <TypeScriptCompile Include="Shockout\f_spApi15.ts" />
     <TypeScriptCompile Include="Shockout\a_SPForm.ts" />
     <TypeScriptCompile Include="Shockout\h_spDatatypes.ts" />
-    <TypeScriptCompile Include="Shockout\z_qqFileUploader.ts" />
     <TypeScriptCompile Include="Shockout\c_koHandlers.ts" />
     <TypeScriptCompile Include="Shockout\e_spApi.ts" />
     <TypeScriptCompile Include="Shockout\g_spSoap.ts" />
@@ -49,11 +48,17 @@
     <Content Include="example\SP2013\PurchaseRequisition.aspx" />
     <Content Include="README.md" />
     <Content Include="test.html" />
-    <Content Include="_layouts\SPFormFileHandler.ashx" />
     <Content Include="example\SP2010\PurchaseRequisitions.stp" />
     <Content Include="example\SP2010\Shockout.SpForms.master" />
     <Content Include="example\SP2013\PurchaseRequisitionList.stp" />
     <Content Include="example\SP2013\Shockout.SpForms.master" />
+    <Content Include="web.config" />
+    <None Include="web.Debug.config">
+      <DependentUpon>web.config</DependentUpon>
+    </None>
+    <None Include="web.Release.config">
+      <DependentUpon>web.config</DependentUpon>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <Reference Include="Microsoft.SharePoint, Version=15.0.0.0, Culture=neutral, PublicKeyToken=71e9bce111e9429c, processorArchitecture=MSIL" />

@@ -2,22 +2,13 @@
 
     export class Templates {
 
-        public static attachmentsTemplate = 
-        `<h4>Attachments <span data-bind="text: attachments().length" class="badge"></span></h4>
-        <div id="{0}"></div>
-        <!-- ko foreach: attachments -->
-        <div class="so-attachment">
-            <a href="" data-bind="attr: {href: __metadata.media_src}"><span class="glyphicon glyphicon-paperclip"></span> <span data-bind="text: Name"></span></a>
-            &nbsp;&nbsp;<button data-bind="event: {click: $root.deleteAttachment}" class="btn btn-sm btn-danger" title="Delete Attachment"><span class="glyphicon glyphicon-trash"></span></button>
-        </div>
-        <!-- /ko -->`;
-
-        public static fileuploadTemplate: string = `
-        <div class="qq-uploader" data-author-only>
-            <div class="qq-upload-drop-area"><span>Drop files here to upload</span></div>
-            <div class="btn btn-primary qq-upload-button"><span class="glyphicon glyphicon-paperclip"></span> Attach File</div>
-            <ul class="qq-upload-list"></ul>
-        </div>`;
+        // dropped support for qq fileuploader
+        //public static fileuploadTemplate: string = `
+        //<div class="qq-uploader" data-author-only>
+        //    <div class="qq-upload-drop-area"><span>Drop files here to upload</span></div>
+        //    <div class="btn btn-primary qq-upload-button"><span class="glyphicon glyphicon-paperclip"></span> Attach File</div>
+        //    <ul class="qq-upload-list"></ul>
+        //</div>`;
 
         public static actionTemplate: string = 
         `<div class="row">
@@ -37,21 +28,11 @@
             </div>
         </div>`;
 
-        public static getFileUploadTemplate(): string {
-            return Templates.fileuploadTemplate;
-        }
-
         public static getFormAction(): HTMLDivElement {
             var div = document.createElement('div');
             div.className = 'form-action no-print';
             div.innerHTML = Templates.actionTemplate;
             return div;
-        }
-
-        public static getAttachmentsTemplate(fileuploaderId: string): HTMLElement {
-            var section = document.createElement('section');
-            section.innerHTML = Templates.attachmentsTemplate.replace(/\{0\}/, fileuploaderId);
-            return section;
         }
     }
    
