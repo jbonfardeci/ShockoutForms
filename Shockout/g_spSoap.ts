@@ -253,7 +253,8 @@
                 $jqXhr.fail(function (jqXhr: any, status: string, error: string) {
                     var msg = 'Error in SpSoap.executeSoapRequest. ' + status + ': ' + error + ' ';
                     Utils.logError(msg, SPForm.errorLogListName);
-                    console.warn(msg);
+                    callback(arguments);
+                    //console.warn(msg);
                 });
             }
             catch (e) {

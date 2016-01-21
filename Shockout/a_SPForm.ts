@@ -1122,7 +1122,7 @@ module Shockout {
 
                 //run presave action and stop if the presave action returns false
                 if (self.preSave) {
-                    var retVal = self.preSave(self, self.viewModel);
+                    var retVal = self.preSave(self, self.viewModel, isSubmit);
                     if (typeof (retVal) != 'undefined' && !!!retVal) {
                         return;
                     }

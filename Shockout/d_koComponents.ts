@@ -122,12 +122,12 @@
                     var w: any = window;
                     this.errorMsg = ko.observable(null);
                     if (!!!params) {
-                        this.errorMsg('params is undefined in so-html5-attachments');
+                        this.errorMsg('`params` is undefined in component so-attachments');
                         throw this.errorMsg();
                         return;
                     }
                     if (!!!params.val) {
-                        this.errorMsg('Parameter `val` for so-html5-attachments is required!');
+                        this.errorMsg('Parameter `val` for component so-attachments is required!');
                         throw this.errorMsg();
                         return;
                     }
@@ -137,7 +137,7 @@
                     var allowedExtensions: Array<string> = params.allowedExtensions || spForm.allowedExtensions;
                     var reader: FileReader;
 
-                    this.attachments = params.val;
+                    this.attachments = <IViewModelAttachments>params.val;
                     this.label = params.label || 'Attach Files';
                     this.drop = params.drop || false;
                     this.dropLabel = params.dropLabel || 'Drag and Drop Files Here';
@@ -152,11 +152,10 @@
                     this.hasFileReader = ko.observable(w.File && w.FileReader && w.FileList && w.Blob);
 
                     this.id = params.id || 'so_fileUploader_' + uniqueId();
-                    this.qqFileUploaderId = 'so_qq_fileUploader_' + uniqueId();
 
                     if (!this.hasFileReader()) {
-                        //this.errorMsg('FileReader is not supported by this browser.');
-                        // instantiate the file uploader instance
+                        // instantiate the qq file uploader instance
+                        this.qqFileUploaderId = 'so_qq_fileUploader_' + uniqueId();
                         var settings: IFileUploaderSettings = new FileUploaderSettings(spForm, this.qqFileUploaderId, spForm.allowedExtensions);
                         var uploader = new Shockout.qq.FileUploader(settings);
                     }
@@ -176,6 +175,7 @@
 
                     // HTML 5 methods
                     this.fileHandler = function (e) { 
+                        // If this is a new form, save it first; you can't attach a file unless the list item already exists.
                         if (vm.Id() == null) {
                             spForm.saveListItem(vm, false, undefined, function (itemId) {
                                 setTimeout(function () {
@@ -193,6 +193,7 @@
                         document.getElementById(self.id).click();
                     };
 
+                    // WIP
                     this.onDrop = function (e) {
                         cancel(e);
                         var dt = e.dataTransfer;
@@ -217,11 +218,27 @@
                             console.info(file);
                         }
                                            
-                        var fileName = file.name.replace(/[^a-zA-Z0-9_\-\.]/g, ''); // clean the filename
-                        var allowedExtension = new RegExp("\\b.(" + allowedExtensions.join('|') + ")$").test(fileName);
+                        var fileName: string = file.name.replace(/[^a-zA-Z0-9_\-\.]/g, ''); // clean the filename
+                        var allowedExtension: boolean = new RegExp("\\b.(" + allowedExtensions.join('|') + ")$").test(fileName);
                         if (!allowedExtension) {
                             self.errorMsg('Only files with the extensions: ' + allowedExtensions.join(', ') + ' are allowed.'); 
                             return;
+                        }
+
+                        //var extension: Array<string> = /\.\w{3,4}$/.exec(fileName); //extract extension from filename
+                        // Check for duplicate filename. If found, append a number.
+                        var duplicateCt: number = self.attachments().filter(function (file: ISpAttachment): boolean {
+                            return fileName == file.Name;
+                        }).length;
+
+                        if (spForm.debug && duplicateCt > 0) {
+                            console.warn(duplicateCt + ' duplicate files found in Attachments Array');
+                        }
+
+                        if (duplicateCt > 0) {
+                            var ext = fileName.split('.').slice(-1); // e.g. 'txt'
+                            var rootName = fileName.split('.').slice(0, -1).join('.'); //if they have more than one period in the filename - e.g. 'test.2016.01.20'
+                            fileName = rootName + '-' + duplicateCt + '.' + ext;                      
                         }
                                                                
                         var fileUpload = new FileUpload(fileName, file.size);
@@ -266,16 +283,20 @@
                         // read as base64 string
                         reader.readAsDataURL(file);
 
-                        function callback(xmlDoc: any, status: string, jqXhr: any) {
+                        function callback(xmlDoc: any, status: string, jqXhr: JQueryXHR) {
                             if (spForm.debug) {
                                 console.info('so-html5-attachments.onFileUploadComplete()...');
                                 console.info(arguments);
                             }
-                            
-                            // push a new SP attachment instance to the view model's `attachments` collection
-                            var att: ISpAttachment = new SpAttachment(spForm.getRootUrl(), spForm.siteUrl, spForm.listName, spForm.getItemId(), fileName);
-                            spForm.viewModel.attachments().push(att);
-                            spForm.viewModel.attachments.valueHasMutated(); // tell KO the array has been updated
+
+                            if (!!!status || status != 'success') {
+                                spForm.$dialog.html('Error on file upload. Please ensure you upload unique filenames to this form.').dialog('open');
+                            }
+                            else if (status == 'success') {
+                                // push a new SP attachment instance to the view model's `attachments` collection
+                                var att: ISpAttachment = new SpAttachment(spForm.getRootUrl(), spForm.siteUrl, spForm.listName, spForm.getItemId(), fileName);
+                                self.attachments.push(att);
+                            }
 
                             setTimeout(function () {
                                 self.fileUploads.remove(fileUpload);

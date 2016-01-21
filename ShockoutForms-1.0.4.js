@@ -924,7 +924,7 @@ var Shockout;
                 isSubmit = typeof (isSubmit) == "undefined" ? true : isSubmit;
                 //run presave action and stop if the presave action returns false
                 if (self.preSave) {
-                    var retVal = self.preSave(self, self.viewModel);
+                    var retVal = self.preSave(self, self.viewModel, isSubmit);
                     if (typeof (retVal) != 'undefined' && !!!retVal) {
                         return;
                     }
@@ -2133,12 +2133,12 @@ var Shockout;
                     var w = window;
                     this.errorMsg = ko.observable(null);
                     if (!!!params) {
-                        this.errorMsg('params is undefined in so-html5-attachments');
+                        this.errorMsg('`params` is undefined in component so-attachments');
                         throw this.errorMsg();
                         return;
                     }
                     if (!!!params.val) {
-                        this.errorMsg('Parameter `val` for so-html5-attachments is required!');
+                        this.errorMsg('Parameter `val` for component so-attachments is required!');
                         throw this.errorMsg();
                         return;
                     }
@@ -2159,10 +2159,9 @@ var Shockout;
                     //check for compatibility
                     this.hasFileReader = ko.observable(w.File && w.FileReader && w.FileList && w.Blob);
                     this.id = params.id || 'so_fileUploader_' + uniqueId();
-                    this.qqFileUploaderId = 'so_qq_fileUploader_' + uniqueId();
                     if (!this.hasFileReader()) {
-                        //this.errorMsg('FileReader is not supported by this browser.');
-                        // instantiate the file uploader instance
+                        // instantiate the qq file uploader instance
+                        this.qqFileUploaderId = 'so_qq_fileUploader_' + uniqueId();
                         var settings = new Shockout.FileUploaderSettings(spForm, this.qqFileUploaderId, spForm.allowedExtensions);
                         var uploader = new Shockout.qq.FileUploader(settings);
                     }
@@ -2180,6 +2179,7 @@ var Shockout;
                     };
                     // HTML 5 methods
                     this.fileHandler = function (e) {
+                        // If this is a new form, save it first; you can't attach a file unless the list item already exists.
                         if (vm.Id() == null) {
                             spForm.saveListItem(vm, false, undefined, function (itemId) {
                                 setTimeout(function () {
@@ -2195,6 +2195,7 @@ var Shockout;
                         //trigger click on the input file control
                         document.getElementById(self.id).click();
                     };
+                    // WIP
                     this.onDrop = function (e) {
                         cancel(e);
                         var dt = e.dataTransfer;
@@ -2221,6 +2222,19 @@ var Shockout;
                         if (!allowedExtension) {
                             self.errorMsg('Only files with the extensions: ' + allowedExtensions.join(', ') + ' are allowed.');
                             return;
+                        }
+                        //var extension: Array<string> = /\.\w{3,4}$/.exec(fileName); //extract extension from filename
+                        // Check for duplicate filename. If found, append a number.
+                        var duplicateCt = self.attachments().filter(function (file) {
+                            return fileName == file.Name;
+                        }).length;
+                        if (spForm.debug && duplicateCt > 0) {
+                            console.warn(duplicateCt + ' duplicate files found in Attachments Array');
+                        }
+                        if (duplicateCt > 0) {
+                            var ext = fileName.split('.').slice(-1); // e.g. 'txt'
+                            var rootName = fileName.split('.').slice(0, -1).join('.'); //if they have more than one period in the filename - e.g. 'test.2016.01.20'
+                            fileName = rootName + '-' + duplicateCt + '.' + ext;
                         }
                         var fileUpload = new FileUpload(fileName, file.size);
                         self.fileUploads().push(fileUpload);
@@ -2266,10 +2280,14 @@ var Shockout;
                                 console.info('so-html5-attachments.onFileUploadComplete()...');
                                 console.info(arguments);
                             }
-                            // push a new SP attachment instance to the view model's `attachments` collection
-                            var att = new Shockout.SpAttachment(spForm.getRootUrl(), spForm.siteUrl, spForm.listName, spForm.getItemId(), fileName);
-                            spForm.viewModel.attachments().push(att);
-                            spForm.viewModel.attachments.valueHasMutated(); // tell KO the array has been updated
+                            if (!!!status || status != 'success') {
+                                spForm.$dialog.html('Error on file upload. Please ensure you upload unique filenames to this form.').dialog('open');
+                            }
+                            else if (status == 'success') {
+                                // push a new SP attachment instance to the view model's `attachments` collection
+                                var att = new Shockout.SpAttachment(spForm.getRootUrl(), spForm.siteUrl, spForm.listName, spForm.getItemId(), fileName);
+                                self.attachments.push(att);
+                            }
                             setTimeout(function () {
                                 self.fileUploads.remove(fileUpload);
                             }, 1000);
@@ -3054,7 +3072,8 @@ var Shockout;
                 $jqXhr.fail(function (jqXhr, status, error) {
                     var msg = 'Error in SpSoap.executeSoapRequest. ' + status + ': ' + error + ' ';
                     Shockout.Utils.logError(msg, Shockout.SPForm.errorLogListName);
-                    console.warn(msg);
+                    callback(arguments);
+                    //console.warn(msg);
                 });
             }
             catch (e) {
@@ -4959,4 +4978,4 @@ var Shockout;
 /// <reference path="Shockout/j_templates.ts" />
 /// <reference path="Shockout/k_utils.ts" />
 /// <reference path="Shockout/z_qqfileuploader.ts" />
-//# sourceMappingURL=ShockoutForms-1.0.3.js.map
+//# sourceMappingURL=ShockoutForms-1.0.4.js.map
