@@ -997,6 +997,7 @@ declare module Shockout {
         fileName: KnockoutObservable<string>;
         kb: KnockoutObservable<number>;
         className: KnockoutObservable<string>;
+        getProgress: KnockoutComputed<string>;
     }
     /**
      * FileUpload Class
@@ -1010,6 +1011,7 @@ declare module Shockout {
         fileName: KnockoutObservable<string>;
         kb: KnockoutObservable<number>;
         className: KnockoutObservable<string>;
+        getProgress: KnockoutComputed<string>;
         constructor(fileName: string, bytes: number);
     }
 }

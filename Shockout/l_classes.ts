@@ -87,6 +87,7 @@
         fileName: KnockoutObservable<string>;
         kb: KnockoutObservable<number>;
         className: KnockoutObservable<string>;
+        getProgress: KnockoutComputed<string>;
     }
 
     /**
@@ -102,13 +103,18 @@
         public fileName: KnockoutObservable<string>;
         public kb: KnockoutObservable<number>;
         public className: KnockoutObservable<string>;
+        public getProgress: KnockoutComputed<string>;
 
         constructor(fileName: string, bytes: number) {
+            var self = this;
             this.label = ko.observable(null);
             this.progress = ko.observable(0);
             this.fileName = ko.observable(fileName);
             this.kb = ko.observable((bytes / 1024));
             this.className = ko.observable('progress-bar progress-bar-success progress-bar-striped active');
+            this.getProgress = ko.pureComputed(function () {
+                return self.fileName() + ' ' + self.progress() + '%';
+            }, this);
         }
     }
 

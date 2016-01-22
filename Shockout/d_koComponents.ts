@@ -379,7 +379,6 @@
                             var percentLoaded = Math.round((e.loaded / e.total) * 100);
                             // Increase the progress bar length.
                             if (percentLoaded < 100) {
-                                //fileUpload.label(fileUpload.fileName() + ' ' + percentLoaded + '% Complete');
                                 fileUpload.progress(percentLoaded);
                             }
                         }
@@ -417,7 +416,7 @@
                         <!-- ko foreach: fileUploads -->
                             <div class="progress"> 
                                 <div data-bind="attr: {'aria-valuenow': progress(), 'style': 'width:' + progress() + '%;', 'class': className() }" role="progressbar" aria-valuemin="0" aria-valuemax="100">
-                                    <span data-bind="text: fileName() + ' ' + progress() + '%'"></span>
+                                    <span data-bind="text: fileName"></span>
                                 </div>  
                             </div>
                         <!-- /ko -->
