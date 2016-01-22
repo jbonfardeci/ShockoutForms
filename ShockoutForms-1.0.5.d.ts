@@ -388,21 +388,6 @@ declare module Shockout {
     }
 }
 declare module Shockout {
-    interface IFileUpload {
-        label: KnockoutObservable<string>;
-        progress: KnockoutObservable<number>;
-        fileName: KnockoutObservable<string>;
-        kb: KnockoutObservable<number>;
-        className: KnockoutObservable<string>;
-    }
-    class FileUpload implements IFileUpload {
-        label: KnockoutObservable<string>;
-        progress: KnockoutObservable<number>;
-        fileName: KnockoutObservable<string>;
-        kb: KnockoutObservable<number>;
-        className: KnockoutObservable<string>;
-        constructor(fileName: string, bytes: number);
-    }
     class KoComponents {
         static registerKoComponents(): void;
         private static hasErrorCssDiv;
@@ -972,5 +957,59 @@ declare module Shockout {
         static trim(str: string): any;
         static formatPictureUrl(pictureUrl: any): string;
         static isZrow(node: any): boolean;
+    }
+}
+declare module Shockout {
+    interface ICafe {
+        asyncFns: Array<Function>;
+        complete(fn: Function): any;
+        fail(fn: Function): any;
+        finally(fn: Function): any;
+        next(success?: boolean, msg?: string, args?: any): void;
+    }
+    /**
+     * CAFE - Cascading Asynchronous Function Execution.
+     * A class to control the sequential execution of asynchronous functions.
+     * by John Bonfardeci <john.bonfardeci@gmail.com> 2014
+     * @param {Array<Function>} asyncFns
+     * @returns
+     */
+    class Cafe {
+        private _complete;
+        private _fail;
+        private _finally;
+        asyncFns: Array<Function>;
+        constructor(asyncFns?: Array<Function>);
+        complete(fn: Function): ICafe;
+        fail(fn: Function): ICafe;
+        finally(fn: Function): ICafe;
+        next(success?: boolean, msg?: string, args?: any): void;
+    }
+    /**
+     * IFileUpload Interface
+     * Interface for upload progress indicator for a Knockout observable array.
+     * @param {string} fileName
+     * @param {number} bytes
+     */
+    interface IFileUpload {
+        label: KnockoutObservable<string>;
+        progress: KnockoutObservable<number>;
+        fileName: KnockoutObservable<string>;
+        kb: KnockoutObservable<number>;
+        className: KnockoutObservable<string>;
+    }
+    /**
+     * FileUpload Class
+     * Creates an upload progress indicator for a Knockout observable array.
+     * @param {string} fileName
+     * @param {number} bytes
+     */
+    class FileUpload implements IFileUpload {
+        label: KnockoutObservable<string>;
+        progress: KnockoutObservable<number>;
+        fileName: KnockoutObservable<string>;
+        kb: KnockoutObservable<number>;
+        className: KnockoutObservable<string>;
+        constructor(fileName: string, bytes: number);
     }
 }

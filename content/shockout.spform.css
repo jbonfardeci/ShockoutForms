@@ -26,7 +26,7 @@
 
   .sp-form {
     /*.user-profile-card*/
-    /*Valum's QQ File Uploader*/
+    /* Attachments drop zone */
     /* Boostrap overrides */
     /* Shockout Components */ }
     .sp-form .req {
@@ -239,60 +239,12 @@
       border: 1px solid #333;
       padding: .5em;
       margin: 1em auto;
-      height: auto; }
+      height: auto;
+      border-radius: 3px; }
       .sp-form .so-file-dropzone > div {
         padding: 1.5em;
         border: 1px dashed #333;
         height: auto; }
-    .sp-form .qq-uploader {
-      position: relative;
-      width: 100%; }
-    .sp-form .qq-upload-button-hover {
-      background: #FAD42E; }
-    .sp-form .qq-upload-button-focus {
-      outline: 1px dotted #000; }
-    .sp-form .qq-upload-drop-area {
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      min-height: 70px;
-      z-index: 2;
-      background: #FF9797;
-      text-align: center; }
-    .sp-form .qq-upload-drop-area span {
-      display: block;
-      position: absolute;
-      top: 50%;
-      width: 100%;
-      margin-top: -8px;
-      font-size: 16px; }
-    .sp-form .qq-upload-drop-area-active {
-      background: #FF7171; }
-    .sp-form .qq-upload-list {
-      margin: 15px 35px;
-      padding: 0;
-      list-style: disc; }
-      .sp-form .qq-upload-list li {
-        margin: 0;
-        padding: 0;
-        line-height: 15px;
-        font-size: 12px; }
-    .sp-form .qq-upload-file, .sp-form .qq-upload-spinner, .sp-form .qq-upload-size, .sp-form .qq-upload-cancel, .sp-form .qq-upload-failed-text {
-      margin-right: 7px; }
-    .sp-form .qq-upload-spinner {
-      display: inline-block;
-      background: url("/StyleLibrary/images/loading.gif");
-      width: 15px;
-      height: 15px;
-      vertical-align: text-bottom; }
-    .sp-form .qq-upload-size, .sp-form .qq-upload-cancel {
-      font-size: 11px; }
-    .sp-form .qq-upload-failed-text {
-      display: none; }
-    .sp-form .qq-upload-fail .qq-upload-failed-text {
-      display: inline; }
     .sp-form .navigation-buttons .btn {
       margin-right: 1em;
       margin-bottom: 1em; }
@@ -340,7 +292,12 @@
       margin-left: 2em; }
     .sp-form .so-attachment {
       display: inline-block;
-      margin: .5em 1em; }
+      margin: .5em;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      padding: .5em; }
+      .sp-form .so-attachment .btn.delete {
+        margin-left: 2em; }
     .sp-form so-text-field,
     .sp-form so-html-field,
     .sp-form so-person-field,
@@ -403,7 +360,6 @@
     body #BackToTop,
     body .sp-form .sp-validate-person,
     body .sp-form .sp-lookup-person,
-    body .qq-uploader,
     body .sp-form .rte,
     body .sp-form .json,
     body button {

@@ -1,30 +1,5 @@
 ﻿module Shockout {
 
-    export interface IFileUpload {
-        label: KnockoutObservable<string>;
-        progress: KnockoutObservable<number>;
-        fileName: KnockoutObservable<string>;
-        kb: KnockoutObservable<number>;
-        className: KnockoutObservable<string>;
-    }
-
-    export class FileUpload implements IFileUpload {
-
-        public label: KnockoutObservable<string>;
-        public progress: KnockoutObservable<number>;
-        public fileName: KnockoutObservable<string>;
-        public kb: KnockoutObservable<number>;
-        public className: KnockoutObservable<string>;
-
-        constructor(fileName: string, bytes: number) {
-            this.label = ko.observable(null);
-            this.progress = ko.observable(0);
-            this.fileName = ko.observable(fileName);
-            this.kb = ko.observable((bytes / 1024));
-            this.className = ko.observable('progress-bar progress-bar-success progress-bar-striped active');
-        }
-    }
-    
     export class KoComponents {
 
         public static registerKoComponents() {
@@ -161,6 +136,10 @@
                     var vm: IViewModel = spForm.getViewModel();
                     var allowedExtensions: Array<string> = params.allowedExtensions || spForm.allowedExtensions;
                     var reader: FileReader;
+                    // CAFE - Cascading Asynchronous Function Exectuion; 
+                    // Required to let SharePoint only write one file at a time, otherwise you'll get a 'changes conflict with another user's changes...' when attempting to write multiple files at once
+                    var cafe: ICafe; 
+                    var asyncFns: Array<Function>;
 
                     this.attachments = <IViewModelAttachments>params.val;
                     this.label = params.label || 'Attach Files';
@@ -230,6 +209,17 @@
 
                     // read files array
                     function readFiles(files: Array<File>): void {
+                        asyncFns = [];
+
+                        // build the cascading function execution array
+                        $(files).each(function (i, file) {
+                            asyncFns.push(function () {
+                                readFile(files[i]);
+                            });
+                        });
+
+                        cafe = new Cafe(asyncFns);
+
                         // If this is a new form, save it first; you can't attach a file unless the list item already exists.
                         if (vm.Id() == null) {
                             spForm.saveListItem(vm, false, undefined, function (itemId: number) {
@@ -238,11 +228,11 @@
                                     vm.Id(itemId);
                                 }
                                 setTimeout(function () {
-                                    Array.prototype.slice.call(files, 0).map(readFile);
+                                    cafe.next(true); //start the async function exectuion cascade
                                 }, 1000);
                             });
                         } else {
-                            Array.prototype.slice.call(files, 0).map(readFile);
+                            cafe.next(true); //start the async function exectuion cascade
                         }
                     };
 
@@ -359,17 +349,19 @@
                             if (!!!status && status == 'error') {
                                 var jqXhr: JQueryXHR = arguments[0];
                                 var responseXml: Document = jqXhr.responseXML;
-                                var errorString = $(jqXhr.responseXML).find('*').filter(function () {
-                                    return this.nodeName.toLowerCase() == 'errorstring';
-                                });
-                                spForm.$dialog.html('Error on file upload. Message from server: ' + (errorString || jqXhr.statusText)).dialog('open');
+                                var errorString = $(jqXhr.responseXML).find('errorstring').text();
+                                if (!!errorString) {
+                                    spForm.$dialog.html('Error on file upload. Message from server: ' + (errorString || jqXhr.statusText)).dialog('open');
+                                }
                                 fileUpload.className(fileUpload.className().replace('-success', '-danger'));
+                                cafe.next(false); // will cause Cafe to stop execution of all async functions
                             }
                             else if (status == 'success') {
                                 // push a new SP attachment instance to the view model's `attachments` collection
                                 var att: ISpAttachment = new SpAttachment(spForm.getRootUrl(), spForm.siteUrl, spForm.listName, spForm.getItemId(), fileName);
                                 self.attachments().push(att);
                                 self.attachments.valueHasMutated();
+                                cafe.next(true); //execute the next file read
                             }
 
                             setTimeout(function () {
@@ -387,7 +379,7 @@
                             var percentLoaded = Math.round((e.loaded / e.total) * 100);
                             // Increase the progress bar length.
                             if (percentLoaded < 100) {
-                                fileUpload.label(fileUpload.fileName() + ' ' + percentLoaded + '% Complete');
+                                //fileUpload.label(fileUpload.fileName() + ' ' + percentLoaded + '% Complete');
                                 fileUpload.progress(percentLoaded);
                             }
                         }
@@ -418,19 +410,23 @@
                         <input type="file" data-bind="attr: {'id': id}, event: {'change': fileHandler}" multiple class="form-control" style="display:none;" /> 
                         <div data-bind="attr:{'class': className}, event: {'click': onSelect}"><span class="glyphicon glyphicon-paperclip"></span>&nbsp;<span data-bind="text: label"></span></div> 
                         <!-- ko if: drop -->
-                            <div class="so-file-dropzone" data-bind="event: {'dragenter': onDragenter, 'dragover': onDragover, 'drop': onDrop}"><div data-bind="text: dropLabel"></div></div>
+                            <div class="so-file-dropzone" data-bind="event: {'dragenter': onDragenter, 'dragover': onDragover, 'drop': onDrop}">
+                                <div><span class="glyphicon glyphicon-upload"></span> <span data-bind="text: dropLabel"></span></div>
+                            </div>
                         <!-- /ko -->
                         <!-- ko foreach: fileUploads -->
                             <div class="progress"> 
-                                <div data-bind="text: label, attr: {'aria-valuenow': progress(), 'style': 'width:' + progress() + '%;', 'class': className() }" role="progressbar" aria-valuemin="0" aria-valuemax="100"></div>  
+                                <div data-bind="attr: {'aria-valuenow': progress(), 'style': 'width:' + progress() + '%;', 'class': className() }" role="progressbar" aria-valuemin="0" aria-valuemax="100">
+                                    <span data-bind="text: fileName() + ' ' + progress() + '%'"></span>
+                                </div>  
                             </div>
                         <!-- /ko -->
                     <!-- /ko -->
                     <div data-bind="foreach: attachments" style="margin:1em auto;">
-                        <div>      
+                        <div class="so-attachment">      
                             <a href="" data-bind="attr: {href: __metadata.media_src}"><span class="glyphicon glyphicon-paperclip"></span>&nbsp;<span data-bind="text: Name"></span></a>
                             <!-- ko ifnot: $parent.readOnly() -->
-                            <button data-bind="event: {click: $parent.deleteAttachment}" class="btn btn-sm btn-danger" title="Delete Attachment"><span class="glyphicon glyphicon-remove"></span></button>
+                            <button data-bind="event: {click: $parent.deleteAttachment}" class="btn btn-sm btn-danger delete" title="Delete Attachment"><span class="glyphicon glyphicon-remove"></span></button>
                             <!-- /ko -->
                         </div>
                     </div>

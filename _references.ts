@@ -9,3 +9,4 @@
 /// <reference path="Shockout/i_spdatatypes15.ts" />
 /// <reference path="Shockout/j_templates.ts" />
 /// <reference path="Shockout/k_utils.ts" />
+/// <reference path="shockout/l_classes.ts" />

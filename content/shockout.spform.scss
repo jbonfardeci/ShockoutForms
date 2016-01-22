@@ -311,46 +311,21 @@ $aliceblue: aliceblue;
 
         }/*.user-profile-card*/
 
-         .so-file-dropzone{
+        /* Attachments drop zone */
+        .so-file-dropzone{
              text-align:center;
              color: $dk-grey;
              border:1px solid $dk-grey;
              padding:.5em;
              margin:1em auto;
              height:auto;
+             border-radius:3px;
              > div{
                  padding:1.5em;
                  border:1px dashed $dk-grey;
                  height:auto;
              }
          }
-
-        /*Valum's QQ File Uploader*/
-	    .qq-uploader { position:relative; width: 100%;}	
-	    .qq-upload-button {}
-	    .qq-upload-button-hover {background:$yellow;}
-	    .qq-upload-button-focus {outline:1px dotted $black;}
-	
-	    .qq-upload-drop-area {
-	        position:absolute; top:0; left:0; width:100%; height:100%; min-height: 70px; z-index:2;
-	        background:$lt-pink; text-align:center; 
-	    }
-	    .qq-upload-drop-area span {
-	        display:block; position:absolute; top: 50%; width:100%; margin-top:-8px; font-size:16px;
-	    }
-	    .qq-upload-drop-area-active {background:$pink;}
-	
-	    .qq-upload-list {       
-            margin:15px 35px; padding:0; list-style:disc;
-            li { margin:0; padding:0; line-height:15px; font-size:12px;}
-	    }
-
-	    .qq-upload-file, .qq-upload-spinner, .qq-upload-size, .qq-upload-cancel, .qq-upload-failed-text {margin-right: 7px;}
-	    .qq-upload-spinner {display:inline-block; background: url("/StyleLibrary/images/loading.gif"); width:15px; height:15px; vertical-align:text-bottom;}
-	    .qq-upload-size,.qq-upload-cancel {font-size:11px;}
-	
-	    .qq-upload-failed-text {display:none;}
-	    .qq-upload-fail .qq-upload-failed-text {display:inline;}
 
         .navigation-buttons{
             .btn{margin-right:1em; margin-bottom:1em;}
@@ -428,8 +403,14 @@ $aliceblue: aliceblue;
         }
 
         .so-attachment{
-            display:inline-block;
-            margin:.5em 1em;
+            display: inline-block;
+            margin: .5em;
+            border: 1px solid $grey;
+            border-radius: 4px;
+            padding: .5em;
+            .btn.delete{
+                margin-left: 2em;
+            }
         }
 
         /* Shockout Components */
@@ -504,7 +485,6 @@ $aliceblue: aliceblue;
 	    #BackToTop,
 	    .sp-form .sp-validate-person, 
 	    .sp-form .sp-lookup-person,
-	    .qq-uploader,
 	    .sp-form .rte,
 	    .sp-form .json,
 	    button

@@ -2021,17 +2021,6 @@ var Shockout;
 })(Shockout || (Shockout = {}));
 var Shockout;
 (function (Shockout) {
-    var FileUpload = (function () {
-        function FileUpload(fileName, bytes) {
-            this.label = ko.observable(null);
-            this.progress = ko.observable(0);
-            this.fileName = ko.observable(fileName);
-            this.kb = ko.observable((bytes / 1024));
-            this.className = ko.observable('progress-bar progress-bar-success progress-bar-striped active');
-        }
-        return FileUpload;
-    })();
-    Shockout.FileUpload = FileUpload;
     var KoComponents = (function () {
         function KoComponents() {
         }
@@ -2145,6 +2134,10 @@ var Shockout;
                     var vm = spForm.getViewModel();
                     var allowedExtensions = params.allowedExtensions || spForm.allowedExtensions;
                     var reader;
+                    // CAFE - Cascading Asynchronous Function Exectuion; 
+                    // Required to let SharePoint only write one file at a time, otherwise you'll get a 'changes conflict with another user's changes...' when attempting to write multiple files at once
+                    var cafe;
+                    var asyncFns;
                     this.attachments = params.val;
                     this.label = params.label || 'Attach Files';
                     this.drop = params.drop || true;
@@ -2203,6 +2196,14 @@ var Shockout;
                     };
                     // read files array
                     function readFiles(files) {
+                        asyncFns = [];
+                        // build the cascading function execution array
+                        $(files).each(function (i, file) {
+                            asyncFns.push(function () {
+                                readFile(files[i]);
+                            });
+                        });
+                        cafe = new Shockout.Cafe(asyncFns);
                         // If this is a new form, save it first; you can't attach a file unless the list item already exists.
                         if (vm.Id() == null) {
                             spForm.saveListItem(vm, false, undefined, function (itemId) {
@@ -2211,12 +2212,12 @@ var Shockout;
                                     vm.Id(itemId);
                                 }
                                 setTimeout(function () {
-                                    Array.prototype.slice.call(files, 0).map(readFile);
+                                    cafe.next(true); //start the async function exectuion cascade
                                 }, 1000);
                             });
                         }
                         else {
-                            Array.prototype.slice.call(files, 0).map(readFile);
+                            cafe.next(true); //start the async function exectuion cascade
                         }
                     }
                     ;
@@ -2242,7 +2243,7 @@ var Shockout;
                                 break;
                             }
                         }
-                        var fileUpload = new FileUpload(fileName, file.size);
+                        var fileUpload = new Shockout.FileUpload(fileName, file.size);
                         self.fileUploads().push(fileUpload);
                         self.fileUploads.valueHasMutated();
                         reader = new FileReader();
@@ -2324,17 +2325,19 @@ var Shockout;
                             if (!!!status && status == 'error') {
                                 var jqXhr = arguments[0];
                                 var responseXml = jqXhr.responseXML;
-                                var errorString = $(jqXhr.responseXML).find('*').filter(function () {
-                                    return this.nodeName.toLowerCase() == 'errorstring';
-                                });
-                                spForm.$dialog.html('Error on file upload. Message from server: ' + (errorString || jqXhr.statusText)).dialog('open');
+                                var errorString = $(jqXhr.responseXML).find('errorstring').text();
+                                if (!!errorString) {
+                                    spForm.$dialog.html('Error on file upload. Message from server: ' + (errorString || jqXhr.statusText)).dialog('open');
+                                }
                                 fileUpload.className(fileUpload.className().replace('-success', '-danger'));
+                                cafe.next(false); // will cause Cafe to stop execution of all async functions
                             }
                             else if (status == 'success') {
                                 // push a new SP attachment instance to the view model's `attachments` collection
                                 var att = new Shockout.SpAttachment(spForm.getRootUrl(), spForm.siteUrl, spForm.listName, spForm.getItemId(), fileName);
                                 self.attachments().push(att);
                                 self.attachments.valueHasMutated();
+                                cafe.next(true); //execute the next file read
                             }
                             setTimeout(function () {
                                 self.fileUploads.remove(fileUpload);
@@ -2350,7 +2353,7 @@ var Shockout;
                             var percentLoaded = Math.round((e.loaded / e.total) * 100);
                             // Increase the progress bar length.
                             if (percentLoaded < 100) {
-                                fileUpload.label(fileUpload.fileName() + ' ' + percentLoaded + '% Complete');
+                                //fileUpload.label(fileUpload.fileName() + ' ' + percentLoaded + '% Complete');
                                 fileUpload.progress(percentLoaded);
                             }
                         }
@@ -2370,7 +2373,7 @@ var Shockout;
                         this.readOnly(true);
                     }
                 },
-                template: "<section>\n                    <h4><span data-bind=\"text: title\"></span><span data-bind=\"text: length\" class=\"badge\"></span></h4>\n                    <div data-bind=\"visible: !!errorMsg()\" class=\"alert alert-danger\"><span class=\"glyphicon glyphicon-exclamation-sign\"></span>&nbsp;<span data-bind=\"text: errorMsg\"></span></div> \n                    <!-- ko ifnot: hasFileReader() -->\n                    <div data-bind=\"visible: !!!readOnly(), attr: {id: this.qqFileUploaderId}\"></div>\n                    <!-- /ko -->\n                    <!-- ko if: !readOnly() && hasFileReader() -->\n                        <input type=\"file\" data-bind=\"attr: {'id': id}, event: {'change': fileHandler}\" multiple class=\"form-control\" style=\"display:none;\" /> \n                        <div data-bind=\"attr:{'class': className}, event: {'click': onSelect}\"><span class=\"glyphicon glyphicon-paperclip\"></span>&nbsp;<span data-bind=\"text: label\"></span></div> \n                        <!-- ko if: drop -->\n                            <div class=\"so-file-dropzone\" data-bind=\"event: {'dragenter': onDragenter, 'dragover': onDragover, 'drop': onDrop}\"><div data-bind=\"text: dropLabel\"></div></div>\n                        <!-- /ko -->\n                        <!-- ko foreach: fileUploads -->\n                            <div class=\"progress\"> \n                                <div data-bind=\"text: label, attr: {'aria-valuenow': progress(), 'style': 'width:' + progress() + '%;', 'class': className() }\" role=\"progressbar\" aria-valuemin=\"0\" aria-valuemax=\"100\"></div>  \n                            </div>\n                        <!-- /ko -->\n                    <!-- /ko -->\n                    <div data-bind=\"foreach: attachments\" style=\"margin:1em auto;\">\n                        <div>      \n                            <a href=\"\" data-bind=\"attr: {href: __metadata.media_src}\"><span class=\"glyphicon glyphicon-paperclip\"></span>&nbsp;<span data-bind=\"text: Name\"></span></a>\n                            <!-- ko ifnot: $parent.readOnly() -->\n                            <button data-bind=\"event: {click: $parent.deleteAttachment}\" class=\"btn btn-sm btn-danger\" title=\"Delete Attachment\"><span class=\"glyphicon glyphicon-remove\"></span></button>\n                            <!-- /ko -->\n                        </div>\n                    </div>\n                    <!-- ko if: length() == 0 && readOnly() -->\n                        <p>No attachments have been included.</p> \n                    <!-- /ko -->\n                    <!-- ko if: description -->\n                        <div data-bind=\"text: description\"></div>\n                    <!-- /ko -->\n                </section>"
+                template: "<section>\n                    <h4><span data-bind=\"text: title\"></span><span data-bind=\"text: length\" class=\"badge\"></span></h4>\n                    <div data-bind=\"visible: !!errorMsg()\" class=\"alert alert-danger\"><span class=\"glyphicon glyphicon-exclamation-sign\"></span>&nbsp;<span data-bind=\"text: errorMsg\"></span></div> \n                    <!-- ko ifnot: hasFileReader() -->\n                    <div data-bind=\"visible: !!!readOnly(), attr: {id: this.qqFileUploaderId}\"></div>\n                    <!-- /ko -->\n                    <!-- ko if: !readOnly() && hasFileReader() -->\n                        <input type=\"file\" data-bind=\"attr: {'id': id}, event: {'change': fileHandler}\" multiple class=\"form-control\" style=\"display:none;\" /> \n                        <div data-bind=\"attr:{'class': className}, event: {'click': onSelect}\"><span class=\"glyphicon glyphicon-paperclip\"></span>&nbsp;<span data-bind=\"text: label\"></span></div> \n                        <!-- ko if: drop -->\n                            <div class=\"so-file-dropzone\" data-bind=\"event: {'dragenter': onDragenter, 'dragover': onDragover, 'drop': onDrop}\">\n                                <div><span class=\"glyphicon glyphicon-upload\"></span> <span data-bind=\"text: dropLabel\"></span></div>\n                            </div>\n                        <!-- /ko -->\n                        <!-- ko foreach: fileUploads -->\n                            <div class=\"progress\"> \n                                <div data-bind=\"attr: {'aria-valuenow': progress(), 'style': 'width:' + progress() + '%;', 'class': className() }\" role=\"progressbar\" aria-valuemin=\"0\" aria-valuemax=\"100\">\n                                    <span data-bind=\"text: fileName() + ' ' + progress() + '%'\"></span>\n                                </div>  \n                            </div>\n                        <!-- /ko -->\n                    <!-- /ko -->\n                    <div data-bind=\"foreach: attachments\" style=\"margin:1em auto;\">\n                        <div class=\"so-attachment\">      \n                            <a href=\"\" data-bind=\"attr: {href: __metadata.media_src}\"><span class=\"glyphicon glyphicon-paperclip\"></span>&nbsp;<span data-bind=\"text: Name\"></span></a>\n                            <!-- ko ifnot: $parent.readOnly() -->\n                            <button data-bind=\"event: {click: $parent.deleteAttachment}\" class=\"btn btn-sm btn-danger delete\" title=\"Delete Attachment\"><span class=\"glyphicon glyphicon-remove\"></span></button>\n                            <!-- /ko -->\n                        </div>\n                    </div>\n                    <!-- ko if: length() == 0 && readOnly() -->\n                        <p>No attachments have been included.</p> \n                    <!-- /ko -->\n                    <!-- ko if: description -->\n                        <div data-bind=\"text: description\"></div>\n                    <!-- /ko -->\n                </section>"
             });
             ko.components.register('so-created-modified-info', {
                 viewModel: function (params) {
@@ -3828,6 +3831,82 @@ var Shockout;
     })();
     Shockout.Utils = Utils;
 })(Shockout || (Shockout = {}));
+var Shockout;
+(function (Shockout) {
+    /**
+     * CAFE - Cascading Asynchronous Function Execution.
+     * A class to control the sequential execution of asynchronous functions.
+     * by John Bonfardeci <john.bonfardeci@gmail.com> 2014
+     * @param {Array<Function>} asyncFns
+     * @returns
+     */
+    var Cafe = (function () {
+        function Cafe(asyncFns) {
+            if (asyncFns === void 0) { asyncFns = undefined; }
+            if (asyncFns) {
+                this.asyncFns = asyncFns;
+            }
+            return this;
+        }
+        Cafe.prototype.complete = function (fn) {
+            this._complete = fn;
+            return this;
+        };
+        ;
+        Cafe.prototype.fail = function (fn) {
+            this._fail = fn;
+            return this;
+        };
+        Cafe.prototype.finally = function (fn) {
+            this._finally = fn;
+            return this;
+        };
+        Cafe.prototype.next = function (success, msg, args) {
+            if (success === void 0) { success = true; }
+            if (msg === void 0) { msg = undefined; }
+            if (args === void 0) { args = undefined; }
+            if (!this.asyncFns) {
+                throw "Error in Cafe: The required parameter `asyncFns` of type (Array<Function>) is undefined. Don't forget to instantiate Cafe with this parameter or set its value after instantiation.";
+            }
+            if (!success) {
+                if (this._fail) {
+                    this._fail(arguments);
+                }
+                return;
+            }
+            if (this._complete) {
+                this._complete(arguments);
+            }
+            if (this.asyncFns.length == 0) {
+                if (this._finally) {
+                    this._finally(arguments);
+                }
+                return;
+            }
+            // execute the next function in the array
+            this.asyncFns.shift()(this, args);
+        };
+        return Cafe;
+    })();
+    Shockout.Cafe = Cafe;
+    /**
+     * FileUpload Class
+     * Creates an upload progress indicator for a Knockout observable array.
+     * @param {string} fileName
+     * @param {number} bytes
+     */
+    var FileUpload = (function () {
+        function FileUpload(fileName, bytes) {
+            this.label = ko.observable(null);
+            this.progress = ko.observable(0);
+            this.fileName = ko.observable(fileName);
+            this.kb = ko.observable((bytes / 1024));
+            this.className = ko.observable('progress-bar progress-bar-success progress-bar-striped active');
+        }
+        return FileUpload;
+    })();
+    Shockout.FileUpload = FileUpload;
+})(Shockout || (Shockout = {}));
 /// <reference path="Shockout/a_spform.ts" />
 /// <reference path="Shockout/b_viewmodel.ts" />
 /// <reference path="Shockout/c_kohandlers.ts" />
@@ -3839,4 +3918,5 @@ var Shockout;
 /// <reference path="Shockout/i_spdatatypes15.ts" />
 /// <reference path="Shockout/j_templates.ts" />
 /// <reference path="Shockout/k_utils.ts" />
-//# sourceMappingURL=ShockoutForms-1.0.4.js.map
+/// <reference path="shockout/l_classes.ts" />
+//# sourceMappingURL=ShockoutForms-1.0.5.js.map
