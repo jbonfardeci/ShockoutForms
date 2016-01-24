@@ -36,9 +36,6 @@
 *   
 */
 
-// Set alias for Shockout only if it doesn't conflict with another object with the same name.
-window['so'] = window['so'] || Shockout;
-
 module Shockout {
 
     export class SPForm {
@@ -195,8 +192,8 @@ module Shockout {
         * Get the default mobile view for the list.
         * @return string
         */
-        public getDefailtMobileViewUrl(): string { return this.defailtMobileViewUrl; }
-        private defailtMobileViewUrl: string;
+        public getDefailtMobileViewUrl(): string { return this.defaultMobileViewUrl; }
+        private defaultMobileViewUrl: string;
         
         /**
         * Get a reference to the form element.
@@ -515,7 +512,7 @@ module Shockout {
                     self.enableAttachments = !!enableAttachments ? enableAttachments.toLowerCase() == 'true' : false;
 
                     self.defaultViewUrl = $list.attr('DefaultViewUrl');
-                    self.defailtMobileViewUrl = $list.attr('MobileDefaultViewUrl');
+                    self.defaultMobileViewUrl = $list.attr('MobileDefaultViewUrl');
 
                     $(xmlDoc).find('Field').filter(function (i: number, el: any) {
                         return !!($(el).attr('DisplayName')) && $(el).attr('Hidden') != 'TRUE' && !rxExcludeNames.test($(el).attr('Name'));
@@ -1740,3 +1737,6 @@ module Shockout {
     }
 
 }
+
+// Set global alias for Shockout only if it doesn't conflict with another object with the same name.
+window['so'] = window['so'] || Shockout;

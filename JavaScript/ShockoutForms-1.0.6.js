@@ -34,8 +34,6 @@
 * DEALINGS IN THE SOFTWARE.
 *
 */
-// Set alias for Shockout only if it doesn't conflict with another object with the same name.
-window['so'] = window['so'] || Shockout;
 var Shockout;
 (function (Shockout) {
     var SPForm = (function () {
@@ -256,7 +254,7 @@ var Shockout;
         * Get the default mobile view for the list.
         * @return string
         */
-        SPForm.prototype.getDefailtMobileViewUrl = function () { return this.defailtMobileViewUrl; };
+        SPForm.prototype.getDefailtMobileViewUrl = function () { return this.defaultMobileViewUrl; };
         /**
         * Get a reference to the form element.
         * @return HTMLElement
@@ -398,7 +396,7 @@ var Shockout;
                     var enableAttachments = $list.attr('EnableAttachments');
                     self.enableAttachments = !!enableAttachments ? enableAttachments.toLowerCase() == 'true' : false;
                     self.defaultViewUrl = $list.attr('DefaultViewUrl');
-                    self.defailtMobileViewUrl = $list.attr('MobileDefaultViewUrl');
+                    self.defaultMobileViewUrl = $list.attr('MobileDefaultViewUrl');
                     $(xmlDoc).find('Field').filter(function (i, el) {
                         return !!($(el).attr('DisplayName')) && $(el).attr('Hidden') != 'TRUE' && !rxExcludeNames.test($(el).attr('Name'));
                     }).each(setupKoVar);
@@ -1481,6 +1479,8 @@ var Shockout;
     })();
     Shockout.SPForm = SPForm;
 })(Shockout || (Shockout = {}));
+// Set global alias for Shockout only if it doesn't conflict with another object with the same name.
+window['so'] = window['so'] || Shockout;
 var Shockout;
 (function (Shockout) {
     var ViewModel = (function () {
@@ -2295,9 +2295,10 @@ var Shockout;
                 function readFiles(files) {
                     asyncFns = [];
                     // build the cascading function execution array
-                    $(files).each(function (i, file) {
+                    var fileArray = Array.prototype.slice.call(files, 0);
+                    fileArray.map(function (file, i) {
                         asyncFns.push(function () {
-                            readFile(files[i]);
+                            readFile(file);
                         });
                     });
                     cafe = new Shockout.Cafe(asyncFns);
@@ -3946,16 +3947,16 @@ var Shockout;
     })();
     Shockout.FileUpload = FileUpload;
 })(Shockout || (Shockout = {}));
-/// <reference path="Shockout/a_spform.ts" />
-/// <reference path="Shockout/b_viewmodel.ts" />
-/// <reference path="Shockout/c_kohandlers.ts" />
-/// <reference path="Shockout/d_kocomponents.ts" />
-/// <reference path="Shockout/e_spapi.ts" />
-/// <reference path="Shockout/f_spapi15.ts" />
-/// <reference path="Shockout/g_spsoap.ts" />
-/// <reference path="Shockout/h_spdatatypes.ts" />
-/// <reference path="Shockout/i_spdatatypes15.ts" />
-/// <reference path="Shockout/j_templates.ts" />
-/// <reference path="Shockout/k_utils.ts" />
-/// <reference path="shockout/l_classes.ts" />
+/// <reference path="TypeScript/a_spform.ts" />
+/// <reference path="TypeScript/b_viewmodel.ts" />
+/// <reference path="TypeScript/c_kohandlers.ts" />
+/// <reference path="TypeScript/d_kocomponents.ts" />
+/// <reference path="TypeScript/e_spapi.ts" />
+/// <reference path="TypeScript/f_spapi15.ts" />
+/// <reference path="TypeScript/g_spsoap.ts" />
+/// <reference path="TypeScript/h_spdatatypes.ts" />
+/// <reference path="TypeScript/i_spdatatypes15.ts" />
+/// <reference path="TypeScript/j_templates.ts" />
+/// <reference path="TypeScript/k_utils.ts" />
+/// <reference path="TypeScript/l_classes.ts" />
 //# sourceMappingURL=ShockoutForms-1.0.6.js.map

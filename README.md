@@ -471,8 +471,8 @@ Your Error Log list must have 2 fields: "Title" (text) and "Error" (multiple lin
 
 It's recommended to set a workflow or an alert on this list to notify you as soon as an error is logged.   
 
-##Browser Compatibility
-Shockout SPForms has been successfully tested with IE 9-11 and the latest versions of Chrome and FireFox.
+##Supported Browsers
+Shockout has been successfully tested with IE 10-11 (*should* work with Edge) and the latest versions of Chrome and FireFox. Support for IE9 was dropped in favor of the new HTML 5 file uploader. Plus we want to discourage Win XP stalwarts.
 
 ##Static Data Access Methods
  * Read the JavaDoc comments above each method for usage.

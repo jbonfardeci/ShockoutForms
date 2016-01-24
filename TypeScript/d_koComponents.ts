@@ -307,9 +307,10 @@
                     asyncFns = [];
 
                     // build the cascading function execution array
-                    $(files).each(function (i, file) {
+                    var fileArray: Array<File> = Array.prototype.slice.call(files, 0);
+                    fileArray.map(function (file: File, i: number) {
                         asyncFns.push(function () {
-                            readFile(files[i]);
+                            readFile(file);
                         });
                     });
 

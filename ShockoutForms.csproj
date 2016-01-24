@@ -23,18 +23,18 @@
     <Service Include="{4A0DDDB5-7A95-4FBF-97CC-616D07737A77}" />
   </ItemGroup>
   <ItemGroup>
-    <TypeScriptCompile Include="Shockout\d_koComponents.ts" />
-    <TypeScriptCompile Include="Shockout\i_spDatatypes15.ts" />
-    <TypeScriptCompile Include="Shockout\f_spApi15.ts" />
-    <TypeScriptCompile Include="Shockout\a_SPForm.ts" />
-    <TypeScriptCompile Include="Shockout\h_spDatatypes.ts" />
-    <TypeScriptCompile Include="Shockout\c_koHandlers.ts" />
-    <TypeScriptCompile Include="Shockout\e_spApi.ts" />
-    <TypeScriptCompile Include="Shockout\g_spSoap.ts" />
-    <TypeScriptCompile Include="Shockout\j_templates.ts" />
-    <TypeScriptCompile Include="Shockout\k_utils.ts" />
-    <TypeScriptCompile Include="Shockout\b_ViewModel.ts" />
-    <TypeScriptCompile Include="Shockout\l_classes.ts" />
+    <TypeScriptCompile Include="TypeScript\d_koComponents.ts" />
+    <TypeScriptCompile Include="TypeScript\i_spDatatypes15.ts" />
+    <TypeScriptCompile Include="TypeScript\f_spApi15.ts" />
+    <TypeScriptCompile Include="TypeScript\a_SPForm.ts" />
+    <TypeScriptCompile Include="TypeScript\h_spDatatypes.ts" />
+    <TypeScriptCompile Include="TypeScript\c_koHandlers.ts" />
+    <TypeScriptCompile Include="TypeScript\e_spApi.ts" />
+    <TypeScriptCompile Include="TypeScript\g_spSoap.ts" />
+    <TypeScriptCompile Include="TypeScript\j_templates.ts" />
+    <TypeScriptCompile Include="TypeScript\k_utils.ts" />
+    <TypeScriptCompile Include="TypeScript\b_ViewModel.ts" />
+    <TypeScriptCompile Include="TypeScript\l_classes.ts" />
     <TypeScriptCompile Include="_references.ts" />
     <TypeScriptCompile Include="typings\accounting.d.ts" />
     <TypeScriptCompile Include="typings\jquery.d.ts" />
@@ -43,15 +43,22 @@
     <TypeScriptCompile Include="typings\knockout.d.ts" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="content\shockout.spform.scss" />
-    <Content Include="Docs\soAttachments.png" />
+    <Content Include="css\shockout.spform.css.map" />
+    <None Include="css\shockout.spform.scss" />
+    <Content Include="css\bootstrap.cosmo.min.css" />
+    <Content Include="css\shockout.spform.css" />
+    <Content Include="css\shockout.spform.min.css" />
+    <Content Include="docs\soAttachments.png" />
     <Content Include="example\SP2010\PurchaseRequisition.aspx" />
     <Content Include="example\SP2013\PurchaseRequisition.aspx" />
+    <Content Include="JavaScript\ShockoutForms-1.0.6.js" />
+    <Content Include="JavaScript\ShockoutForms-1.0.6.min.js" />
     <Content Include="README.md" />
     <Content Include="example\SP2010\PurchaseRequisitions.stp" />
     <Content Include="example\SP2010\Shockout.SpForms.master" />
     <Content Include="example\SP2013\PurchaseRequisitionList.stp" />
     <Content Include="example\SP2013\Shockout.SpForms.master" />
+    <Content Include="JavaScript\ShockoutForms-1.0.6.js.map" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="Microsoft.SharePoint, Version=15.0.0.0, Culture=neutral, PublicKeyToken=71e9bce111e9429c, processorArchitecture=MSIL" />
@@ -97,13 +104,14 @@
   <PropertyGroup Condition="'$(Configuration)' == 'Debug'">
     <TypeScriptRemoveComments>false</TypeScriptRemoveComments>
     <TypeScriptSourceMap>true</TypeScriptSourceMap>
-    <TypeScriptOutFile>ShockoutForms-1.0.6.js</TypeScriptOutFile>
+    <TypeScriptOutFile>JavaScript/ShockoutForms-1.0.6.js</TypeScriptOutFile>
     <TypeScriptTarget>ES5</TypeScriptTarget>
     <TypeScriptCompileOnSaveEnabled>True</TypeScriptCompileOnSaveEnabled>
     <TypeScriptNoImplicitAny>False</TypeScriptNoImplicitAny>
     <TypeScriptModuleKind>None</TypeScriptModuleKind>
-    <TypeScriptOutDir />
-    <TypeScriptGeneratesDeclarations>True</TypeScriptGeneratesDeclarations>
+    <TypeScriptOutDir>
+    </TypeScriptOutDir>
+    <TypeScriptGeneratesDeclarations>False</TypeScriptGeneratesDeclarations>
     <TypeScriptNoEmitOnError>True</TypeScriptNoEmitOnError>
     <TypeScriptMapRoot />
     <TypeScriptSourceRoot />
