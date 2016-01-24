@@ -20,9 +20,10 @@
         allowDelete: KnockoutObservable<boolean>;
         attachments: IViewModelAttachments;
         currentUser: KnockoutObservable<any>;
-        historyItems: KnockoutObservable<Array<IHistoryItem>>;       
+        historyItems: KnockoutObservableArray<IHistoryItem>;       
         isValid: KnockoutComputed<boolean>;
         showUserProfiles: KnockoutObservable<boolean>;
+        navMenuItems: KnockoutObservableArray<any>;
 
         // methods
         isAuthor(): boolean;
@@ -54,9 +55,10 @@
         public allowDelete: KnockoutObservable<boolean> = ko.observable(false);
         public attachments: IViewModelAttachments = <any>ko.observableArray();
         public currentUser: KnockoutObservable<ICurrentUser>;
-        public historyItems: KnockoutObservable<Array<any>> = ko.observableArray();
+        public historyItems: KnockoutObservableArray<any> = ko.observableArray();
         public isValid: KnockoutComputed<boolean>;
         public showUserProfiles: KnockoutObservable<boolean> = ko.observable(false);
+        public navMenuItems: KnockoutObservableArray<any> = ko.observableArray();
 
         public deleteAttachment;
 

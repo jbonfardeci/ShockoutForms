@@ -27,6 +27,9 @@
   .sp-form {
     /*.user-profile-card*/
     /* Attachments drop zone */
+    /*.navigation-buttons{
+        .btn{margin-right:1em; margin-bottom:1em;}
+    }*/
     /* Boostrap overrides */
     /* Shockout Components */ }
     .sp-form .req {
@@ -245,9 +248,8 @@
         padding: 1.5em;
         border: 1px dashed #333;
         height: auto; }
-    .sp-form .navigation-buttons .btn {
-      margin-right: 1em;
-      margin-bottom: 1em; }
+    .sp-form .navbar-nav > li > a {
+      border-right: 1px dotted #efefef; }
     .sp-form .even {
       background-color: aliceblue; }
     .sp-form .form-control-feedback {
@@ -290,6 +292,13 @@
       text-align: right !important; }
     .sp-form .indent {
       margin-left: 2em; }
+    .sp-form .progress {
+      height: 1.4em; }
+      .sp-form .progress .progress-bar {
+        padding: .5em 1em;
+        font-size: .8em; }
+    .sp-form .so-attach-files-btn {
+      margin: 2.2em auto; }
     .sp-form .so-attachment {
       display: inline-block;
       margin: .5em;
@@ -317,7 +326,8 @@
     .sp-form so-static-money,
     .sp-form so-static-number,
     .sp-form so-static-html,
-    .sp-form so-attachments {
+    .sp-form so-attachments,
+    .sp-form so-nav-menu {
       display: block; }
 
   /*.sp-form*/ }

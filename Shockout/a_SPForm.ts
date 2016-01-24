@@ -35,6 +35,10 @@
 * DEALINGS IN THE SOFTWARE.
 *   
 */
+
+// Set alias for Shockout only if it doesn't conflict with another object with the same name.
+window['so'] = window['so'] || Shockout;
+
 module Shockout {
 
     export class SPForm {
@@ -61,7 +65,6 @@ module Shockout {
         /////////////////////////
         // Public jQuery Objects
         /////////////////////////
-        public $createdInfo;
         public $dialog;
         public $form;
         public $formAction;
@@ -129,6 +132,8 @@ module Shockout {
 
         // Display logs from the workflow history list assigned to form workflows.
         public includeWorkflowHistory: boolean = true;
+
+        public includeNavigationMenu: boolean = true;
                 
         // Function to execute before rendering templates and before Knockout databinding. Good for inserting your own markup and logic.
         public preRender: Function;
@@ -262,7 +267,9 @@ module Shockout {
 
         public isSp2013: Boolean = false;
 
-        constructor(listName: string, formId: string, options: Object) {
+        private cafe: ICafe;
+
+        constructor(listName: string, formId: string, options: Object = undefined) {
             var self = this;
             var error;
 
@@ -345,9 +352,6 @@ module Shockout {
             // create element for displaying form load status
             self.$formStatus = $('<div>', { 'class': 'form-status' }).appendTo(self.$form);
 
-            // set the element to display created/modified by info
-            self.$createdInfo = self.$form.find(".created-info, [data-sp-created-info]");
-
             // create jQuery Dialog for displaying feedback to user
             self.$dialog = $('<div>', { 'id': 'formdialog' })
                 .appendTo(self.$form)
@@ -387,7 +391,7 @@ module Shockout {
             ];
 
             //start CAFE
-            this.nextAsync(true, 'Begin initialization...');         
+            this.nextAsync(true, 'Begin initialization...');    
         }
 
         /**
@@ -401,7 +405,7 @@ module Shockout {
             var self = this;
 
             if (msg) {
-                this.updateStatus(msg, success);
+                this.updateStatus(msg, success, self);
             }
 
             if (!success) { return; }
@@ -424,7 +428,7 @@ module Shockout {
         */
         getCurrentUserAsync(self: SPForm, args: any = undefined): void {
 
-            self.updateStatus('Retrieving your account...');
+            self.updateStatus('Retrieving your account...', true, self);
             var success: string = 'Retrieved your account.';
 
             if (self.debug) {
@@ -657,7 +661,7 @@ module Shockout {
         */
         initForm(self: SPForm, args: any = undefined): void {            
             try {
-                self.updateStatus("Initializing dynamic form features...");
+                self.updateStatus("Initializing dynamic form features...", true, self);
 
                 var vm: IViewModel = self.viewModel;
                 var rx: RegExp = /submitted/i;
@@ -697,12 +701,27 @@ module Shockout {
                     }, self.errorLogSiteUrl, null, 'Title,Error', 'Modified', 1, false);
                 }
 
-                //append Created/Modified, Workflow History info to predefined section or append to form
-                self.$createdInfo.replaceWith(KoComponents.soCreatedModifiedTemplate);
+                if (self.includeNavigationMenu) {
+                    // add navigation section to top of form
+                    var $navMenu: JQuery = self.$form.find(".so-nav-menu, [data-so-nav-menu], [so-nav-menu]");
+                    if ($navMenu.length > 0) {
+                        $navMenu.replaceWith(Templates.soNavMenuControl);
+                    } else {
+                        self.$form.prepend(Templates.soNavMenuControl);
+                    }
+                }
 
-                //append Workflow history section
+                // set the element to display created/modified by info
+                self.$form.find(".created-info, [data-sp-created-info], [data-so-created-info], [sp-created-info], [so-created-info]").replaceWith(Templates.soCreatedModifiedInfoControl);
+
+                // replace/append Workflow history section
                 if (self.includeWorkflowHistory) {
-                    self.$form.append(KoComponents.soWorkflowHistoryTemplate);
+                    var $wfControls: JQuery = self.$form.find(".workflow-history, [data-so-workflow-history], [so-workflow-history]");
+                    if ($wfControls.length > 0) {
+                        $wfControls.replaceWith(Templates.soWorkflowHistoryControl);
+                    } else {
+                        self.$form.append(Templates.soWorkflowHistoryControl);
+                    }
                 }
                             
                 // Dynamically add/remove elements with attribute `data-new-only` from the DOM if not editing an existing form - a new form where `itemId == null || undefined`.
@@ -749,7 +768,7 @@ module Shockout {
                 return;
             }
 
-            self.updateStatus("Retrieving form values...");
+            self.updateStatus("Retrieving form values...", true, self);
 
             var vm = self.viewModel;
 
@@ -798,7 +817,7 @@ module Shockout {
                 return;
             }
 
-            self.updateStatus("Retrieving your groups...");
+            self.updateStatus("Retrieving your groups...", true, self);
 
             if (self.isSp2013) {
                 SpApi15.getUsersGroups(self.currentUser.id, callback);
@@ -831,7 +850,7 @@ module Shockout {
         */
         implementPermissions(self: SPForm, args: any = undefined): void {
             try {
-                self.updateStatus("Retrieving your permissions...");
+                self.updateStatus("Retrieving your permissions...", true, self);
 
                 // Remove elements from DOM if current user doesn't belong to any of the SP user groups in an element's attribute `data-sp-groups`.
                 self.$form.find("[data-sp-groups], [user-groups]").each(function(i: number, el: HTMLElement): void {
@@ -878,7 +897,7 @@ module Shockout {
                 return;
             }
 
-            self.updateStatus('Retrieving workflow history...');
+            self.updateStatus('Retrieving workflow history...', true, self);
 
             var filter: string = "ListID eq '" + self.listId + "' and PrimaryItemID eq " + self.itemId;
             var select: string = "Description,DateOccurred";
@@ -1353,10 +1372,10 @@ module Shockout {
         * @param success?: boolean = undefined
         * @return void
         */
-        updateStatus(msg: string, success: boolean = true): void {
-            var self: SPForm = this;
+        updateStatus(msg: string, success: boolean = true, spForm): void {
+            var self: SPForm = spForm;
 
-            this.$formStatus
+            self.$formStatus
                 .html(msg)
                 .css('color', (success ? "#ff0" : "$f00"))
                 .show();
@@ -1611,6 +1630,7 @@ module Shockout {
         setupNavigation(self: SPForm = undefined): number {
             var self = self || this;
             var count: number = 0;
+            if (!self.includeNavigationMenu) { return count; }
 
             try {
                 // Set up a navigation menu at the top of the form if there are elements with the class `nav-section`.
@@ -1620,15 +1640,6 @@ module Shockout {
                     return count;
                 }
 
-                // add navigation section to top of form
-                self.$form.prepend('<section class="no-print" id="TOP">' +
-                    '<h4>Navigation</h4>' +
-                    '<div class="navigation-buttons"></div>' +
-                    '</section>');
-
-                // include the workflow history section
-                self.$form.find('#workflowHistory, [data-workflow-history]').addClass('nav-section');
-
                 // add navigation buttons
                 self.$form.find(".nav-section:visible").each(function (i, el) {
                     var $el = $(el);
@@ -1636,12 +1647,14 @@ module Shockout {
                     if ($header.length == 0) {
                         return;
                     }
-                    var title = $header.text();
+                    var title = $header.html();
                     var anchorName = Utils.toCamelCase(title) + 'Nav';
                     $el.before('<div style="height:1px;" id="' + anchorName + '">&nbsp;</div>');
-                    self.$form.find(".navigation-buttons").append('<a href="#' + anchorName + '" class="btn btn-sm btn-info">' + title + '</a>');
+                    self.viewModel.navMenuItems().push({ 'title': title, 'anchorName': anchorName });
                     count++;
                 });
+
+                self.viewModel.navMenuItems.valueHasMutated();
 
                 // add a back-to-top button
                 self.$form.append('<a href="#TOP" class="back-to-top"><span class="glyphicon glyphicon-chevron-up"></span></a>');

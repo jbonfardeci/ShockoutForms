@@ -6,7 +6,8 @@ Forget the frustrations of legacy InfoPath and XSL SharePoint form development. 
 ###Compatibilty
 Compatible with SharePoint 2010 and 2013, Foundation, Standard, and Enterprise.
 
-![Example Form built in Shockout](Docs/ShockoutForm.png "Purchase Requisition Form Built with Shockout")
+####Example Form shown with [Cosmo Theme](http://bootswatch.com/cosmo/bootstrap.min.css)
+![Example Form built in Shockout](Docs/ShockoutFormCosmo.png "Purchase Requisition Form Built with Shockout")
 
 [View the source for this sample Purchase Requisition form.](https://github.com/jbonfardeci/ShockoutForms/blob/master/example/SP2013/PurchaseRequisition.aspx)
 
@@ -30,8 +31,13 @@ If you've spent any time implementing rules in InfoPath, you have probably becom
 	<option>Blue</option>
 	<option>Green</option>
 </select>
-<!-- The div element below is hidden until `color == 'Red'` -->
-<div data-bind="visible: color() == 'Red'">What a coincidence. Red is my favorite color too!</div>
+
+<!-- The div element below is absent from the DOM until `color == 'Red'` -->
+
+<!-- ko if: color() == 'Red' -->
+<div>What a coincidence. Red is my favorite color too!</div>
+<!-- /ko -->
+
 ```
 
 #### Usage
@@ -86,7 +92,7 @@ If you've spent any time implementing rules in InfoPath, you have probably becom
 			allowDelete: false, // default false
 			allowPrint: true, // default true
 			allowSave: true, // default true
-			confirmationUrl: '<siteUrl>', // the default
+			confirmationUrl: '<siteUrl parameter>', // the default
             dialogOpts: { width: 400,
                 height: 250,
                 autoOpen: false,
@@ -115,7 +121,7 @@ If you've spent any time implementing rules in InfoPath, you have probably becom
 ```
 
 ###Attachments - SP 2010 and 2013
-To enable attachments for your forms, include at least one `so-attachments` element within your form and ensure attachments are enabled on your list. An error message will be displayed if the browser doesn't suppor tthe FileReader class for uplaoding base64 strings to the lists.asmx/AddAttachment SOAP service.
+To enable attachments for your forms, include at least one `so-attachments` element within your form and ensure attachments are enabled on your list. An error message will be displayed if the browser doesn't support the FileReader class for uplaoding base64 strings to the lists.asmx/AddAttachment SOAP service.
     
     * Parameters:
      * `val` - ViewModel.attachments (KnockoutObservableArray<IViewModelAttachments>) 

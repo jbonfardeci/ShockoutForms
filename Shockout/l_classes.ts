@@ -2,9 +2,10 @@
 
     export interface ICafe {
         asyncFns: Array<Function>;
-        complete(fn: Function);
-        fail(fn: Function);
-        finally(fn: Function);
+        start(msg?: string): void;
+        complete(fn: Function): ICafe;
+        fail(fn: Function): ICafe;
+        finally(fn: Function): ICafe;
         next(success?: boolean, msg?: string, args?: any): void;
     }
 
@@ -30,6 +31,10 @@
             return this;
         }
 
+        public start(msg: string = undefined): void {
+            this.next(true, msg);
+        }
+
         public complete(fn: Function): ICafe {
             this._complete = fn;
             return this;
@@ -51,20 +56,20 @@
                 throw "Error in Cafe: The required parameter `asyncFns` of type (Array<Function>) is undefined. Don't forget to instantiate Cafe with this parameter or set its value after instantiation.";
             }
 
+            if (this._complete) {
+                this._complete(msg, success, args);
+            }
+
             if (!success) {
                 if (this._fail) {
-                    this._fail(arguments);
+                    this._fail(msg, success, args);
                 }
                 return;
-            }
-            
-            if (this._complete) {
-                this._complete(arguments);
             }
 
             if (this.asyncFns.length == 0) {
                 if (this._finally) {
-                    this._finally(arguments);
+                    this._finally(msg, success, args);
                 }
                 return;
             }
@@ -111,7 +116,7 @@
             this.progress = ko.observable(0);
             this.fileName = ko.observable(fileName);
             this.kb = ko.observable((bytes / 1024));
-            this.className = ko.observable('progress-bar progress-bar-success progress-bar-striped active');
+            this.className = ko.observable('progress-bar progress-bar-info progress-bar-striped active');
             this.getProgress = ko.pureComputed(function () {
                 return self.fileName() + ' ' + self.progress() + '%';
             }, this);

@@ -327,9 +327,13 @@ $aliceblue: aliceblue;
              }
          }
 
-        .navigation-buttons{
-            .btn{margin-right:1em; margin-bottom:1em;}
+        .navbar-nav > li > a{
+            border-right:1px dotted $lt-grey;
         }
+
+        /*.navigation-buttons{
+            .btn{margin-right:1em; margin-bottom:1em;}
+        }*/
 
         .even{background-color:$aliceblue;}
 
@@ -402,6 +406,18 @@ $aliceblue: aliceblue;
             margin-left:2em;
         }
 
+        .progress {
+            height:1.4em;
+            .progress-bar{
+                padding:.5em 1em;
+                font-size:.8em;
+            }
+        }
+
+        .so-attach-files-btn{
+            margin:2.2em auto;
+        }
+
         .so-attachment{
             display: inline-block;
             margin: .5em;
@@ -433,7 +449,8 @@ $aliceblue: aliceblue;
         so-static-money,
         so-static-number,
         so-static-html,
-        so-attachments{
+        so-attachments,
+        so-nav-menu{
             display:block;
         }
 

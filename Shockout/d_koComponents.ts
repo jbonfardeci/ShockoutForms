@@ -1,4 +1,4 @@
-﻿module Shockout {
+﻿ module Shockout {
 
     export class KoComponents {
 
@@ -13,492 +13,142 @@
 
             ko.components.register('so-text-field', {
                 viewModel: soFieldModel,
-                template: KoComponents.soTextFieldTemplate
+                template: Templates.soTextField
             });
 
             ko.components.register('so-html-field', {
                 viewModel: soFieldModel,
-                template: KoComponents.soHtmlFieldTemplate
+                template: Templates.soHtmlFieldTemplate
             });
 
             ko.components.register('so-person-field', {
                 viewModel: soFieldModel,
-                template: KoComponents.soTextFieldTemplate.replace(/data-bind="(value|text): modelValue/g, 'data-bind="spPerson: modelValue')
+                template: Templates.soTextField.replace(/data-bind="(value|text): modelValue/g, 'data-bind="spPerson: modelValue')
             });
 
             ko.components.register('so-date-field', {
                 viewModel: soFieldModel,
-                template: KoComponents.soTextFieldTemplate.replace(/data-bind="(value|text): modelValue/g, 'data-bind="spDate: modelValue')
+                template: Templates.soTextField.replace(/data-bind="(value|text): modelValue/g, 'data-bind="spDate: modelValue')
             });
 
             ko.components.register('so-datetime-field', {
                 viewModel: soFieldModel,
-                template: KoComponents.soTextFieldTemplate.replace(/data-bind="(value|text): modelValue/g, 'data-bind="spDateTime: modelValue')
+                template: Templates.soTextField.replace(/data-bind="(value|text): modelValue/g, 'data-bind="spDateTime: modelValue')
             });
 
             ko.components.register('so-money-field', {
                 viewModel: soFieldModel,
-                template: KoComponents.soTextFieldTemplate.replace(/data-bind="(value|text): modelValue/g, 'data-bind="spMoney: modelValue')
+                template: Templates.soTextField.replace(/data-bind="(value|text): modelValue/g, 'data-bind="spMoney: modelValue')
             });
 
             ko.components.register('so-number-field', {
                 viewModel: soFieldModel,
-                template: KoComponents.soTextFieldTemplate.replace(/data-bind="(value|text): modelValue/g, 'data-bind="spNumber: modelValue')
+                template: Templates.soTextField.replace(/data-bind="(value|text): modelValue/g, 'data-bind="spNumber: modelValue')
             });
 
             ko.components.register('so-decimal-field', {
                 viewModel: soFieldModel,
-                template: KoComponents.soTextFieldTemplate.replace(/data-bind="(value|text): modelValue/g, 'data-bind="spDecimal: modelValue')
+                template: Templates.soTextField.replace(/data-bind="(value|text): modelValue/g, 'data-bind="spDecimal: modelValue')
             });
 
             ko.components.register('so-checkbox-field', {
                 viewModel: soFieldModel,
-                template: KoComponents.soCheckboxFieldTemplate
+                template: Templates.soCheckboxField
             });
 
             ko.components.register('so-select-field', {
                 viewModel: soFieldModel,
-                template: KoComponents.soSelectFieldTemplate
+                template: Templates.soSelectField
             });
 
             ko.components.register('so-checkbox-group', {
                 viewModel: soFieldModel,
-                template: KoComponents.soCheckboxGroupTemplate
+                template: Templates.soCheckboxGroup
             });
 
             ko.components.register('so-radio-group', {
                 viewModel: soFieldModel,
-                template: KoComponents.soRadioGroupTemplate
+                template: Templates.soRadioGroup
             });
 
             ko.components.register('so-usermulti-group', {
                 viewModel: soUsermultiModel,
-                template: KoComponents.soUsermultiFieldTemplate
+                template: Templates.soUsermultiField
             });
 
             ko.components.register('so-static-field', {
                 viewModel: soStaticModel,
-                template: KoComponents.soStaticFieldTemplate
+                template: Templates.soStaticField
             });
 
             ko.components.register('so-static-person', {
                 viewModel: soStaticModel,
-                template: KoComponents.soStaticFieldTemplate.replace(/data-bind="text: modelValue/g, 'data-bind="spPerson: modelValue')
+                template: Templates.soStaticField.replace(/data-bind="text: modelValue/g, 'data-bind="spPerson: modelValue')
             });
 
             ko.components.register('so-static-date', {
                 viewModel: soStaticModel,
-                template: KoComponents.soStaticFieldTemplate.replace(/data-bind="text: modelValue/g, 'data-bind="spDate: modelValue')
+                template: Templates.soStaticField.replace(/data-bind="text: modelValue/g, 'data-bind="spDate: modelValue')
             });
 
             ko.components.register('so-static-datetime', {
                 viewModel: soStaticModel,
-                template: KoComponents.soStaticFieldTemplate.replace(/data-bind="text: modelValue/g, 'data-bind="spDateTime: modelValue')
+                template: Templates.soStaticField.replace(/data-bind="text: modelValue/g, 'data-bind="spDateTime: modelValue')
             });
 
             ko.components.register('so-static-money', {
                 viewModel: soStaticModel,
-                template: KoComponents.soStaticFieldTemplate.replace(/data-bind="text: modelValue/g, 'data-bind="spMoney: modelValue')
+                template: Templates.soStaticField.replace(/data-bind="text: modelValue/g, 'data-bind="spMoney: modelValue')
             });
 
             ko.components.register('so-static-number', {
                 viewModel: soStaticModel,
-                template: KoComponents.soStaticFieldTemplate.replace(/data-bind="text: modelValue/g, 'data-bind="spNumber: modelValue')
+                template: Templates.soStaticField.replace(/data-bind="text: modelValue/g, 'data-bind="spNumber: modelValue')
             });
 
             ko.components.register('so-static-decimal', {
                 viewModel: soStaticModel,
-                template: KoComponents.soStaticFieldTemplate.replace(/data-bind="text: modelValue/g, 'data-bind="spDecimal: modelValue')
+                template: Templates.soStaticField.replace(/data-bind="text: modelValue/g, 'data-bind="spDecimal: modelValue')
             });
 
             ko.components.register('so-static-html', {
                 viewModel: soStaticModel,
-                template: KoComponents.soStaticFieldTemplate.replace(/data-bind="text: modelValue/g, 'data-bind="html: modelValue')
+                template: Templates.soStaticField.replace(/data-bind="text: modelValue/g, 'data-bind="html: modelValue')
             });
 
             ko.components.register('so-attachments', {
-                viewModel: function (params) {
-                    var self = this;
-                    var w: any = window;
-                    this.errorMsg = ko.observable(null);
-                    if (!!!params) {
-                        this.errorMsg('`params` is undefined in component so-attachments');
-                        throw this.errorMsg();
-                        return;
-                    }
-                    if (!!!params.val) {
-                        this.errorMsg('Parameter `val` for component so-attachments is required!');
-                        throw this.errorMsg();
-                        return;
-                    }
-
-                    var spForm: SPForm = params.val.getSpForm();
-                    var vm: IViewModel = spForm.getViewModel();
-                    var allowedExtensions: Array<string> = params.allowedExtensions || spForm.allowedExtensions;
-                    var reader: FileReader;
-                    // CAFE - Cascading Asynchronous Function Exectuion; 
-                    // Required to let SharePoint only write one file at a time, otherwise you'll get a 'changes conflict with another user's changes...' when attempting to write multiple files at once
-                    var cafe: ICafe; 
-                    var asyncFns: Array<Function>;
-
-                    this.attachments = <IViewModelAttachments>params.val;
-                    this.label = params.label || 'Attach Files';
-                    this.drop = params.drop || true;
-                    this.dropLabel = params.dropLabel || 'OR Drag and Drop Files Here';
-                    this.className = params.className || 'btn btn-primary';
-                    this.title = params.title || 'Attachments';
-                    this.description = params.description;
-                    this.readOnly = (typeof params.readOnly == 'function') ? params.readOnly : ko.observable(params.readOnly || false); // allow for static bool or ko observable
-                    this.length = ko.pureComputed(function () { return self.attachments().length; });
-                    this.fileUploads = <KnockoutObservableArray<any>>ko.observableArray();
-
-                    //check for compatibility
-                    this.hasFileReader = ko.observable(w.File && w.FileReader && w.FileList && w.Blob);
-
-                    if (!this.hasFileReader) {
-                        this.errorMsg('This browser does not support the FileReader class required for uplaoding files. You may be using IE 9 or another unsupported browser.');
-                    }
-
-                    this.id = params.id || 'so_fileUploader_' + uniqueId();
-
-                    this.deleteAttachment = function (att, event) {
-                        if (!confirm('Are you sure you want to delete ' + att.Name + '? This can\'t be undone.')) {
-                            return;
-                        }
-                        Shockout.SpApi.deleteAttachment(att, function (data, error) {
-                            if (!!error) {
-                                alert("Failed to delete attachment: " + error);
-                                return;
-                            }
-                            self.attachments.remove(att);
-                        });
-                    };
-
-                    // event handler for input[type='file']
-                    this.fileHandler = function (e) { 
-                        var files: Array<File> = document.getElementById(self.id)['files'];
-                        readFiles(files);          
-                    };
-
-                    // event handler for Attach button
-                    this.onSelect = function (e) {
-                        cancel(e);
-                        //trigger click on the input file control
-                        document.getElementById(self.id).click();
-                    };
-
-                    // event handler for Drag adn Drop Zone
-                    this.onDrop = function (localViewModel: any, e: any) {
-                        cancel(e);
-
-                        if (spForm.debug) {
-                            console.info('dropped files over dropzone, arguments are...');
-                            console.info(arguments);
-                        }
-
-                        var dt = (e.originalEvent || e).dataTransfer;
-                        var files: Array<File> = dt.files;
-                        if (!!!files) {
-                            console.warn('Error in so-attachments - event.dataTransfer.files is ' + typeof files);
-                            return false;
-                        }
-                        else {
-                            readFiles(files);
-                        }
-                    };
-
-                    // read files array
-                    function readFiles(files: Array<File>): void {
-                        asyncFns = [];
-
-                        // build the cascading function execution array
-                        $(files).each(function (i, file) {
-                            asyncFns.push(function () {
-                                readFile(files[i]);
-                            });
-                        });
-
-                        cafe = new Cafe(asyncFns);
-
-                        // If this is a new form, save it first; you can't attach a file unless the list item already exists.
-                        if (vm.Id() == null) {
-                            spForm.saveListItem(vm, false, undefined, function (itemId: number) {
-                                // catch-all if for some reason vm.Id is still null or lost reference of vm and we're referencing a local copy of the actual view model?
-                                if (vm.Id() == null && !!itemId && itemId.toFixed) {
-                                    vm.Id(itemId);
-                                }
-                                setTimeout(function () {
-                                    cafe.next(true); //start the async function exectuion cascade
-                                }, 1000);
-                            });
-                        } else {
-                            cafe.next(true); //start the async function exectuion cascade
-                        }
-                    };
-
-                    // upload a File object
-                    function readFile(file: File): void {     
-                        
-                        if (spForm.debug) {
-                            console.info('uploading file...');
-                            console.info(file);
-                        }
-                                           
-                        var fileName: string = file.name.replace(/[^a-zA-Z0-9_\-\.]/g, ''); // clean the filename
-                        var ext: string = /\.\w{2,4}$/.exec(fileName)[0]; //extract extension from filename, e.g. '.docx'
-                        var rootName = fileName.replace(new RegExp(ext + '$'), ''); // e.g. 'test.docx' becomes 'test'
-                        // Is the extension of the fileName in the array of allowed extensions? 
-                        var allowedExtension: boolean = new RegExp("^(\\.|)(" + allowedExtensions.join('|') + ")$", "i").test(ext);
-                        if (!allowedExtension) {
-                            self.errorMsg('Only files with the extensions: ' + allowedExtensions.join(', ') + ' are allowed.'); 
-                            return;
-                        }
-
-                        // Check for duplicate filename. If found, append a number.
-                        for (var i = 0; i < self.attachments().length; i++) {
-                            if (new RegExp(fileName, 'i').test( self.attachments()[i].Name) ) {
-                                fileName = rootName + '-1' + ext;
-                                break;
-                            }
-                        }
-
-                        var fileUpload: IFileUpload = new FileUpload(fileName, file.size);
-                        self.fileUploads().push(fileUpload);
-                        self.fileUploads.valueHasMutated();
-
-                        reader = new FileReader();
-                        reader.onerror = function errorHandler(e) {
-                            var evt: any = e;
-                            var className = fileUpload.className();
-                            fileUpload.className(className.replace('-success', '-danger'));
-                            switch (evt.target.error.code) {
-                                case evt.target.error.NOT_FOUND_ERR:
-                                    self.errorMsg = 'File Not Found!';
-                                    break;
-                                case evt.target.error.NOT_READABLE_ERR:
-                                    self.errorMsg = 'File is not readable.';
-                                    break;
-                                case evt.target.error.ABORT_ERR:
-                                    break; // noop
-                                default:
-                                    self.errorMsg = 'An error occurred reading this file.';
-                            };
-                        };
-                        reader.onprogress = function (e) {
-                            updateProgress(e, fileUpload);
-                        };
-                        reader.onabort = function (e) {
-                            self.errorMsg('File read cancelled');
-                        };
-                        reader.onloadstart = function (e) {
-                            fileUpload.progress(0);
-                        };
-                        reader.onload = function (e) {
-                            var event: any = e;
-                            // Ensure that the progress bar displays 100% at the end.
-                            fileUpload.progress(100);
-                            // Send the base64 string to the AddAttachment service for upload.
-                            Shockout.SpSoap.addAttachment(event.target.result, fileName, spForm.listName, spForm.viewModel.Id(), spForm.siteUrl, callback);
-                        }
-                        reader.onloadend = function (loadend) {
-                            /*loadend = { 
-                                target: FileReader, 
-                                isTrusted: true, 
-                                lengthComputable: true, 
-                                loaded: 1972, 
-                                total: 1972, 
-                                eventPhase: 0, 
-                                bubbles: false, 
-                                cancelable: false, 
-                                defaultPrevented: false, 
-                                timeStamp: 1453336901529000, 
-                                originalTarget: FileReader 
-                            }*/
-                            //console.info('loaded ' +  + (loadend.loaded/1024).toFixed(2) + ' KB.');
-                        };
-
-                        // read as base64 string
-                        reader.readAsDataURL(file);
-
-                        function callback() {
-
-                            // on error: jqXhr: JQueryXHR, status: string, error: string
-                            // success: xmlDoc: any, status: string, jqXhr: JQueryXHR
-                            var status: string = arguments[1];
-
-                            if (spForm.debug) {
-                                console.info('so-html5-attachments.onFileUploadComplete()...');
-                                console.info(arguments);
-                            }
-
-                            /* error XML: 
-                            <?xml version="1.0" encoding="utf-8"?>
-                            <soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
-                                <soap:Body>
-                                    <soap:Fault>
-                                        <faultcode>soap:Server</faultcode>
-                                        <faultstring>Exception of type 'Microsoft.SharePoint.SoapServer.SoapServerException' was thrown.</faultstring>
-                                        <detail>
-                                            <errorstring xmlns="http://schemas.microsoft.com/sharepoint/soap/">Parameter listItemID is missing or invalid.</errorstring>
-                                            <errorcode xmlns="http://schemas.microsoft.com/sharepoint/soap/">0x82000001</errorcode>
-                                        </detail>
-                                    </soap:Fault>
-                                </soap:Body>
-                            </soap:Envelope>                       
-                            */
-                            if (!!!status && status == 'error') {
-                                var jqXhr: JQueryXHR = arguments[0];
-                                var responseXml: Document = jqXhr.responseXML;
-                                var errorString = $(jqXhr.responseXML).find('errorstring').text();
-                                if (!!errorString) {
-                                    spForm.$dialog.html('Error on file upload. Message from server: ' + (errorString || jqXhr.statusText)).dialog('open');
-                                }
-                                fileUpload.className(fileUpload.className().replace('-success', '-danger'));
-                                cafe.next(false); // will cause Cafe to stop execution of all async functions
-                            }
-                            else if (status == 'success') {
-                                // push a new SP attachment instance to the view model's `attachments` collection
-                                var att: ISpAttachment = new SpAttachment(spForm.getRootUrl(), spForm.siteUrl, spForm.listName, spForm.getItemId(), fileName);
-                                self.attachments().push(att);
-                                self.attachments.valueHasMutated();
-                                cafe.next(true); //execute the next file read
-                            }
-
-                            setTimeout(function () {
-                                self.fileUploads.remove(fileUpload);
-                            }, 1000);
-                        }
-                    };
-
-                    this.onDragenter = cancel;
-                    this.onDragover = cancel;
-
-                    function updateProgress(e, fileUpload: IFileUpload): void {
-                        // e is a ProgressEvent.
-                        if (e.lengthComputable) {
-                            var percentLoaded = Math.round((e.loaded / e.total) * 100);
-                            // Increase the progress bar length.
-                            if (percentLoaded < 100) {
-                                fileUpload.progress(percentLoaded);
-                            }
-                        }
-                    };
-
-                    function cancel(e: Event): void {
-                        if (e.preventDefault) {
-                            e.preventDefault();
-                        }
-                        if (e.stopPropagation) {
-                            e.stopPropagation();
-                        }
-                    };
-
-                    if (!spForm.enableAttachments) {
-                        this.errorMsg('Attachments are disabled for this form or SharePoint list.');
-                        this.readOnly(true);
-                    }
-                },
-                template: 
-                `<section>
-                    <h4><span data-bind="text: title"></span><span data-bind="text: length" class="badge"></span></h4>
-                    <div data-bind="visible: !!errorMsg()" class="alert alert-danger"><span class="glyphicon glyphicon-exclamation-sign"></span>&nbsp;<span data-bind="text: errorMsg"></span></div> 
-                    <!-- ko ifnot: hasFileReader() -->
-                    <div data-bind="visible: !!!readOnly(), attr: {id: this.qqFileUploaderId}"></div>
-                    <!-- /ko -->
-                    <!-- ko if: !readOnly() && hasFileReader() -->
-                        <input type="file" data-bind="attr: {'id': id}, event: {'change': fileHandler}" multiple class="form-control" style="display:none;" /> 
-                        <div data-bind="attr:{'class': className}, event: {'click': onSelect}"><span class="glyphicon glyphicon-paperclip"></span>&nbsp;<span data-bind="text: label"></span></div> 
-                        <!-- ko if: drop -->
-                            <div class="so-file-dropzone" data-bind="event: {'dragenter': onDragenter, 'dragover': onDragover, 'drop': onDrop}">
-                                <div><span class="glyphicon glyphicon-upload"></span> <span data-bind="text: dropLabel"></span></div>
-                            </div>
-                        <!-- /ko -->
-                        <!-- ko foreach: fileUploads -->
-                            <div class="progress"> 
-                                <div data-bind="attr: {'aria-valuenow': progress(), 'style': 'width:' + progress() + '%;', 'class': className() }" role="progressbar" aria-valuemin="0" aria-valuemax="100">
-                                    <span data-bind="text: fileName"></span>
-                                </div>  
-                            </div>
-                        <!-- /ko -->
-                    <!-- /ko -->
-                    <div data-bind="foreach: attachments" style="margin:1em auto;">
-                        <div class="so-attachment">      
-                            <a href="" data-bind="attr: {href: __metadata.media_src}"><span class="glyphicon glyphicon-paperclip"></span>&nbsp;<span data-bind="text: Name"></span></a>
-                            <!-- ko ifnot: $parent.readOnly() -->
-                            <button data-bind="event: {click: $parent.deleteAttachment}" class="btn btn-sm btn-danger delete" title="Delete Attachment"><span class="glyphicon glyphicon-remove"></span></button>
-                            <!-- /ko -->
-                        </div>
-                    </div>
-                    <!-- ko if: length() == 0 && readOnly() -->
-                        <p>No attachments have been included.</p> 
-                    <!-- /ko -->
-                    <!-- ko if: description -->
-                        <div data-bind="text: description"></div>
-                    <!-- /ko -->
-                </section>`
+                viewModel: soAttachmentsModel,
+                template: Templates.soAttachments
             });
 
             ko.components.register('so-created-modified-info', {
-                viewModel: function (params) {
-                    this.CreatedBy = <KnockoutObservable<ISpPerson>>params.createdBy
-                    this.ModifiedBy = <KnockoutObservable<ISpPerson>>params.modifiedBy;
-                    this.profiles = ko.observableArray([
-                        { header: 'Created By', profile: this.CreatedBy },
-                        { header: 'Modified By', profile: this.ModifiedBy }
-                    ]);
-                    this.Created = params.created;
-                    this.Modified = params.modified;
-                    this.showUserProfiles = params.showUserProfiles;
-                },
-                template:
-                    `<!-- ko if: showUserProfiles() -->
-                        <div class="create-mod-info no-print hidden-xs">
-                            <!-- ko foreach: profiles -->
-                                <div class="user-profile-card">
-                                    <h4 data-bind="text: header"></h4>
-                                    <!-- ko with: profile -->
-                                        <img data-bind="attr: {src: Picture, alt: Name}" />
-                                        <ul>
-                                            <li><label>Name</label><span data-bind="text: Name"></span><li>
-                                            <li><label>Job Title</label><span data-bind="text: JobTitle"></span></li>
-                                            <li><label>Department</label><span data-bind="text: Department"></span></li>
-                                            <li><label>Email</label><a data-bind="text: WorkEMail, attr: {href: (\'mailto:\' + WorkEMail)}"></a></li>
-                                            <li><label>Phone</label><span data-bind="text: WorkPhone"></span></li>
-                                            <li><label>Office</label><span data-bind="text: Office"></span></li>
-                                        </ul>
-                                    <!-- /ko -->
-                                </div>
-                            <!-- /ko -->             
-                        </div>
-                    <!-- /ko -->
-                    <div class="row">
-                        <!-- ko with: CreatedBy -->
-                            <div class="col-md-3"><label>Created By</label> <a data-bind="text: Name, attr: {href: \'mailto:\' + WorkEMail}" class="email"> </a></div>
-                        <!-- /ko -->
-                        <div class="col-md-3"><label>Created</label> <span data-bind="spDateTime: Created"></span></div>                    
-                        <!-- ko with: ModifiedBy -->
-                            <div class="col-md-3"><label>Modified By</label> <a data-bind="text: Name, attr: {href: \'mailto:\' + WorkEMail}" class="email"></a></div>
-                        <!-- /ko -->
-                        <div class="col-md-3"><label>Modified</label> <span data-bind="spDateTime: Modified"></span></div>
-                    </div>`
+                viewModel: soCreatedModifiedInfoModel,
+                template: Templates.soCreatedModifiedInfo                 
+            });
+
+            ko.components.register('so-nav-menu', {
+                viewModel: soNavMenuModel,
+                template: Templates.soNavMenu
             });
 
             ko.components.register('so-workflow-history', {
                 viewModel: function (params) {
                     this.historyItems = <Array<IHistoryItem>>(params.val || params.historyItems);
                 },
-                template:
-                `<div class="row">
-                    <div class="col-sm-8"><strong>Description</strong></div>
-                    <div class="col-sm-4"><strong>Date</strong></div>
-                </div>
-                <!-- ko foreach: historyItems -->
-                    <div class="row">
-                        <div class="col-sm-8"><span data-bind="text: _description"></span></div>
-                        <div class="col-sm-4"><span data-bind="spDateTime: _dateOccurred"></span></div>
-                    </div>
-                <!-- /ko -->`
+                template: Templates.soWorkflowHistory
             });
+
+            function soCreatedModifiedInfoModel(params) {
+                this.CreatedBy = <KnockoutObservable<ISpPerson>>params.createdBy
+                this.ModifiedBy = <KnockoutObservable<ISpPerson>>params.modifiedBy;
+                this.profiles = ko.observableArray([
+                    { header: 'Created By', profile: this.CreatedBy },
+                    { header: 'Modified By', profile: this.ModifiedBy }
+                ]);
+                this.Created = params.created;
+                this.Modified = params.modified;
+                this.showUserProfiles = params.showUserProfiles;
+            };
 
             function soStaticModel(params) {
                 if (!params) {
@@ -523,7 +173,7 @@
                 this.fieldColWidth = 'col-sm-' + fieldX;
             };
 
-            function soFieldModel(params) {
+            function soFieldModel(params): void {
 
                 if (!params) {
                     throw 'params is undefined in soFieldModel';
@@ -561,6 +211,288 @@
                 // allow for static bool or ko obs
                 this.readOnly = (typeof params.readOnly == 'function') ? params.readOnly : ko.observable(!!params.readOnly || false);
             };
+
+            function soAttachmentsModel(params) {
+                var self = this;
+                var w: any = window;
+                this.errorMsg = ko.observable(null);
+                if (!!!params) {
+                    this.errorMsg('`params` is undefined in component so-attachments');
+                    throw this.errorMsg();
+                    return;
+                }
+                if (!!!params.val) {
+                    this.errorMsg('Parameter `val` for component so-attachments is required!');
+                    throw this.errorMsg();
+                    return;
+                }
+
+                var spForm: SPForm = params.val.getSpForm();
+                var vm: IViewModel = spForm.getViewModel();
+                var allowedExtensions: Array<string> = params.allowedExtensions || spForm.allowedExtensions;
+                var reader: FileReader;
+                // CAFE - Cascading Asynchronous Function Exectuion; 
+                // Required to let SharePoint only write one file at a time, otherwise you'll get a 'changes conflict with another user's changes...' when attempting to write multiple files at once
+                var cafe: ICafe;
+                var asyncFns: Array<Function>;
+
+                this.attachments = <IViewModelAttachments>params.val;
+                this.label = params.label || 'Attach Files';
+                this.drop = params.drop || true;
+                this.dropLabel = params.dropLabel || '...or Drag and Drop Files Here';
+                this.className = params.className || 'btn btn-primary';
+                this.title = params.title || 'Attachments';
+                this.description = params.description;
+                this.readOnly = (typeof params.readOnly == 'function') ? params.readOnly : ko.observable(params.readOnly || false); // allow for static bool or ko observable
+                this.length = ko.pureComputed(function () { return self.attachments().length; });
+                this.fileUploads = <KnockoutObservableArray<any>>ko.observableArray();
+
+                //check for compatibility
+                this.hasFileReader = ko.observable(w.File && w.FileReader && w.FileList && w.Blob);
+
+                if (!this.hasFileReader) {
+                    this.errorMsg('This browser does not support the FileReader class required for uplaoding files. You may be using IE 9 or another unsupported browser.');
+                }
+
+                this.id = params.id || 'so_fileUploader_' + uniqueId();
+
+                this.deleteAttachment = function (att, event) {
+                    if (!confirm('Are you sure you want to delete ' + att.Name + '? This can\'t be undone.')) {
+                        return;
+                    }
+                    Shockout.SpApi.deleteAttachment(att, function (data, error) {
+                        if (!!error) {
+                            alert("Failed to delete attachment: " + error);
+                            return;
+                        }
+                        self.attachments.remove(att);
+                    });
+                };
+
+                // event handler for input[type='file']
+                this.fileHandler = function (e) {
+                    var files: Array<File> = document.getElementById(self.id)['files'];
+                    readFiles(files);
+                };
+
+                // event handler for Attach button
+                this.onSelect = function (e) {
+                    cancel(e);
+                    //trigger click on the input file control
+                    document.getElementById(self.id).click();
+                };
+
+                // event handler for Drag adn Drop Zone
+                this.onDrop = function (localViewModel: any, e: any) {
+                    cancel(e);
+
+                    if (spForm.debug) {
+                        console.info('dropped files over dropzone, arguments are...');
+                        console.info(arguments);
+                    }
+
+                    var dt = (e.originalEvent || e).dataTransfer;
+                    var files: Array<File> = dt.files;
+                    if (!!!files) {
+                        console.warn('Error in so-attachments - event.dataTransfer.files is ' + typeof files);
+                        return false;
+                    }
+                    else {
+                        readFiles(files);
+                    }
+                };
+
+                // read files array
+                function readFiles(files: Array<File>): void {
+                    asyncFns = [];
+
+                    // build the cascading function execution array
+                    $(files).each(function (i, file) {
+                        asyncFns.push(function () {
+                            readFile(files[i]);
+                        });
+                    });
+
+                    cafe = new Cafe(asyncFns);
+
+                    // If this is a new form, save it first; you can't attach a file unless the list item already exists.
+                    if (vm.Id() == null) {
+                        spForm.saveListItem(vm, false, undefined, function (itemId: number) {
+                            // catch-all if for some reason vm.Id is still null or lost reference of vm and we're referencing a local copy of the actual view model?
+                            if (vm.Id() == null && !!itemId && itemId.toFixed) {
+                                vm.Id(itemId);
+                            }
+                            setTimeout(function () {
+                                cafe.next(true); //start the async function exectuion cascade
+                            }, 1000);
+                        });
+                    } else {
+                        cafe.next(true); //start the async function exectuion cascade
+                    }
+                };
+
+                // upload a File object
+                function readFile(file: File): void {
+
+                    if (spForm.debug) {
+                        console.info('uploading file...');
+                        console.info(file);
+                    }
+
+                    var fileName: string = file.name.replace(/[^a-zA-Z0-9_\-\.]/g, ''); // clean the filename
+                    var ext: string = /\.\w{2,4}$/.exec(fileName)[0]; //extract extension from filename, e.g. '.docx'
+                    var rootName = fileName.replace(new RegExp(ext + '$'), ''); // e.g. 'test.docx' becomes 'test'
+                    // Is the extension of the fileName in the array of allowed extensions? 
+                    var allowedExtension: boolean = new RegExp("^(\\.|)(" + allowedExtensions.join('|') + ")$", "i").test(ext);
+                    if (!allowedExtension) {
+                        self.errorMsg('Only files with the extensions: ' + allowedExtensions.join(', ') + ' are allowed.');
+                        return;
+                    }
+
+                    // Check for duplicate filename. If found, append a number.
+                    for (var i = 0; i < self.attachments().length; i++) {
+                        if (new RegExp(fileName, 'i').test(self.attachments()[i].Name)) {
+                            fileName = rootName + '-1' + ext;
+                            break;
+                        }
+                    }
+
+                    var fileUpload: IFileUpload = new FileUpload(fileName, file.size);
+                    self.fileUploads().push(fileUpload);
+                    self.fileUploads.valueHasMutated();
+
+                    reader = new FileReader();
+                    reader.onerror = function errorHandler(e) {
+                        var evt: any = e;
+                        var className = fileUpload.className();
+                        fileUpload.className(className.replace('-success', '-danger'));
+                        switch (evt.target.error.code) {
+                            case evt.target.error.NOT_FOUND_ERR:
+                                self.errorMsg = 'File Not Found!';
+                                break;
+                            case evt.target.error.NOT_READABLE_ERR:
+                                self.errorMsg = 'File is not readable.';
+                                break;
+                            case evt.target.error.ABORT_ERR:
+                                break; // noop
+                            default:
+                                self.errorMsg = 'An error occurred reading this file.';
+                        };
+                    };
+                    reader.onprogress = function (e) {
+                        updateProgress(e, fileUpload);
+                    };
+                    reader.onabort = function (e) {
+                        self.errorMsg('File read cancelled');
+                    };
+                    reader.onloadstart = function (e) {
+                        fileUpload.progress(0);
+                    };
+                    reader.onload = function (e) {
+                        var event: any = e;
+                        // Ensure that the progress bar displays 100% at the end.
+                        fileUpload.progress(100);
+                        // Send the base64 string to the AddAttachment service for upload.
+                        Shockout.SpSoap.addAttachment(event.target.result, fileName, spForm.listName, spForm.viewModel.Id(), spForm.siteUrl, callback);
+                    }
+                    reader.onloadend = function (loadend) {
+                        /*loadend = { 
+                            target: FileReader, 
+                            isTrusted: true, 
+                            lengthComputable: true, 
+                            loaded: 1972, 
+                            total: 1972, 
+                            eventPhase: 0, 
+                            bubbles: false, 
+                            cancelable: false, 
+                            defaultPrevented: false, 
+                            timeStamp: 1453336901529000, 
+                            originalTarget: FileReader 
+                        }*/
+                        //console.info('loaded ' +  + (loadend.loaded/1024).toFixed(2) + ' KB.');
+                    };
+
+                    // read as base64 string
+                    reader.readAsDataURL(file);
+
+                    function callback() {
+
+                        // on error: jqXhr: JQueryXHR, status: string, error: string
+                        // success: xmlDoc: any, status: string, jqXhr: JQueryXHR
+                        var status: string = arguments[1];
+
+                        if (spForm.debug) {
+                            console.info('so-html5-attachments.onFileUploadComplete()...');
+                            console.info(arguments);
+                        }
+
+                        /* error XML: 
+                        <?xml version="1.0" encoding="utf-8"?>
+                        <soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+                            <soap:Body>
+                                <soap:Fault>
+                                    <faultcode>soap:Server</faultcode>
+                                    <faultstring>Exception of type 'Microsoft.SharePoint.SoapServer.SoapServerException' was thrown.</faultstring>
+                                    <detail>
+                                        <errorstring xmlns="http://schemas.microsoft.com/sharepoint/soap/">Parameter listItemID is missing or invalid.</errorstring>
+                                        <errorcode xmlns="http://schemas.microsoft.com/sharepoint/soap/">0x82000001</errorcode>
+                                    </detail>
+                                </soap:Fault>
+                            </soap:Body>
+                        </soap:Envelope>                       
+                        */
+                        if (!!!status && status == 'error') {
+                            var jqXhr: JQueryXHR = arguments[0];
+                            var responseXml: Document = jqXhr.responseXML;
+                            var errorString = $(jqXhr.responseXML).find('errorstring').text();
+                            if (!!errorString) {
+                                spForm.$dialog.html('Error on file upload. Message from server: ' + (errorString || jqXhr.statusText)).dialog('open');
+                            }
+                            fileUpload.className(fileUpload.className().replace('-success', '-danger'));
+                            cafe.next(false); // will cause Cafe to stop execution of all async functions
+                        }
+                        else if (status == 'success') {
+                            // push a new SP attachment instance to the view model's `attachments` collection
+                            var att: ISpAttachment = new SpAttachment(spForm.getRootUrl(), spForm.siteUrl, spForm.listName, spForm.getItemId(), fileName);
+                            self.attachments().push(att);
+                            self.attachments.valueHasMutated();
+                            cafe.next(true); //execute the next file read
+                        }
+
+                        setTimeout(function () {
+                            self.fileUploads.remove(fileUpload);
+                        }, 1000);
+                    }
+                };
+
+                this.onDragenter = cancel;
+                this.onDragover = cancel;
+
+                function updateProgress(e, fileUpload: IFileUpload): void {
+                    // e is a ProgressEvent.
+                    if (e.lengthComputable) {
+                        var percentLoaded = Math.round((e.loaded / e.total) * 100);
+                        // Increase the progress bar length.
+                        if (percentLoaded < 100) {
+                            fileUpload.progress(percentLoaded);
+                        }
+                    }
+                };
+
+                function cancel(e: Event): void {
+                    if (e.preventDefault) {
+                        e.preventDefault();
+                    }
+                    if (e.stopPropagation) {
+                        e.stopPropagation();
+                    }
+                };
+
+                if (!spForm.enableAttachments) {
+                    this.errorMsg('Attachments are disabled for this form or SharePoint list.');
+                    this.readOnly(true);
+                }
+            }
 
             function soUsermultiModel(params) {
                 if (!params) {
@@ -655,236 +587,13 @@
                 };
             };
 
+            function soNavMenuModel(params) {
+                this.navMenuItems = <KnockoutObservableArray<any>>params.val;
+                this.title = params.title || 'Navigation';
+            };
+
         };
 
-        //&& !!required && !readOnly
-        private static hasErrorCssDiv: string = `<div class="form-group" data-bind="css: {\'has-error\': !!!modelValue() && !!required(), \'has-success has-feedback\': !!modelValue() && !!required()}">`;
-
-        private static requiredFeedbackSpan: string = `<span class="glyphicon glyphicon-ok form-control-feedback" aria-hidden="true"></span>`;
-
-        public static soStaticFieldTemplate: string =
-        `<div class="form-group">
-            <div class="row">            
-                <!-- ko if: !!label -->
-                    <div class="col-sm-3" data-bind="attr:{\'class\': labelColWidth}"><label data-bind="html: label"></label></div>
-                <!-- /ko -->
-                <div class="col-sm-9" data-bind="text: modelValue, attr:{\'class\': fieldColWidth}"></div>
-            </div>
-            <!-- ko if: description -->
-            <div class="so-field-description"><p data-bind="html: description"></p></div>
-            <!-- /ko -->
-        </div>`;
-
-        public static soTextFieldTemplate: string =
-        `${KoComponents.hasErrorCssDiv}
-        <div class="row">                 
-	        <!-- ko if: !!label -->
-		        <div class="col-sm-3" data-bind="attr:{\'class\': labelColWidth}"><label data-bind="html: label, attr: {for: id}"></label></div>
-	        <!-- /ko -->          
-	        <div class="col-sm-9" data-bind="attr:{\'class\': fieldColWidth}">
-		        <!-- ko if: readOnly() -->
-			        <div data-bind="text: modelValue"></div>
-		        <!-- /ko -->
-		        <!-- ko ifnot: readOnly() -->
-			        <!-- ko if: multiline -->
-				        <textarea data-bind="value: modelValue, css: {\'so-editable\': editable}, attr: {id: id, placeholder: placeholder, title: title, required: required, \'ko-name\': koName }" class="form-control"></textarea>
-			        <!-- /ko -->
-			        <!-- ko ifnot: multiline -->
-				        <input type="text" data-bind="value: modelValue, css: {\'so-editable\': editable}, attr: {id: id, placeholder: placeholder, title: title, required: required, maxlength: maxlength, \'ko-name\': koName }" class="form-control" />
-			        <!-- /ko -->
-			        <!-- ko if: !!required() -->
-				        ${KoComponents.requiredFeedbackSpan}
-			        <!-- /ko -->
-		        <!-- /ko -->
-	        </div>
-	        <!-- ko if: description -->
-		    <div class="so-field-description"><p data-bind="html: description"></p></div>
-	        <!-- /ko -->
-        </div>`;
-
-        public static soHtmlFieldTemplate: string =
-        `${KoComponents.hasErrorCssDiv}
-        <div class="row"> 
-            <!-- ko if: !!label -->
-                <div class="col-sm-3" data-bind="attr:{\'class\': labelColWidth}"><label data-bind="html: label, attr: {for: id}"></label></div>
-            <!-- /ko -->
-            <div class="col-sm-9" data-bind="attr:{\'class\': fieldColWidth}">
-                <!-- ko if: readOnly() -->
-                    <div data-bind="html: modelValue"></div>
-                <!-- /ko -->
-                <!-- ko ifnot: readOnly() -->
-                    <div data-bind="spHtmlEditor: modelValue" contenteditable="true" class="form-control content-editable"></div>
-                    <textarea data-bind="value: modelValue, css: {\'so-editable\': editable}, attr: {id: id, required: required, \'ko-name\': koName }" data-sp-html="" style="display:none;"></textarea>
-                    <!-- ko if: !!required() -->
-                        ${KoComponents.requiredFeedbackSpan}
-                    <!-- /ko -->
-                <!-- /ko -->
-                </div>
-            </div>
-            <!-- ko if: description -->
-                <div class="so-field-description"><p data-bind="html: description"></p></div>
-            <!-- /ko -->
-        </div>`;
-
-        public static soCheckboxFieldTemplate: string =
-        `<div class="form-group">
-            <div class="row">
-                <div class="col-sm-3" data-bind="attr:{\'class\': labelColWidth}"></div>
-                <div class="col-sm-9" data-bind="attr:{\'class\': fieldColWidth}">
-                    <!-- ko if: readOnly() -->
-                        <div data-bind="text: !!modelValue() ? \'Yes\' : \'No\'"></div>
-                    <!-- /ko -->
-                    <!-- ko ifnot: readOnly() -->
-                        <label class="checkbox">
-                            <input type="checkbox" data-bind="checked: modelValue, css: {\'so-editable\': editable}, attr: {id: id, \'ko-name\': koName}, valueUpdate: valueUpdate" />
-                            <span data-bind="html: label" style="margin-left:1em;"></span>
-                        </label>
-                    <!-- /ko -->
-                </div>
-            </div>
-            <!-- ko if: description -->
-                <div class="so-field-description"><p data-bind="html: description"></p></div>
-            <!-- /ko -->
-        </div>`;
-
-        public static soSelectFieldTemplate: string =
-            `${KoComponents.hasErrorCssDiv}<div class="row">
-                <!-- ko if: !!label -->
-                    <div class="col-sm-3" data-bind="attr:{\'class\': labelColWidth}"><label data-bind="html: label, attr: {for: id}"></label></div>
-                <!-- /ko -->
-                <div class="col-sm-9" data-bind="attr:{\'class\': fieldColWidth}">
-                    <!-- ko if: readOnly() -->
-                        <div data-bind="text: modelValue"></div>
-                    <!-- /ko -->
-                    <!-- ko ifnot: readOnly() -->
-                        <select data-bind="value: modelValue, options: options, optionsCaption: caption, css: {\'so-editable\': editable}, attr: {id: id, title: title, required: required, \'ko-name\': koName}" class="form-control"></select>
-                        <!-- ko if: !!required() -->
-                            ${KoComponents.requiredFeedbackSpan}
-                        <!-- /ko -->
-                    <!-- /ko -->
-                </div>
-            </div>
-            <!-- ko if: description -->
-                <div class="so-field-description"><p data-bind="html: description"></p></div>
-            <!-- /ko -->
-        </div>`;
-
-        public static soCheckboxGroupTemplate: string =
-        `<div class="form-group">
-            <!-- ko if: description -->
-	            <div class="so-field-description"><p data-bind="html: description"></p></div>
-            <!-- /ko -->
-            <div class="row">
-	            <!-- ko if: !!label -->
-		            <div><label data-bind="html: label"></label></div>
-	            <!-- /ko -->
-	            <div>
-		            <!-- ko if: readOnly() -->
-			            <!-- ko ifnot: inline -->
-				            <ul class="list-group">
-					            <!-- ko foreach: modelValue -->
-						            <li data-bind="text: $data" class="list-group-item"></li>
-					            <!-- /ko -->
-					            <!-- ko if: modelValue().length == 0 -->
-						            <li class="list-group-item">--None--</li>
-					            <!-- /ko -->
-				            </ul>
-			            <!-- /ko -->
-			            <!-- ko if: inline -->
-				            <!-- ko foreach: modelValue -->
-					            <span data-bind="text: $data"></span>
-					            <!-- ko if: $index() < $parent.modelValue().length-1 -->,&nbsp;<!-- /ko -->
-				            <!-- /ko -->
-				            <!-- ko if: modelValue().length == 0 -->
-					            <span>--None--</span>
-				            <!-- /ko -->
-			            <!-- /ko -->
-		            <!-- /ko -->
-		            <!-- ko ifnot: readOnly() -->
-			            <input type="hidden" data-bind="value: modelValue, attr:{required: !!required}" /><p data-bind="visible: !!required" class="req">(Required)</p>
-			            <!-- ko foreach: options -->
-				            <label data-bind="css:{\'checkbox\': !$parent.inline, \'checkbox-inline\': $parent.inline}">
-					            <input type="checkbox" data-bind="checked: $parent.modelValue, css: {\'so-editable\': $parent.editable}, attr: {\'ko-name\': $parent.koName, \'value\': $data}" />
-					            <span data-bind="text: $data"></span>
-				            </label>
-			            <!-- /ko -->
-		            <!-- /ko -->
-	            </div>
-            </div>`;
-
-        public static soRadioGroupTemplate: string =
-        `<div class="form-group">
-	        <!-- ko if: description -->
-		        <div class="so-field-description"><p data-bind="html: description"></p></div>
-	        <!-- /ko -->
-	        <div class="row">
-		        <!-- ko if: !!label -->
-			        <div class="col-sm-3" data-bind="attr:{\'class\': labelColWidth}"><label data-bind="html: label"></label></div>
-		        <!-- /ko -->
-		        <div class="col-sm-9" data-bind="attr:{\'class\': fieldColWidth}">
-			        <!-- ko if: readOnly() -->
-				        <div data-bind="text: modelValue"></div>
-			        <!-- /ko -->
-			        <!-- ko ifnot: readOnly() -->
-				        <!-- ko foreach: options -->  
-					        <label data-bind="css:{\'radio\': !$parent.inline, \'radio-inline\': $parent.inline}">
-						        <input type="radio" data-bind="checked: $parent.modelValue, attr:{value: $data, name: $parent.name, \'ko-name\': $parent.koName}, css:{\'so-editable\': $parent.editable}" />
-						        <span data-bind="text: $data"></span>
-					        </label>
-				        <!-- /ko -->
-			        <!-- /ko -->
-		        </div>
-	        </div>
-        </div>`;
-
-        public static soUsermultiFieldTemplate: string =
-        `<div class="form-group">
-	        <input type="hidden" data-bind="value: modelValue, css: {\'so-editable\': editable}, attr: {id: id, \'ko-name\': koName, required: required}" />
-	        <div class="row">
-		        <div class="col-md-3 col-xs-3">
-			        <label data-bind="html: label"></label>
-		        </div>
-		        <div class="col-md-9 col-xs-9">
-			        <!-- ko ifnot: readOnly -->
-				        <input type="text" data-bind="spPerson: person, attr: {placeholder: placeholder}" />
-				        <button class="btn btn-success" data-bind="click: addPerson, attr: {\'disabled\': person() == null, id: koName + \'_AddButton\' }"><span>Add</span></button>
-				        <!-- ko if: showRequiredText -->
-					        <div class="col-md-6 col-xs-6">
-						        <p class="text-danger">At least one person must be added.</p>
-					        </div>
-				        <!-- /ko -->
-			        <!-- /ko -->		
-			        <!-- ko foreach: modelValue -->
-				        <div class="row">
-					        <div class="col-md-10 col-xs-10" data-bind="spPerson: $data"></div>
-					        <!-- ko ifnot: $parent.readOnly() -->
-						        <div class="col-md-2 col-xs-2">
-							        <button class="btn btn-xs btn-danger" data-bind="click: $parent.removePerson"><span class="glyphicon glyphicon-trash"></span></button>
-						        </div>
-					        <!-- /ko -->
-				        </div>
-			        <!-- /ko -->
-			        <!-- ko if: description -->
-				        <div class="so-field-description"><p data-bind="html: description"></p></div>
-			        <!-- /ko -->		
-		        </div>
-	        </div>
-        </div>`;
-
-        public static soCreatedModifiedTemplate =
-        `<!-- ko if: !!CreatedBy && CreatedBy() != null -->
-            <section>
-                <so-created-modified-info params="created: Created, createdBy: CreatedBy, modified: Modified, modifiedBy: ModifiedBy, showUserProfiles: showUserProfiles"></so-created-modified-info>
-            </section>
-        <!-- /ko -->`;
-
-        public static soWorkflowHistoryTemplate =
-        `<!-- ko if: !!Id() -->
-            <section id="workflowHistory" class="nav-section">
-                <h4>Workflow History</h4>
-                <so-workflow-history params="val: historyItems"></so-workflow-history>
-            </section>
-        <!-- /ko -->`;
     }
 
 }

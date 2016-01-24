@@ -2,36 +2,6 @@
 /// <reference path="typings/jquery.d.ts" />
 /// <reference path="typings/jquery.ui.datetimepicker.d.ts" />
 /// <reference path="typings/jqueryui.d.ts" />
-/**
-* -----------------
-* Shockout SP Form
-* -----------------
-* By John Bonfardeci <john.bonfardeci@gmail.com>
-*
-* GitHub: https://github.com/jbonfardeci/ShockoutForms
-*
-* A Replacement for InfoPath and XSLT Forms
-* Leverage the power Knockout JS databinding with SharePoint services for modern and dynamic web form development.
-*
-* Minimum Usage:
-* `var spForm = new Shockout.SPForm('My SharePoint List Name', 'my-form-ID', {});`
-*
-* Dependencies: jQuery 1.72+, jQuery UI<any>, KnockoutJS 3.2+
-* Compatible with Bootstrap 3.5.x CSS - http://getbootstrap.com
-*
-* The MIT License (MIT) - https://tldrlegal.com/license/mit-license
-* Copyright (c) 2015 John T. Bonfardeci
-*
-* Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
-*
-* The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
-*
-* THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-* FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-* LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
-* DEALINGS IN THE SOFTWARE.
-*
-*/
 declare module Shockout {
     class SPForm {
         static DEBUG: boolean;
@@ -41,7 +11,6 @@ declare module Shockout {
         static errorLogListName: string;
         static errorLogSiteUrl: string;
         static enableErrorLog: boolean;
-        $createdInfo: any;
         $dialog: any;
         $form: any;
         $formAction: any;
@@ -63,6 +32,7 @@ declare module Shockout {
         fieldNames: Array<string>;
         includeUserProfiles: boolean;
         includeWorkflowHistory: boolean;
+        includeNavigationMenu: boolean;
         preRender: Function;
         postRender: Function;
         preSave: Function;
@@ -146,7 +116,8 @@ declare module Shockout {
         private version;
         queryStringId: string;
         isSp2013: Boolean;
-        constructor(listName: string, formId: string, options: Object);
+        private cafe;
+        constructor(listName: string, formId: string, options?: Object);
         /**
         * Execute the next asynchronous function from `asyncFns`.
         * @param success?: boolean = undefined
@@ -256,7 +227,7 @@ declare module Shockout {
         * @param success?: boolean = undefined
         * @return void
         */
-        updateStatus(msg: string, success?: boolean): void;
+        updateStatus(msg: string, success: boolean, spForm: any): void;
         /**
         * Display a message to the user with jQuery UI Dialog.
         * @param msg: string
@@ -344,9 +315,10 @@ declare module Shockout {
         allowDelete: KnockoutObservable<boolean>;
         attachments: IViewModelAttachments;
         currentUser: KnockoutObservable<any>;
-        historyItems: KnockoutObservable<Array<IHistoryItem>>;
+        historyItems: KnockoutObservableArray<IHistoryItem>;
         isValid: KnockoutComputed<boolean>;
         showUserProfiles: KnockoutObservable<boolean>;
+        navMenuItems: KnockoutObservableArray<any>;
         isAuthor(): boolean;
         deleteItem(): void;
         cancel(): void;
@@ -369,9 +341,10 @@ declare module Shockout {
         allowDelete: KnockoutObservable<boolean>;
         attachments: IViewModelAttachments;
         currentUser: KnockoutObservable<ICurrentUser>;
-        historyItems: KnockoutObservable<Array<any>>;
+        historyItems: KnockoutObservableArray<any>;
         isValid: KnockoutComputed<boolean>;
         showUserProfiles: KnockoutObservable<boolean>;
+        navMenuItems: KnockoutObservableArray<any>;
         deleteAttachment: any;
         constructor(instance: Shockout.SPForm);
         isAuthor(): boolean;
@@ -390,18 +363,6 @@ declare module Shockout {
 declare module Shockout {
     class KoComponents {
         static registerKoComponents(): void;
-        private static hasErrorCssDiv;
-        private static requiredFeedbackSpan;
-        static soStaticFieldTemplate: string;
-        static soTextFieldTemplate: string;
-        static soHtmlFieldTemplate: string;
-        static soCheckboxFieldTemplate: string;
-        static soSelectFieldTemplate: string;
-        static soCheckboxGroupTemplate: string;
-        static soRadioGroupTemplate: string;
-        static soUsermultiFieldTemplate: string;
-        static soCreatedModifiedTemplate: string;
-        static soWorkflowHistoryTemplate: string;
     }
 }
 declare module Shockout {
@@ -809,8 +770,25 @@ declare module Shockout {
 }
 declare module Shockout {
     class Templates {
-        static actionTemplate: string;
+        static soFormAction: string;
         static getFormAction(): HTMLDivElement;
+        static hasErrorCssDiv: string;
+        static requiredFeedbackSpan: string;
+        static soNavMenuControl: string;
+        static soNavMenu: string;
+        static soStaticField: string;
+        static soTextField: string;
+        static soAttachments: string;
+        static soHtmlFieldTemplate: string;
+        static soCheckboxField: string;
+        static soSelectField: string;
+        static soCheckboxGroup: string;
+        static soRadioGroup: string;
+        static soUsermultiField: string;
+        static soWorkflowHistoryControl: string;
+        static soWorkflowHistory: string;
+        static soCreatedModifiedInfoControl: string;
+        static soCreatedModifiedInfo: string;
     }
 }
 declare module Shockout {
@@ -962,9 +940,10 @@ declare module Shockout {
 declare module Shockout {
     interface ICafe {
         asyncFns: Array<Function>;
-        complete(fn: Function): any;
-        fail(fn: Function): any;
-        finally(fn: Function): any;
+        start(msg?: string): void;
+        complete(fn: Function): ICafe;
+        fail(fn: Function): ICafe;
+        finally(fn: Function): ICafe;
         next(success?: boolean, msg?: string, args?: any): void;
     }
     /**
@@ -980,6 +959,7 @@ declare module Shockout {
         private _finally;
         asyncFns: Array<Function>;
         constructor(asyncFns?: Array<Function>);
+        start(msg?: string): void;
         complete(fn: Function): ICafe;
         fail(fn: Function): ICafe;
         finally(fn: Function): ICafe;
