@@ -809,20 +809,16 @@ module Shockout {
         * @return void
         */
         getUsersGroupsAsync(self: SPForm, args: any = undefined): void {
-            if (self.$form.find("[data-sp-groups], [user-groups]").length == 0 || self.isSp2013) {
+            
+            if (self.isSp2013) {
+                // We already have the groups from the SP 2013 CurrentUser call; return
                 self.nextAsync(true);
                 return;
             }
 
             self.updateStatus("Retrieving your groups...", true, self);
 
-            if (self.isSp2013) {
-                SpApi15.getUsersGroups(self.currentUser.id, callback);
-            } else {
-                SpSoap.getUsersGroups(self.currentUser.login, callback);
-            }
-
-            function callback(groups: Array<any>, error: string) {
+            SpSoap.getUsersGroups(self.currentUser.login, function callback(groups: Array<any>, error: string) {
                 if (error) {
                     self.nextAsync(false, "Failed to retrieve your groups. " + error);
                     return;
@@ -836,7 +832,7 @@ module Shockout {
                 }
 
                 self.nextAsync(true, "Retrieved your groups.");
-            }
+            });         
         }
 
         /**
@@ -852,25 +848,25 @@ module Shockout {
                 // Remove elements from DOM if current user doesn't belong to any of the SP user groups in an element's attribute `data-sp-groups`.
                 self.$form.find("[data-sp-groups], [user-groups]").each(function(i: number, el: HTMLElement): void {
 
-                    // Provide backward compatibility.
-                    // Attribute `user-groups` is deprecated and `data-sp-groups` is preferred for HTML5 "correctness."
                     var groups: string = $(el).attr("data-sp-groups");
                     if (!!!groups) {
                         groups = $(el).attr("user-groups");
                     }
 
-                    var isMember: boolean = self.currentUserIsMemberOfGroups(groups);
+                    $(el).before('<!-- ko if: !!$root.isMember(' + groups + ') -->')
+                        .after('<!-- /ko -->');
 
-                    if (self.debug) {
-                        console.info('element is restricted to groups...');
-                        console.info(groups);
-                    }
+                    //var isMember: boolean = self.currentUserIsMemberOfGroups(groups);
 
-                    if (!isMember) {
-                        $(el).remove();
-                    }
+                    //if (self.debug) {
+                    //    console.info('element is restricted to groups...');
+                    //    console.info(groups);
+                    //}
+
+                    //if (!isMember) {
+                    //    $(el).remove();
+                    //}
                 });
-
 
                 self.nextAsync(true, "Retrieved your permissions.");
             }

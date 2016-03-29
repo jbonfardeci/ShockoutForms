@@ -24,6 +24,7 @@
         isValid: KnockoutComputed<boolean>;
         showUserProfiles: KnockoutObservable<boolean>;
         navMenuItems: KnockoutObservableArray<any>;
+        isMember: KnockoutComputed<boolean>;
 
         // methods
         isAuthor(): boolean;
@@ -59,6 +60,7 @@
         public isValid: KnockoutComputed<boolean>;
         public showUserProfiles: KnockoutObservable<boolean> = ko.observable(false);
         public navMenuItems: KnockoutObservableArray<any> = ko.observableArray();
+        public isMember: KnockoutComputed<boolean>;
 
         public deleteAttachment;
 
@@ -79,6 +81,15 @@
             this.attachments.getSpForm = function(){
                 return self.parent;
             }
+            this.isMember = <KnockoutComputed<boolean>>ko.pureComputed(<any>{
+                read: function (): boolean {
+                    return false;
+                },
+                write: function (groups: string): boolean {
+                    return self.parent.currentUserIsMemberOfGroups(groups);
+                },
+                owner: this
+            });
         }
 
         public isAuthor(): boolean {

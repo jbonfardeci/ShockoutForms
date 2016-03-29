@@ -1,0 +1,218 @@
+@media print{
+    body{
+
+        background-color:$white;
+	    background:$white;
+	    margin:2.5em;
+	    padding:0;
+	    color:$black; 
+	    text-align:center;
+	    * {
+		    margin:0 !important; 
+		    padding:0 !important; 
+		    height:auto; 
+		    color:$black !important;
+		    border-radius: 0 !important;
+		    box-shadow:none !important;
+            font-size:1em !important;
+            border:none;
+            border-color: transparent;
+	    }
+
+	    #s4-ribbonrow,
+	    .s4-ql, 
+	    #v5-page-column-sidebar, 
+	    #v5-header,
+	    .no-print,
+	    .sp-form .company-branding,
+	    .sp-form .error,
+	    .sp-form .warning,
+	    .sp-form .req,
+	    .sp-form button,
+	    .sp-form .form-action,
+	    .sp-form .btn,
+	    .sp-form .form-breadcrumbs,
+	    .sp-form .form-status,
+	    .sp-form .form-nav,
+	    #BackToTop,
+	    .sp-form .sp-validate-person, 
+	    .sp-form .sp-lookup-person,
+	    .sp-form .rte,
+	    .sp-form .json,
+	    button
+	    {display:none !important;}
+
+        .print-only{
+            display:block !important;
+        }
+
+        .panel{
+            border: none;;
+        }
+		
+        .sp-form {
+            display:block;
+            width:100%;
+            margin:auto;
+            text-align:left;
+            border:none;
+            font-size:11pt;
+        
+            h1, h2, h3, h4{
+                clear:left;
+                font-weight: normal;
+                color: $black;
+                padding:1em;
+                margin: 1em 0;
+            }
+
+            h1{
+			    font-size: 16pt;
+		    }
+		
+		    h2{
+                font-size: 14pt;
+		    }
+
+            h3 {
+                font-size: 12pt;             
+            }
+
+            h4{
+                font-size:11pt;
+                border-bottom: 1px solid $black;
+            }
+
+            strong{
+                font-weight:normal;
+                border-bottom: 1px solid $black;
+            }
+
+		    table{
+			    width:90%;
+			    background-color:$white;
+			    border:1px solid $grey;
+			    border-collapse:collapse;
+			    margin:10px auto !important;
+
+                td, th{
+				    border:0 solid $grey;
+				    border-width:0 0 1px 0;
+				    padding:5px !important;
+				    text-align:left;
+			    }
+		    }
+	
+            ul{
+                li {
+                    margin: 0;
+                    padding: 0;
+                    list-style-type: none;
+                    display: block;
+                    height: auto;
+                    padding: 5px;
+                }
+            }
+  
+            em{font-weight:bold; font-size:.7em; font-style:oblique; color:$black;}
+		
+            input,
+            textarea {
+                padding: 2px !important;
+                max-width: 70%;
+                border-width: 0;
+                border-color: transparent;
+                border-bottom: 1px solid $black;
+                min-height: 25px;
+                margin: 0 5px !important;                      
+            }
+                
+            textarea{
+			    padding:5px !important;
+                width: 90%;
+                height: 100px;
+                display: block;
+		    }
+
+            input[type='checkbox'],
+            input[type='radio'],
+            .checkbox,
+            .radio{
+                width: auto;
+                height: auto;
+                min-height: 25px;
+                margin: 0 5px !important;
+                padding: 0;
+                position: relative;
+                border-width: 0;
+                cursor: pointer;            
+            }
+            
+            input.long {
+                width: 300px;
+            }
+
+            input.med {
+                width: 140px;
+            }
+
+            input.short {
+                width: 70px;
+            }
+            
+            input.abbr{
+				width:2em;
+			}
+
+            .date {
+                width: 140px !important;
+            }
+
+            select {
+                height: 29px;
+                margin:0 5px !important;
+                border-style:solid;
+                border-width:1px;
+            } 
+                   	
+	        .attachment-form{ width:45%; display:block; float:left; height:auto;}	
+		    .attachment-form table{width:100%;}
+						            
+	        .content-editable{
+		        border:1px solid $md-grey;
+		        min-height:120px;
+		        height:auto;
+		        padding:5px !important;
+	        }	
+		
+	        .form-nav ul{
+		        margin:0;
+		        padding:0;
+		        list-style-type:none;
+		        text-align:center; 
+
+                li{
+		            margin:2px !important;
+		            padding:0;
+		            list-style-type:none;
+		            display:inline-block;
+		            height:auto;
+	            }
+	        }
+
+            label{
+                font-weight:normal;
+                font-size:9pt;
+            }
+
+            label::after{
+                content: ': ';
+            }
+
+            section{
+                padding:2em;
+                border-radius:5px;
+            }
+        }
+    }			
+}

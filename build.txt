@@ -1,0 +1,1 @@
+-d --sourceMap --outFile "../JavaScript/ShockoutForms-1.0.7.js"
