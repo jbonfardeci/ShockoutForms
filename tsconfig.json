@@ -1,0 +1,18 @@
+{
+    "compilerOptions": {
+        "module": "commonjs",
+        "target": "es5",
+        "noImplicitAny": false,
+        "outDir": "JavaScript",
+        "outFile": "JavaScript/ShockoutForms-1.0.7.js",
+        "rootDir": "TypeScript",
+        "sourceMap": true,
+        "sourceRoot": "TypeScript",
+        "declaration": true,
+        "newLine": "CRLF",
+        "project": "TypeScript"
+    },
+    "exclude": [
+        "node_modules"
+    ]
+}
