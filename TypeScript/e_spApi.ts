@@ -34,12 +34,29 @@
          * @param {Function} callback
          */
         public static getPersonById(id: number, callback: Function): void {
-            SpApi.getListItem('UserInformationList', id, function (data: ISpPerson, error: string) {
+            if(isNaN( parseInt(id+'') )){
+                return;
+            }
+            
+            var url: string = '/_vti_bin/listdata.svc/UserInformationList(' + id + ')';
+            
+            SpApi.executeRestRequest(url, fn, true, 'GET');
+
+            function fn(data: any, error) {
                 if (!!error) {
-                    callback(null, error);
+                    callback(data, error);
+                    return;
                 }
-                callback(data);
-            }, '/', true);
+
+                if (!!data) {
+                    if (data.d) {
+                        callback(data.d);
+                    }
+                    else {
+                        callback(data);
+                    }
+                }
+            };
         }
 
         /**
@@ -67,7 +84,7 @@
             });
 
             $jqXhr.fail(function (jqXhr: JQueryXHR, status: string, error: string) {
-                if (!!status && status == '404') {
+                if (!!status && parseInt(status) == 404) {
                     var msg = status + ". The data may have been deleted by another user."
                 }
                 else {

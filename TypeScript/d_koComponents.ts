@@ -153,7 +153,6 @@
             function soStaticModel(params) {
                 if (!params) {
                     throw 'params is undefined in so-static-field';
-                    return;
                 }
 
                 var koObj: IShockoutObservable<string> = params.val || params.modelValue;
@@ -177,7 +176,6 @@
 
                 if (!params) {
                     throw 'params is undefined in soFieldModel';
-                    return;
                 }
 
                 var koObj: IShockoutObservable<string> = params.val || params.modelValue;
@@ -219,12 +217,10 @@
                 if (!!!params) {
                     this.errorMsg('`params` is undefined in component so-attachments');
                     throw this.errorMsg();
-                    return;
                 }
                 if (!!!params.val) {
                     this.errorMsg('Parameter `val` for component so-attachments is required!');
                     throw this.errorMsg();
-                    return;
                 }
 
                 var spForm: SPForm = params.val.getSpForm();
@@ -498,7 +494,6 @@
             function soUsermultiModel(params) {
                 if (!params) {
                     throw 'params is undefined in soFieldModel';
-                    return;
                 }
                 var self = this;
                 var koObj = params.val || params.modelValue;

@@ -1,0 +1,22 @@
+{
+  "name": "shockoutforms",
+  "homepage": "https://github.com/jbonfardeci/shockoutforms",
+  "authors": [
+    "John Bonfardeci <john.bonfardeci@gmail.com>"
+  ],
+  "description": "KnockoutJS + SharePoint === Shockout",
+  "main": "",
+  "keywords": [
+    "sharepoint",
+    "knockout",
+    "forms"
+  ],
+  "license": "MIT",
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "test",
+    "tests"
+  ]
+}

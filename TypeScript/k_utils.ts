@@ -325,7 +325,6 @@
 
             if (debug || !SPForm.enableErrorLog) {
                 throw msg;
-                return;
             }
 
             siteUrl = Utils.formatSubsiteUrl(siteUrl);
