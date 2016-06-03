@@ -62,8 +62,8 @@
 
                     //controls
                     var $spValidate = $('<button>', {
-                        'html': '<span class="glyphicon glyphicon-user"></span>',
-                        'class': 'btn btn-sm btn-default no-print',
+                        'html': Templates.personIcon,
+                        'class': Templates.buttonDefault,
                         'title': 'Validate the employee account name.'
                     }).on('click', function () {
                         if ($.trim($element.val()) == '') {
@@ -82,7 +82,7 @@
                         return false;
                     }).insertAfter($element);
 
-                    var $reset = $('<button>', { 'class': 'btn btn-sm btn-default reset', 'html': 'Reset' })
+                    var $reset = $('<button>', { 'class': Templates.resetButton, 'html': 'Reset' })
                         .on('click', function () {
                             modelValue(null);
                             return false;
@@ -301,7 +301,7 @@
                     .attr('placeholder', 'MM/DD/YYYY')
                     .on('blur', onDateChange)
                     .on('change', onDateChange)
-                    .after('<span class="glyphicon glyphicon-calendar"></span>');
+                    .after(Templates.calendarIcon);
 
                 $(element).datepicker({
                     changeMonth: true,

@@ -1,5 +1,32 @@
 ﻿module Shockout {
 
+    // recreate the SP REST object for an attachment
+    export class SpAttachment implements ISpAttachment {
+        __metadata: ISpAttachmentMetadata;
+        EntitySet: string;
+        ItemId: number;
+        Name: string;
+
+        constructor(rootUrl: string, siteUrl: string, listName: string, itemId: number, fileName: string) {
+            var entitySet: string = listName.replace(/\s/g, '');
+            siteUrl = Utils.formatSubsiteUrl(siteUrl);
+            var uri = rootUrl + siteUrl + "_vti_bin/listdata.svc/Attachments(EntitySet='{0}',ItemId={1},Name='{2}')";
+            uri = uri.replace(/\{0\}/, entitySet).replace(/\{1\}/, itemId + '').replace(/\{2\}/, fileName);
+
+            this.__metadata = {
+                uri: uri,
+                content_type: "application/octetstream",
+                edit_media: uri + "/$value",
+                media_etag: null, // this property is unused for our purposes, so `null` is fine for now
+                media_src: rootUrl + siteUrl + "/Lists/" + listName + "/Attachments/" + itemId + "/" + fileName,
+                type: "Microsoft.SharePoint.DataService.AttachmentsItem"
+            };
+            this.EntitySet = entitySet;
+            this.ItemId = itemId;
+            this.Name = fileName;
+        }
+    }
+
     export interface ICafe {
         asyncFns: Array<Function>;
         start(msg?: string): void;
@@ -184,26 +211,7 @@
                 this.$element.attr('required', '');
             }
 
-            var hrsOpts = [];
-            for (var i = 1; i <= 12; i++) {
-                hrsOpts.push('<option value="' + i + '">' + (i < 10 ? '0' + i : i) + '</option>');
-            }
-
-            var mmOpts = [];
-            for (var i = 0; i < 60; i++) {
-                mmOpts.push('<option value="' + i + '">' + (i < 10 ? '0' + i : i) + '</option>');
-            }
-
-            var timeHtml: string =
-            `<span class="glyphicon glyphicon-calendar"></span>
-            <select class="form-control so-select-hours" style="margin-left:1em; max-width:5em; display:inline-block;">${hrsOpts.join('')}</select><span> : </span>
-            <select class="form-control so-select-minutes" style="width:5em; display:inline-block;">${mmOpts.join('')}</select>
-            <select class="form-control so-select-tt" style="margin-left:1em; max-width:5em; display:inline-block;"><option value="AM">AM</option><option value="PM">PM</option></select>
-            <button class="btn btn-sm btn-default reset" style="margin-left:1em;">Reset</button>
-            <span class="error no-print" style="display:none;">Invalid Date-time</span>
-            <span class="so-datetime-display no-print" style="margin-left:1em;"></span>`;
-
-            this.$element.after(timeHtml);
+            this.$element.after(Templates.getTimeControlsHtml());
             this.$display = this.$parent.find('.so-datetime-display');
             this.$error = this.$parent.find('.error');
             this.$hh = this.$parent.find('.so-select-hours').val('12').on('change', onChange);

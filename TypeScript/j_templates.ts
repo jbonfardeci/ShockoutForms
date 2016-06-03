@@ -2,6 +2,37 @@
 
     export class Templates {
 
+        public static buttonDefault = 'btn btn-sm btn-default no-print';
+
+        public static calendarIcon = '<span class="glyphicon glyphicon-calendar"></span>';
+        
+        public static personIcon = '<span class="glyphicon glyphicon-user"></span>';
+        
+        public static resetButton = 'btn btn-sm btn-default no-print reset';
+        
+        public static timeControlsHtml = `<span class="glyphicon glyphicon-calendar"></span>
+            <select class="form-control so-select-hours" style="margin-left:1em; max-width:5em; display:inline-block;">{0}</select><span> : </span>
+            <select class="form-control so-select-minutes" style="width:5em; display:inline-block;">{1}</select>
+            <select class="form-control so-select-tt" style="margin-left:1em; max-width:5em; display:inline-block;"><option value="AM">AM</option><option value="PM">PM</option></select>
+            <button class="btn btn-sm btn-default reset" style="margin-left:1em;">Reset</button>
+            <span class="error no-print" style="display:none;">Invalid Date-time</span>
+            <span class="so-datetime-display no-print" style="margin-left:1em;"></span>`;
+        
+        public static getTimeControlsHtml = (): string => {
+            var hrsOpts = [];
+            for (var i = 1; i <= 12; i++) {
+                hrsOpts.push('<option value="' + i + '">' + (i < 10 ? '0' + i : i) + '</option>');
+            }
+
+            var mmOpts = [];
+            for (var i = 0; i < 60; i++) {
+                mmOpts.push('<option value="' + i + '">' + (i < 10 ? '0' + i : i) + '</option>');
+            }
+            
+            return Templates.timeControlsHtml.replace('{0}', hrsOpts.join('')).replace('{1}', mmOpts.join(''));
+            
+        };
+        
         public static soFormAction: string = 
         `<div class="row">
             <div class="col-sm-8 col-sm-offset-4 text-right">
@@ -28,12 +59,11 @@
         }
 
         public static hasErrorCssDiv: string =
-        `<div class="form-group" data-bind="css: {\'has-error\': !!!modelValue() && !!required(), \'has-success has-feedback\': !!modelValue() && !!required()}">`;
+        '<div class="form-group" data-bind="css: {\'has-error\': !!!modelValue() && !!required(), \'has-success has-feedback\': !!modelValue() && !!required()}">';
 
-        public static requiredFeedbackSpan: string =
-        `<span class="glyphicon glyphicon-ok form-control-feedback" aria-hidden="true"></span>`;
+        public static requiredFeedbackSpan: string = '<span class="glyphicon glyphicon-ok form-control-feedback" aria-hidden="true"></span>';
 
-        public static soNavMenuControl: string = `<so-nav-menu params="val: navMenuItems"></so-nav-menu>`;
+        public static soNavMenuControl: string = '<so-nav-menu params="val: navMenuItems"></so-nav-menu>';
 
         public static soNavMenu: string =
         `<nav class="navbar navbar-default no-print" id="TOP">

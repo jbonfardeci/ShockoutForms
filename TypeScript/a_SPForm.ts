@@ -1,4 +1,3 @@
-/// <reference path="../_references.ts" />
 /// <reference path="../typings/knockout.d.ts" />
 /// <reference path="../typings/jquery.d.ts" />
 /// <reference path="../typings/jquery.ui.datetimepicker.d.ts" />
@@ -275,7 +274,6 @@ module Shockout {
                 error = 'You must declare an instance of this class with `new`.';
                 alert(error);
                 throw error;
-                return;
             }
 
             // ensure we have the parameters we require
@@ -286,7 +284,6 @@ module Shockout {
                 errors = errors.join('');
                 alert(errors);
                 throw errors;
-                return;
             }
 
             // these are the only parameters required
@@ -1282,9 +1279,6 @@ module Shockout {
                 // Setup Datepickers.
                 self.setupDatePickers(self);
 
-                // Setup Bootstrap validation.
-                self.setupBootstrapValidation(self);
-
                 self.nextAsync(true, 'Finalized form controls.');
             }
             catch (e) {
@@ -1571,46 +1565,6 @@ module Shockout {
             catch (e) {
                 if (self.debug) { throw e; }
                 self.logError('Error in SPForm.setupAttachments(): ', e);
-            }
-
-            return count;
-        }
-
-        /**
-        * Setup Bootstrap validation for required fields.
-        * @return number
-        */
-        setupBootstrapValidation(self: SPForm = undefined): number {
-            var count: number = 0;
-            self = self || this;
-            try {
-                // add control validation to Bootstrap form elements
-                // http://getbootstrap.com/css/#forms-control-validation 
-                self.$form.find('[required], .required').each(function (i: number, el: HTMLElement) {
-
-                    var $parent = $(el).closest('.form-group');
-                    var db = $parent.attr('data-bind');
-
-                    if (/has-error/.test(db)) { return; } // already has the KO bindings
-
-                    var koName = Utils.observableNameFromControl(el, self.viewModel);               
-                    var css = "css:{ 'has-error': !!!" + koName + "(), 'has-success has-feedback': !!" + koName + "()}";
-
-                    // If the parent already has a data-bind attribute, append the css.
-                    if (!!db) {
-                        var dataBind = $parent.attr("data-bind");
-                        $parent.attr("data-bind", dataBind + ", " + css);
-                    } else {
-                        $parent.attr("data-bind", css);
-                    }
-
-                    $parent.append('<span class="glyphicon glyphicon-ok form-control-feedback" aria-hidden="true"></span>');
-                    count++;
-                });
-            }
-            catch (e) {
-                if (self.debug) { throw e; }
-                self.logError('Error in SPForm.setupBootstrapValidation(): ', e);
             }
 
             return count;

@@ -1,4 +1,5 @@
-﻿module Shockout {
+﻿
+module Shockout {
 
     export interface IViewModelAttachments extends KnockoutObservable<Array<ISpAttachment>> {
         getViewModel: Function;

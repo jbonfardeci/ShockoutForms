@@ -137,33 +137,6 @@
         Name: string;
     }
 
-    // recreate the SP REST object for an attachment
-    export class SpAttachment implements ISpAttachment {
-        __metadata: ISpAttachmentMetadata;
-        EntitySet: string;
-        ItemId: number;
-        Name: string;
-
-        constructor(rootUrl: string, siteUrl: string, listName: string, itemId: number, fileName: string) {
-            var entitySet: string = listName.replace(/\s/g, '');
-            siteUrl = Utils.formatSubsiteUrl(siteUrl);
-            var uri = rootUrl + siteUrl + "_vti_bin/listdata.svc/Attachments(EntitySet='{0}',ItemId={1},Name='{2}')";
-            uri = uri.replace(/\{0\}/, entitySet).replace(/\{1\}/, itemId + '').replace(/\{2\}/, fileName);
-
-            this.__metadata = {
-                uri: uri,
-                content_type: "application/octetstream",
-                edit_media: uri + "/$value",
-                media_etag: null, // this property is unused for our purposes, so `null` is fine for now
-                media_src: rootUrl + siteUrl + "/Lists/" + listName + "/Attachments/" + itemId + "/" + fileName,
-                type: "Microsoft.SharePoint.DataService.AttachmentsItem"
-            };
-            this.EntitySet = entitySet;
-            this.ItemId = itemId;
-            this.Name = fileName;
-        }
-    }
-
     export interface ISpItem {
         __metadata: ISpMetadata;
         Title: string;
