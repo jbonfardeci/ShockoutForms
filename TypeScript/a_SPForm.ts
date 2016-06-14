@@ -1535,7 +1535,7 @@ module Shockout {
             err = err.length > 0 ? err.join('; ') : err.join('');
 
             if (self.enableErrorLog) {
-                Utils.logError(err, self.errorLogListName, self.rootUrl, self.debug);
+                Utils.logError(err, self.errorLogListName, self.errorLogSiteUrl, self.debug);
                 self.showDialog('<p>An error has occurred and the web administrator has been notified.</p><pre>' + err + '</pre>');
             }
         }
