@@ -967,28 +967,32 @@ module Shockout {
                 var createdBy: any = item.CreatedBy;
                 var modifiedBy: any = item.ModifiedBy;
 
-                item.CreatedBy.Picture = Utils.formatPictureUrl(item.CreatedBy.Picture); //format picture urls
-                item.ModifiedBy.Picture = Utils.formatPictureUrl(item.ModifiedBy.Picture);
+                // createdBy or modifiedBy can be null in rare cases
+                if(!!createdBy && !!modifiedBy){
+                    item.CreatedBy.Picture = Utils.formatPictureUrl(item.CreatedBy.Picture); //format picture urls
+                    item.ModifiedBy.Picture = Utils.formatPictureUrl(item.ModifiedBy.Picture);
+                    
+                    // Property name shims for variations among SP 2010 & 2013 and User Info List vs. UPS.
+                    // Email 
+                    item.CreatedBy.WorkEMail = item.CreatedBy.WorkEMail || item.CreatedBy.EMail || '';
+                    item.ModifiedBy.WorkEMail = item.ModifiedBy.WorkEMail || item.ModifiedBy.EMail || '';
+
+                    // Job Title
+                    item.CreatedBy.JobTitle = item.CreatedBy.JobTitle || item.CreatedBy.Title || null;
+                    item.ModifiedBy.JobTitle = item.ModifiedBy.JobTitle || item.ModifiedBy.Title || null;
+
+                    // Phone 
+                    item.CreatedBy.WorkPhone = item.CreatedBy.WorkPhone || createdBy.MobileNumber || null;
+                    item.ModifiedBy.WorkPhone = item.ModifiedBy.WorkPhone || modifiedBy.MobileNumber || null;
+
+                    // Office 
+                    item.CreatedBy.Office = item.CreatedBy.Office || null;
+                    item.ModifiedBy.Office = item.ModifiedBy.Office || null;
+
+                    vm.CreatedBy(item.CreatedBy);
+                    vm.ModifiedBy(item.ModifiedBy);
+                }
                 
-                // Property name shims for variations among SP 2010 & 2013 and User Info List vs. UPS.
-                // Email 
-                item.CreatedBy.WorkEMail = item.CreatedBy.WorkEMail || item.CreatedBy.EMail || '';
-                item.ModifiedBy.WorkEMail = item.ModifiedBy.WorkEMail || item.ModifiedBy.EMail || '';
-
-                // Job Title
-                item.CreatedBy.JobTitle = item.CreatedBy.JobTitle || item.CreatedBy.Title || null;
-                item.ModifiedBy.JobTitle = item.ModifiedBy.JobTitle || item.ModifiedBy.Title || null;
-
-                // Phone 
-                item.CreatedBy.WorkPhone = item.CreatedBy.WorkPhone || createdBy.MobileNumber || null;
-                item.ModifiedBy.WorkPhone = item.ModifiedBy.WorkPhone || modifiedBy.MobileNumber || null;
-
-                // Office 
-                item.CreatedBy.Office = item.CreatedBy.Office || null;
-                item.ModifiedBy.Office = item.ModifiedBy.Office || null;
-
-                vm.CreatedBy(item.CreatedBy);
-                vm.ModifiedBy(item.ModifiedBy);
                 vm.Created(Utils.parseDate(item.Created));
                 vm.Modified(Utils.parseDate(item.Modified));
 
