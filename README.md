@@ -134,7 +134,7 @@ To enable attachments for your forms, include at least one `so-attachments` elem
      * `className` - (string) default is Bootstrap's "btn btn-primary" but you can override this class.
 
 ```
-<so-attachments params="val: attahcments, readOnly: readOnly"></so-attachments>
+<so-attachments params="val: attachments"></so-attachments>
 ```
 ![Attachment Component](Docs/soAttachments.png "Attachment Component")
 
@@ -211,7 +211,7 @@ KO Components are really amazing. Visit the KO docs to learn more about them htt
     <so-datetime-field params="val: MySpField"></so-datetime-field>
 
     <!-- Attachments -->
-    <so-attachments params="val: attahcments, readOnly: readOnly"></so-attachments>
+    <so-attachments params="val: attachments"></so-attachments>
 
 ```
 * Optional Parameters
@@ -476,9 +476,9 @@ Shockout has been successfully tested with IE 10-11 (*should* work with Edge) an
 
 ##Static Data Access Methods
  * Read the JavaDoc comments above each method for usage.
-  * SharePoint 2010/13 REST methods: <https://github.com/jbonfardeci/ShockoutForms/blob/master/Shockout/e_spApi.ts>
-  * SharePoint 2013 REST API methods: <https://github.com/jbonfardeci/ShockoutForms/blob/master/Shockout/f_spApi15.ts>
-  * SharePoint SOAP methods: <https://github.com/jbonfardeci/ShockoutForms/blob/master/Shockout/g_spSoap.ts>
+  * SharePoint 2010/13 REST methods: <https://github.com/jbonfardeci/ShockoutForms/blob/master/TypeScript/e_spApi.ts>
+  * SharePoint 2013 REST API methods: <https://github.com/jbonfardeci/ShockoutForms/blob/master/TypeScript/f_spApi15.ts>
+  * SharePoint SOAP methods: <https://github.com/jbonfardeci/ShockoutForms/blob/master/TypeScript/g_spSoap.ts>
 
 ###Copyright
 The MIT License (MIT)
