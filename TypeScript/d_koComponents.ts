@@ -246,7 +246,7 @@
                 //check for compatibility
                 this.hasFileReader = ko.observable(w.File && w.FileReader && w.FileList && w.Blob);
 
-                if (!this.hasFileReader) {
+                if (!this.hasFileReader()) {
                     this.errorMsg('This browser does not support the FileReader class required for uplaoding files. You may be using IE 9 or another unsupported browser.');
                 }
 
@@ -320,11 +320,11 @@
                                 vm.Id(itemId);
                             }
                             setTimeout(function () {
-                                cafe.next(true); //start the async function exectuion cascade
+                                cafe.next(true); //start the async function execution cascade
                             }, 1000);
                         });
                     } else {
-                        cafe.next(true); //start the async function exectuion cascade
+                        cafe.next(true); //start the async function execution cascade
                     }
                 };
 

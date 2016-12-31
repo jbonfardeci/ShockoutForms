@@ -335,15 +335,20 @@
                 var results: Array<IPrincipalInfo> = [];
 
                 $(xmlDoc).find('PrincipalInfo').each((i: number, n: any): void => {
-                    results.push({
-                        AccountName: $('AccountName', n).text(),
-                        UserInfoID: parseInt($('UserInfoID', n).text()),
-                        DisplayName: $('DisplayName', n).text(),
-                        Email: $('Email', n).text(),
-                        Title: $('Title', n).text(), //job title
-                        IsResolved: $('IsResolved', n).text() == 'true' ? !0 : !1,
-                        PrincipalType: $('PrincipalType', n).text()
-                    });
+
+                    var id = parseInt($('UserInfoID', n).text());
+                    if(id > 0){
+                        var account = $('AccountName', n).text().replace(/^i\:0\#\.w\|/, '');
+                        results.push({
+                            AccountName: account,
+                            UserInfoID: id,
+                            DisplayName: $('DisplayName', n).text(),
+                            Email: $('Email', n).text(),
+                            Title: $('Title', n).text(), //job title
+                            IsResolved: $('IsResolved', n).text() == 'true' ? !0 : !1,
+                            PrincipalType: $('PrincipalType', n).text()
+                        });
+                    }
                 });
 
                 callback(results);

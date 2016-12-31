@@ -97,9 +97,11 @@
                             // Thanks to John Kerski from Definitive Logic for the suggestion.
                             SpSoap.searchPrincipals(request.term, function (data: Array<IPrincipalInfo>) {
                                 response($.map(data, function (item: IPrincipalInfo) {
+                                    // replace SP 2013 domain account name prefix `i:0#.w|`
+                                    var account = item.AccountName.replace(/^i\:0\#\.w\|/, '');
                                     return {
                                         label: item.DisplayName + ' (' + item.Email + ')',
-                                        value: item.UserInfoID + ';#' + item.AccountName
+                                        value: item.UserInfoID + ';#' + account
                                     }
                                 }));
                             }, 10, 'User');

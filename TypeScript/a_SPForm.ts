@@ -1498,7 +1498,8 @@ module Shockout {
                     }
                     return;
                 }
-                var name: string = person.Id + ';#' + person.Name;
+
+                var name: string = person.Id + ';#' + person.Name.replace(/^i\:0\#\.w\|/, ''); //remove SP 2013 prefix
                 koField(name);
                 if (self.debug) {
                     console.warn('Retrieved person by ID... ' + name);

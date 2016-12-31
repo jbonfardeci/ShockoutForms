@@ -23,14 +23,15 @@ module Shockout {
 
             $jqXhr.done(function (data: ISpWrapper<ISpApiPerson>, status: string, jqXhr: JQueryXHR) {
                 var user: ISpApiPerson = data.d;
+                var account = user.LoginName.replace(/^i\:0\#\.w\|/, ''); //remove SP 2013 prefix
                 var currentUser: ICurrentUser = <ICurrentUser>{
-                    account: user.LoginName,
+                    account: user.Id + ';#' + user.Title,
                     department: null,
                     email: user.Email,
                     groups: [],
                     id: user.Id,
                     jobtitle: null,
-                    login: user.LoginName,
+                    login: account,
                     title: user.Title
                 };
 
