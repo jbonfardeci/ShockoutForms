@@ -29,6 +29,37 @@
         }
 
         /**
+         * 
+         * @param term Search the User Information List by Name, LastName, or WorkEmail; Contenttype = 'Person'
+         * @param maxResults 
+         * @param callback 
+         */
+        public static searchUsers(term: string, callback: Function, select: string = 'Id,Account,Name,WorkEmail', maxResults: number = 10): void {
+            var url = `/_vti_bin/listdata.svc/UserInformationList?
+            $filter=startswith(WorkEmail, '${term}') or startswith(Name, '${term}') or startswith(LastName, '${term}') and ContentType eq 'Person'
+            &$orderby=Name
+            &$top=${maxResults}`;
+
+            SpApi.executeRestRequest(url, fn, true, 'GET');
+
+            function fn(data: any, error) {
+                if (!!error) {
+                    callback(data, error);
+                    return;
+                }
+
+                if (!!data) {
+                    if (data.d) {
+                        callback(data.d);
+                    }
+                    else {
+                        callback(data);
+                    }
+                }
+            };
+        }
+
+        /**
          * Get a person by their ID from the User Information list.
          * @param {number} id
          * @param {Function} callback

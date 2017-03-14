@@ -50,7 +50,7 @@
                     return (x[1] || x[0]).toUpperCase();
                 }).replace(/\s/g, '')
                 .replace(/\'s/, 'S')
-                .replace(/[^A-Za-z0-9\s]/g, '');
+                .replace(/[^A-Za-z0-9\s_]/g, '');
         }
 
         /**

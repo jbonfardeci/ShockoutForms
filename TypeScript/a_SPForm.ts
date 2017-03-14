@@ -58,6 +58,9 @@ module Shockout {
         public static errorLogSiteUrl: string;
         public static enableErrorLog: boolean;
 
+        // In people search, select users from People.asmx (true) or from User Information List (false)
+        public static searchPrincipals: boolean;
+
         /////////////////////////
         // Public jQuery Objects
         /////////////////////////
@@ -143,6 +146,9 @@ module Shockout {
         // Set to true if at least one attachment is required for a form. Good requriring receipts to purchase requisitions and such. 
         public requireAttachments: boolean = false;
         
+        // In people search, select users from People.asmx (true) or from User Information List (false)
+        public searchPrincipals: boolean = true;
+
         // The relative URL of the SP subsite where the target SP list is located.
         public siteUrl: string = '';      
 
@@ -320,6 +326,7 @@ module Shockout {
             }
 
             SPForm.DEBUG = this.debug;
+            SPForm.searchPrincipals = this.searchPrincipals;
 
             // try to parse the form ID from the hash or querystring
             this.itemId = Utils.getIdFromHash();

@@ -16,7 +16,7 @@ gulp.task('ts', function(){
             noEmitOnError: true,
             removeComments: true,
             sourceMap: false,
-            out: "ShockoutForms-1.0.7.js",
+            out: "ShockoutForms-1.0.8.js",
             target: "es5"
         })).pipe(gulp.dest("JavaScript"));
 });
@@ -24,8 +24,8 @@ gulp.task('ts', function(){
 // Minify and uglify all JavaScript files in www/js/ to into www/js/appBundle.min.js
 gulp.task('min', function(){
     // js
-    gulp.src('JavaScript/ShockoutForms-1.0.7.js')
-        .pipe(concat('ShockoutForms-1.0.7.min.js'))
+    gulp.src('JavaScript/ShockoutForms-1.0.8.js')
+        .pipe(concat('ShockoutForms-1.0.8.min.js'))
         .pipe(uglify())
         .pipe(gulp.dest('JavaScript/'));
 });

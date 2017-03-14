@@ -90,22 +90,7 @@
                         .insertAfter($spValidate);
                     
                     var autoCompleteOpts: any = {
-                        source: function (request, response) {
-
-                            // Use People.asmx instead of REST services against the User Information List, 
-                            // which allows you to search users that haven't logged into SharePoint yet.
-                            // Thanks to John Kerski from Definitive Logic for the suggestion.
-                            SpSoap.searchPrincipals(request.term, function (data: Array<IPrincipalInfo>) {
-                                response($.map(data, function (item: IPrincipalInfo) {
-                                    // replace SP 2013 domain account name prefix `i:0#.w|`
-                                    var account = item.AccountName.replace(/^i\:0\#\.w\|/, '');
-                                    return {
-                                        label: item.DisplayName + ' (' + item.Email + ')',
-                                        value: item.UserInfoID + ';#' + account
-                                    }
-                                }));
-                            }, 10, 'User');
-                        },
+                        source: SPForm.searchPrincipals ? searchPrincipals : searchUserInformationList,
                         minLength: 3,
                         select: function (event, ui) {
                             modelValue(ui.item.value);
@@ -113,7 +98,8 @@
                     };
 
                     $(element).autocomplete(autoCompleteOpts);
-                    $(element).on('focus', function () { $(this).removeClass('valid'); })
+                    $(element)
+                        .on('focus', function () { $(this).removeClass('valid'); })
                         .on('blur', function () { onChangeSpPersonEvent(this, modelValue); })
                         .on('mouseout', function () { onChangeSpPersonEvent(this, modelValue); });
                 }
@@ -123,6 +109,57 @@
                         console.info(e);
                     }
                 }
+
+                // Use People.asmx instead of REST services against the User Information List, 
+                // which allows you to search users that haven't logged into SharePoint yet.
+                // Thanks to John Kerski from Definitive Logic for the suggestion.
+                // SPForm.searchPrincipals must be qual to `true`
+                function searchPrincipals (request, response) {
+                    SpSoap.searchPrincipals(
+                        /*term:*/request.term
+                        , /*callback:*/function (data: Array<IPrincipalInfo>) { 
+
+                            var mapped = $.map(data, function (user: IPrincipalInfo) {
+                                // replace SP 2013 domain account name prefix `i:0#.w|`
+                                var account = user.AccountName;
+                                if(account.indexOf('|') > -1){
+                                    account = account.split('|')[1];
+                                }
+                                return {
+                                    label: `${user.DisplayName} (${user.Email})`,
+                                    value: `${user.UserInfoID};#${account}`
+                                }
+                            });
+
+                            response(mapped);
+                        }
+                        , /*maxResults:*/10
+                        , /*principalType*/'User'
+                    );
+                };
+
+                function searchUserInformationList(request, response){
+                    SpApi.searchUsers(/*term:*/request.term, /*callback:*/function(data: Array<any>){
+
+                        var users = [];
+
+                        for(var i=0; i < data.length; i++){
+                            var user = data[i];
+                            var account = user.Account;
+                            if(account.indexOf('|') > -1){ 
+                                // replace SP 2013 domain account name prefix `i:0#.w|`
+                                account = account.split('|')[1]; 
+                            }
+
+                            users.push({
+                                label: `${user.Name} (${user.WorkEmail})`,
+                                value: `${user.Id};#${account}`
+                            });
+                        }
+
+                        response(users);
+                    });
+                };
 
                 function onChangeSpPersonEvent(self, modelValue) {
                     var value = $.trim($(self).val());
