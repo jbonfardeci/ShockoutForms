@@ -3900,10 +3900,10 @@ var Shockout;
         }
         DateTimeModel.prototype.setModelValue = function (modelValue) {
             try {
+                var val = this.$element.val();
                 if (!!!$.trim(this.$element.val())) {
                     return;
                 }
-                var date = Shockout.Utils.parseDate(this.$element.val());
                 var hrs = parseInt(this.$hh.val());
                 var min = parseInt(this.$mm.val());
                 var tt = this.$tt.val();
@@ -3914,10 +3914,7 @@ var Shockout;
                     hrs -= 12;
                 }
                 // SP saves date/time in UTC
-                var curDateTime = new Date();
-                curDateTime.setUTCFullYear(date.getFullYear());
-                curDateTime.setUTCMonth(date.getMonth());
-                curDateTime.setUTCDate(date.getDate());
+                var curDateTime = new Date(val);
                 curDateTime.setUTCHours(hrs, min, 0, 0);
                 modelValue(curDateTime);
             }

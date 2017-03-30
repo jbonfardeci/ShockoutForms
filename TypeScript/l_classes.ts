@@ -241,11 +241,11 @@
         public setModelValue(modelValue: KnockoutObservable<Date>): void {
             try {
 
+                var val = this.$element.val();
                 if (!!!$.trim(this.$element.val())) {
                     return;
                 }
 
-                var date: Date = Utils.parseDate(this.$element.val());
                 var hrs: number = parseInt(this.$hh.val());
                 var min: number = parseInt(this.$mm.val());
                 var tt: string = this.$tt.val();
@@ -258,10 +258,7 @@
                 }
 
                 // SP saves date/time in UTC
-                var curDateTime: Date = new Date();
-                curDateTime.setUTCFullYear(date.getFullYear());
-                curDateTime.setUTCMonth(date.getMonth());
-                curDateTime.setUTCDate(date.getDate());
+                var curDateTime: Date = new Date(val);
                 curDateTime.setUTCHours(hrs, min, 0, 0);
                 modelValue(curDateTime);
             }
