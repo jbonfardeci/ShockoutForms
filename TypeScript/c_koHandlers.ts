@@ -90,7 +90,10 @@
                         .insertAfter($spValidate);
                     
                     var autoCompleteOpts: any = {
-                        source: SPForm.searchPrincipals ? searchPrincipals : searchUserInformationList,
+                        source: function () {
+                            var src: any = SPForm.searchPrincipals ? searchPrincipals : searchUserInformationList
+                            return $.isFunction( SPForm['peopleFilter'] ) ? SPForm['peopleFilter'](src) : src;
+                        },
                         minLength: 3,
                         select: function (event, ui) {
                             modelValue(ui.item.value);

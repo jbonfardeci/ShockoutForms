@@ -133,7 +133,10 @@ module Shockout {
         public includeWorkflowHistory: boolean = true;
 
         public includeNavigationMenu: boolean = true;
-                
+
+        // Function to execute before using server results for people picker autocomplete
+        public peopleFilter: Function;
+
         // Function to execute before rendering templates and before Knockout databinding. Good for inserting your own markup and logic.
         public preRender: Function;
 
