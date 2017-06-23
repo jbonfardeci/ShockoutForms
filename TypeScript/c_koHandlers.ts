@@ -198,6 +198,11 @@
                     var displayName = "";
                     if (Utils.validateSpPerson(person)) {
                         displayName = person.split('#')[1];
+                        //check for sp2013 form of user:  
+                        if (displayName.indexOf('|') > -1) {
+                            displayName = displayName.split('|')[1];
+                        }
+                        
                         $(element).addClass("valid");
                     }
 
