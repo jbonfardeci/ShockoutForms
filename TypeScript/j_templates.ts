@@ -197,7 +197,11 @@
         public static soCheckboxField: string =
         `<div class="form-group">
             <div class="row">
-                <div class="col-sm-3" data-bind="attr:{\'class\': labelColWidth}"></div>
+                <div class="col-sm-3" data-bind="attr:{\'class\': labelColWidth}">
+                    <!-- ko if: readOnly() -->
+                    <label data-bind="html: label, attr: {for: id}"></label>
+                    <!-- /ko -->
+                </div>
                 <div class="col-sm-9" data-bind="attr:{\'class\': fieldColWidth}">
                     <!-- ko if: readOnly() -->
                         <div data-bind="text: !!modelValue() ? \'Yes\' : \'No\'"></div>
