@@ -1,31 +1,31 @@
-var gulp = require('gulp');
-var bower = require('bower');
-var uglify = require("gulp-uglify");
-var concat = require('gulp-concat');
-var typescript = require('gulp-typescript');
-var sass = require('gulp-sass');
-var tsFiles = "TypeScript/**/*.ts";
+var gulp = require('gulp'),
+    bower = require('bower'),
+    uglify = require("gulp-uglify"),
+    concat = require('gulp-concat'),
+    typescript = require('gulp-typescript'),
+    sass = require('gulp-sass');
 
-gulp.task('default', function(){});
+var tsFiles = "TypeScript/**/*.ts",
+    version = '1.0.9';
 
 // Compile and combine all TypeScript files in ts/ into www/js/appBundle.js
 gulp.task('ts', function(){
-    gulp.src(tsFiles)
+    return gulp.src(tsFiles)
         .pipe(typescript({
             noImplicitAny: false,
             noEmitOnError: true,
             removeComments: true,
             sourceMap: false,
-            out: "ShockoutForms-1.0.8.js",
+            out: "ShockoutForms-" + version + ".js",
             target: "es5"
         })).pipe(gulp.dest("JavaScript"));
 });
 
 // Minify and uglify all JavaScript files in www/js/ to into www/js/appBundle.min.js
-gulp.task('min', function(){
+gulp.task('min', ['ts'], function(){
     // js
-    gulp.src('JavaScript/ShockoutForms-1.0.8.js')
-        .pipe(concat('ShockoutForms-1.0.8.min.js'))
+    return gulp.src('JavaScript/ShockoutForms-' + version + '.js')
+        .pipe(concat('ShockoutForms-' + version + '.min.js'))
         .pipe(uglify())
         .pipe(gulp.dest('JavaScript/'));
 });
@@ -41,5 +41,9 @@ gulp.task('sass', function () {
 });
 
 gulp.task('watch', function(){
-    gulp.watch(tsFiles, ['TypeScript']);
+    gulp.watch(tsFiles, ['ts']);
+});
+
+gulp.task('default', ['min', 'sass'], function(){
+   console.log('--------------the build of Shockout is complete ------------>');
 });

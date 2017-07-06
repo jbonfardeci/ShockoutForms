@@ -1,0 +1,5 @@
+To build, run the following commands:
+
+npm install
+gulp
+
