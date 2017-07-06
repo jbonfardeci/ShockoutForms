@@ -2,19 +2,17 @@
   "name": "shockout-forms",
   "version": "1.1.1",
   "description": "KnockoutJS + SharePoint === Shockout",
-  "dependencies": {
-    "gulp": "^3.9.1",
-    "gulp-concat": "^2.6.0",
-    "gulp-clean-css": "^2.0.3",
-    "gulp-rename": "^1.2.2",
-    "gulp-sass": "^2.2.0"
-  },
+  "dependencies": { },
   "devDependencies": {
     "bower": "^1.7.7",
-    "gulp": "^3.9.1",
+    "gulp": "",
+    "gulp-clean-css": "^2.0.3",
     "gulp-concat": "^2.6.0",
+    "gulp-rename": "^1.2.2",
+    "gulp-replace": "",
     "gulp-sass": "^2.2.0",
     "gulp-typescript": "^2.12.1",
-    "gulp-uglify": "^1.5.3"
+    "gulp-uglify": "^1.5.3",
+    "gulp-util":""
   }
 }

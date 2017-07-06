@@ -56,7 +56,7 @@ var Shockout;
             this.requireCheckout = false;
             this.rootUrl = window.location.protocol + '//' + window.location.hostname + (!!window.location.port ? ':' + window.location.port : '');
             this.sourceUrl = null;
-            this.version = '1.0.1';
+            this.version = '1.0.9';
             this.queryStringId = 'formid';
             this.isSp2013 = false;
             var self = this;
