@@ -90,7 +90,10 @@
                         .insertAfter($spValidate);
                     
                     var autoCompleteOpts: any = {
-                        source: SPForm.searchPrincipals ? searchPrincipals : searchUserInformationList,
+                        source: function () {
+                            var src: any = SPForm.searchPrincipals ? searchPrincipals : searchUserInformationList
+                            return $.isFunction( SPForm['peopleFilter'] ) ? SPForm['peopleFilter'](src) : src;
+                        },
                         minLength: 3,
                         select: function (event, ui) {
                             modelValue(ui.item.value);
@@ -194,7 +197,7 @@
                     // Now manipulate the DOM element
                     var displayName = "";
                     if (Utils.validateSpPerson(person)) {
-                        displayName = person.split('#')[1];
+                        displayName = person.indexOf('|') > -1 ? person.split('|')[1] : person.split('#')[1];
                         $(element).addClass("valid");
                     }
 
