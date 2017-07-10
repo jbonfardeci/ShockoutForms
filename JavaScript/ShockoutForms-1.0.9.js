@@ -1192,10 +1192,7 @@ var Shockout;
                     })
                         .insertAfter($spValidate);
                     var autoCompleteOpts = {
-                        source: function () {
-                            var src = Shockout.SPForm.searchPrincipals ? searchPrincipals : searchUserInformationList;
-                            return $.isFunction(Shockout.SPForm['peopleFilter']) ? Shockout.SPForm['peopleFilter'](src) : src;
-                        },
+                        source: Shockout.SPForm.searchPrincipals ? searchPrincipals : searchUserInformationList,
                         minLength: 3,
                         select: function (event, ui) {
                             modelValue(ui.item.value);
@@ -1215,7 +1212,7 @@ var Shockout;
                 }
                 function searchPrincipals(request, response) {
                     Shockout.SpSoap.searchPrincipals(request.term, function (data) {
-                        var mapped = $.map(data, function (user) {
+                        var users = $.map(data, function (user) {
                             var account = user.AccountName;
                             if (account.indexOf('|') > -1) {
                                 account = account.split('|')[1];
@@ -1225,7 +1222,10 @@ var Shockout;
                                 value: user.UserInfoID + ";#" + account
                             };
                         });
-                        response(mapped);
+                        if ($.isFunction(Shockout['peopleFilter'])) {
+                            users = Shockout['peopleFilter'](users);
+                        }
+                        response(users);
                     }, 10, 'User');
                 }
                 ;
@@ -1242,6 +1242,9 @@ var Shockout;
                                 label: user.Name + " (" + user.WorkEmail + ")",
                                 value: user.Id + ";#" + account
                             });
+                        }
+                        if ($.isFunction(Shockout['peopleFilter'])) {
+                            users = Shockout['peopleFilter'](users);
                         }
                         response(users);
                     });

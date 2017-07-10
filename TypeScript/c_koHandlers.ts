@@ -90,10 +90,7 @@
                         .insertAfter($spValidate);
                     
                     var autoCompleteOpts: any = {
-                        source: function () {
-                            var src: any = SPForm.searchPrincipals ? searchPrincipals : searchUserInformationList
-                            return $.isFunction( SPForm['peopleFilter'] ) ? SPForm['peopleFilter'](src) : src;
-                        },
+                        source: SPForm.searchPrincipals ? searchPrincipals : searchUserInformationList,
                         minLength: 3,
                         select: function (event, ui) {
                             modelValue(ui.item.value);
@@ -122,7 +119,7 @@
                         /*term:*/request.term
                         , /*callback:*/function (data: Array<IPrincipalInfo>) { 
 
-                            var mapped = $.map(data, function (user: IPrincipalInfo) {
+                            var users = $.map(data, function (user: IPrincipalInfo) {
                                 // replace SP 2013 domain account name prefix `i:0#.w|`
                                 var account = user.AccountName;
                                 if(account.indexOf('|') > -1){
@@ -134,7 +131,11 @@
                                 }
                             });
 
-                            response(mapped);
+                            if( $.isFunction(Shockout['peopleFilter']) ){ 
+                                users = Shockout['peopleFilter'](users);
+                            }
+
+                            response(users);
                         }
                         , /*maxResults:*/10
                         , /*principalType*/'User'
@@ -158,6 +159,10 @@
                                 label: `${user.Name} (${user.WorkEmail})`,
                                 value: `${user.Id};#${account}`
                             });
+                        }
+
+                        if( $.isFunction(Shockout['peopleFilter']) ){ 
+                            users = Shockout['peopleFilter'](users);
                         }
 
                         response(users);
