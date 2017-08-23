@@ -83,7 +83,7 @@ module Shockout {
         public allowSave: boolean = false;
 
         // Allowed extensions for file attachments
-        public allowedExtensions: Array<string> = ['txt', 'rtf', 'zip', 'pdf', 'doc', 'docx', 'jpg', 'gif', 'png', 'ppt', 'tif', 'pptx', 'csv', 'pub', 'msg'];
+        public allowedExtensions: Array<string> = ['txt', 'rtf', 'zip', 'pdf', 'doc', 'docx', 'jpg', 'gif', 'png', 'ppt', 'tif', 'pptx', 'csv', 'pub', 'msg', 'xls', 'xlsx'];
 
         public asyncFns: Array<any>;
 
