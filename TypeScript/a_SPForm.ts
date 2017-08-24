@@ -946,7 +946,7 @@ module Shockout {
                 var vm: IViewModel = self.viewModel;
                 
                 // Exclude these read-only metadata fields from the Knockout view model.
-                var rxExclude: RegExp = /(__metadata|ContentTypeID|ContentType|Owshiddenversion|Version|Attachments|Path)/;
+                var rxExclude: RegExp = /\b(__metadata|ContentTypeID|ContentType|Owshiddenversion|Version|Attachments|Path)\b/;
                 var rxExcludeTypes: RegExp = /(MultiChoice|User|Choice)/;
                 var isObj: RegExp = /Object/;
 
