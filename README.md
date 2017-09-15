@@ -1,28 +1,28 @@
 # Shockout SPForms
-###SharePoint + Knockout MVVM forms - an InfoPath and XSL Form Replacement (and Vast Improvement)
+### SharePoint + Knockout MVVM forms - an InfoPath and XSL Form Replacement (and Vast Improvement)
 
 Forget the frustrations of legacy InfoPath and XSL SharePoint form development. Leverage the power of Knockout's databinding plus SharePoint's REST services to create modern and truly dynamic web forms.
 
-###Compatibilty
+### Compatibilty
 Compatible with SharePoint 2010 and 2013, Foundation, Standard, and Enterprise.
 
-####Example Form shown with [Cosmo Theme](http://bootswatch.com/cosmo/bootstrap.min.css)
+#### Example Form shown with [Cosmo Theme](http://bootswatch.com/cosmo/bootstrap.min.css)
 ![Example Form built in Shockout](Docs/ShockoutFormCosmo.png "Purchase Requisition Form Built with Shockout")
 
 [View the source for this sample Purchase Requisition form.](https://github.com/jbonfardeci/ShockoutForms/blob/master/example/SP2013/PurchaseRequisition.aspx)
 
-####Dependencies: 
+#### Dependencies: 
 jQuery 1.72+, jQuery UI<any>, KnockoutJS 3.2+
 
-##Mobile First
+## Mobile First
 Shockout SP Forms is built on the philosophy of Responsive Design and Mobile First. Therefore, the framework's built-in templates utilize Bootstrap CSS. You're encouraged to become familiar with Boostrap CSS and implement the classes in your own form controls. Download Boostrap at http://getbootstrap.com, or use the CDN (Content Delivery Network) links below. See the Knockout HTML form control samples below which include the Boostrap CSS classes.
 
-##About Knockout JS MVVM (Model View View Model)
+## About Knockout JS MVVM (Model View View Model)
 You must be familiar with the Knockout JS MVVM framework syntax, but there are form control samples below that you can copy and paste in order to get you started building Shockout forms with a minimal learning curve. Visit http://knockoutjs.com if you need an introduction or refresher.
 
 Knockout utilizes the Observer/Observable design pattern which means that many objects can "observe" another object - called an "observable." This means when the value of an observable changes, all observers will react to the change. A practical example of this behavior is with Excel formula cells - the calculation updates immediately after another variable in the formula changes. 
 
-###Rules
+### Rules
 If you've spent any time implementing rules in InfoPath, you have probably become frustrated with the interface to manage those rules. Rules with XSL forms? Forget it unless you're prepared to hack your form to death with jQuery selectors and event handlers. With Knockout's directives, you can embed the functionality of rules in an HTML element with the data-bind attribute. For example, do you need to show an element based on the selected option of a select element?
 ```
 <label>What is your favorite color?</label>
@@ -120,7 +120,7 @@ If you've spent any time implementing rules in InfoPath, you have probably becom
 </script>
 ```
 
-###Attachments - SP 2010 and 2013
+### Attachments - SP 2010 and 2013
 To enable attachments for your forms, include at least one `so-attachments` element within your form and ensure attachments are enabled on your list. An error message will be displayed if the browser doesn't support the FileReader class for uplaoding base64 strings to the lists.asmx/AddAttachment SOAP service.
     
     * Parameters:
@@ -139,7 +139,7 @@ To enable attachments for your forms, include at least one `so-attachments` elem
 ![Attachment Component](Docs/soAttachments.png "Attachment Component")
 
 
-###Show the User Profiles for Created By and Modified By
+### Show the User Profiles for Created By and Modified By
 To enable this feature, ensure that `includeUserProfiles` is `true` (the default) include an element with the class name "created-info" or attribute "data-sp-created-info". 
 Shockout will query the User Information List or User Profile Service, if you have it, and display user profiles with: picture, full name, job title, email, phone, department, and office.
 If this feature is disabled, Shockout will only show the Created By/Created and Modified By/Modified fields. 
@@ -149,7 +149,7 @@ If this feature is disabled, Shockout will only show the Created By/Created and 
 <div data-sp-created-info></div>
 ```
 
-###SharePoint Field Variable Names
+### SharePoint Field Variable Names
 Shockout relies on SharePoint REST Services and SP REST Services returns your list's field names in a specific format; basically the current display name, minus spaces and special characters, in "CamelCase."
 
 The Shockout framework will map these camel case variable names to an instance of a Knockout view model. You'll use these variable names to create your form's fields.
@@ -165,7 +165,7 @@ http://<SiteUrl>/<Subsite>/_vti_bin/listdata.svc/<MyListName>(<ID>)
 Choose the GET radio option and enter `Accept: application/json;odata=verbose` in the RAW field. This tells SP to return JSON, not XML!
 Now that you know the variable names, you're ready to create your Shockout form.
 
-###SP Field Metadata
+### SP Field Metadata
 * Shockout assigns metadata properties to all of your list fields.
 
     * `_koName` - (String) - the Knockout variable name
@@ -176,12 +176,12 @@ Now that you know the variable names, you're ready to create your Shockout form.
     * `_readOnly` (Boolean) if the field is read-only or not
     * `_format` (String) the standard name of the type of SP field: Text, Choice, Note, Computed, etc.
 
-##Default Field Templates with Knockout Components
+## Default Field Templates with Knockout Components
 (Thanks to John Kerski at Definitive Logic for the recommendation!)
 
 KO Components are really amazing. Visit the KO docs to learn more about them http://knockoutjs.com/documentation/component-overview.html
 
-###SharePoint Fields
+### SharePoint Fields
 ```
     <!-- Single line of text -->
     <so-text-field params="val: MySpField"></so-text-field>
@@ -227,7 +227,7 @@ KO Components are really amazing. Visit the KO docs to learn more about them htt
     * fieldColWidth: number (default = 9, if you only provide the labelColWidth, the fieldColWidth will be computed `12 - labelColWidth`)
     * multiline: boolean (default = false; for so-text-field only)
 
-###SharePoint Checkbox Field (Boolean)
+### SharePoint Checkbox Field (Boolean)
 ```
 <so-checkbox-field params="val: MySpField"></so-checkbox-field>
 ```
@@ -241,7 +241,7 @@ KO Components are really amazing. Visit the KO docs to learn more about them htt
     * labelColWidth: number (default = 3, Bootstrap grids are up to 12 units wide)
     * fieldColWidth: number (default = 9, if you only provide the labelColWidth, the fieldColWidth will be computed `12 - labelColWidth`)
 
-###SharePoint Choice Fields - Select Menu
+### SharePoint Choice Fields - Select Menu
 How to display the choices from a SharePoint Choice Field in a select menu.
 ```
 <so-select-field params="val: MySpField"></so-select-field>
@@ -258,7 +258,7 @@ How to display the choices from a SharePoint Choice Field in a select menu.
     * labelColWidth: number (default = 3, Bootstrap grids are up to 12 units wide)
     * fieldColWidth: number (default = 9, if you only provide the labelColWidth, the fieldColWidth will be computed `12 - labelColWidth`)
 
-###SharePoint MultiChoice Fields - Checkboxes
+### SharePoint MultiChoice Fields - Checkboxes
 How to display the choices from a SharePoint MultiChoice Field with checkboxes.
 ```
 <so-checkbox-group params="val: MySpField"></so-checkbox-group>
@@ -273,7 +273,7 @@ How to display the choices from a SharePoint MultiChoice Field with checkboxes.
     * labelColWidth: number (default = 3, Bootstrap grids are up to 12 units wide)
     * fieldColWidth: number (default = 9, if you only provide the labelColWidth, the fieldColWidth will be computed `12 - labelColWidth`)
 
-###SharePoint MultiChoice Fields - Radio Buttons
+### SharePoint MultiChoice Fields - Radio Buttons
 How to display the choices from a SharePoint MultiChoice Field with radio buttons.
 ```
 <so-radio-group params="val: MySpField"></so-radio-group>
@@ -289,8 +289,8 @@ How to display the choices from a SharePoint MultiChoice Field with radio button
     * fieldColWidth: number (default = 9, if you only provide the labelColWidth, the fieldColWidth will be computed `12 - labelColWidth`)
 
      
-###Multiple Persons (UserMulti)
-####A Control with Multiple User Accounts
+### Multiple Persons (UserMulti)
+#### A Control with Multiple User Accounts
 
 ```
 <so-usermulti-field params="val: MySpField"></so-usermulti-field>
@@ -303,18 +303,18 @@ How to display the choices from a SharePoint MultiChoice Field with radio button
     * required: boolean | KO observable (default = ko.observable(false))
     * readOnly: boolean | KO observable (default = ko.observable(false))
 
-##Required Field Validation
+## Required Field Validation
 Simply add the `required` attribute to required field elements (if not using a standard SO, so-*-field, component). Shockout will do the rest!
 
-##Knockout SharePoint Field Binding Handlers
+## Knockout SharePoint Field Binding Handlers
 You may use these binding handlers with any HTML element. Shockout will render the apporpriate content whether it's a static element such as a DIV, SPAN, etc. or an input field: INPUT, SELECT, and TEXTAREA.
 	
-####data-sp-html
+#### data-sp-html
 ```
 <textarea data-bind="value: Comments" data-sp-html></textarea>
 ``` 
 
-####spPerson
+#### spPerson
 Displays an auto-complete field with user name and email address as you type a user's first or last name in the field. The minimum number of characters is 3 before it will query the User Information List.
 SharePoint group names aren't supported at this time, but coming soon.
 ```
@@ -322,44 +322,44 @@ SharePoint group names aren't supported at this time, but coming soon.
 <div data-bind="spPerson: myVar"></div>
 ```
 
-####spDate
+#### spDate
 Displays a date in MM/DD/YYYY format.
 ```
 <input type="text" data-bind="spDate: myVar" />
 <div data-bind="spDate: myVar"></div>
 ```
 
-####spDateTime
+#### spDateTime
 Displays a date/time in MM/DD/YYYY HH:MMM TT format.
 ```
 <input type="text" data-bind="spDateTime: myVar" />
 <div data-bind="spDateTime: myVar"></div>
 ```
 
-####spMoney
+#### spMoney
 Displays currency in USD. Negative values are displayed in red and enclosed in parenthesis `()`. Other currency symbols coming soon.
 ```
 <input type="text" data-bind="spMoney: myVar" />
 <div data-bind="spMoney: myVar"></div>
 ```
 
-####spDecimal
+#### spDecimal
 Displays number with 2 decimal places. Negative values are displayed in red. You can change the decmial places with the precision attribute.
 ```
 <input type="text" data-bind="spDecimal: myVar, precision: 2" />
 <div data-bind="spDecimal: myVar, precision: 2"></div>
 ```
 
-####spNumber
+#### spNumber
 Displays integer/whole number. Negative values are displayed in red.
 ```
 <input type="text" data-bind="spNumber: myVar" />
 <div data-bind="spNumber: myVar"></div>
 ```
 
-##Element Attributes
+## Element Attributes
 
-####data-author-only
+#### data-author-only
 Restricts element to authors only where `currentUser.id == listItem.CreatedById`. Removes from DOM otherwise.
 Useful for restricting edit fields to the person that created the form.
 
@@ -374,27 +374,27 @@ Shockout will render a Knockout IF containerless control around your element: e.
 <section data-author-only></section>
 ```
 
-####data-non-authors
+#### data-non-authors
 Restricts element to non-authors of a form. Removes from DOM otherwise. 
 Useful for displaying read-only/non-edit sections to non-authors only.
 ```
 <section data-non-authors></section>
 ```
 
-####data-edit-only
+#### data-edit-only
 Only renders an element when there's an ID in the querystring - an existing form. Removes from DOM otherwise. 
 Useful for sections that require another person's input (such as comment and approval sections) on an existing form.
 ```
 <section data-edit-only></section>
 ```
 
-####data-new-only
+#### data-new-only
 Only renders an element when there is NO ID in the querystring - a new form. Removes from DOM otherwise.
 ```
 <section data-new-only></section>
 ```
 
-####data-sp-groups
+#### data-sp-groups
 Only renders an element for users belonging to the specified SharePoint user groups. Removes from DOM otherwise.
 Useful for restricting access to manager approval sections and fields.
 // Value is a comma delimitted list of user group IDs and names: `<groupId>;#<groupName>`. Shockout SPForms will first try to match on group ID and then the group name.
@@ -409,11 +409,11 @@ For approval sections, you can combine these attributes:
 ```
 This element will be rendered for users who belong to the SP user groups specified and only when there is an ID in the querystring of the form URL. 
 
-##Form Events
+## Form Events
 You may further customize your form by adding extra functionality within the appropriate event methods. 
 You specify the code for these methods in the third parameter of the constructor - the options object.
 
-####preRender()
+#### preRender()
 ```
 preRender: function(spForm){
 	// Run custom code here BEFORE the form is rendered and BEFORE the Knockout view model is bound.
@@ -422,7 +422,7 @@ preRender: function(spForm){
 }
 ```
 
-####postRender()
+#### postRender()
 ```
 postRender: function(spForm){
 	// Run custom code here AFTER the form is rendered and AFTER the Knockout view model is bound.
@@ -432,7 +432,7 @@ postRender: function(spForm){
 }
 ```
 
-####preSave()
+#### preSave()
 ```
 preSave: function(spForm){
 	// Run code before the form is saved.
@@ -442,7 +442,7 @@ preSave: function(spForm){
 }	
 ```
 
-##Saving vs. Submitting Forms
+## Saving vs. Submitting Forms
 Shockout includes a feature that allows your users to save their forms before submitting and triggering approval workflows. This is very useful for long forms - I know our users, especially managers, are interupted constantly 
 and leave their forms open so long their sessions used to time out. 
 
@@ -454,7 +454,7 @@ To enable this feature, you must:
 		Wait on 'IsSubmitted' to equal 'Yes'
 		```   
 
-##Workflow History
+## Workflow History
 If your form has one or more workflows, Shockout will display all logs from your site's Workflow History list at the bottom of your form. This is a very helpful feature for your users to track the status of their forms.
 The Workflow History list is hidden by default and can be made visible a coupe of ways. You can view your site's Workflow History list at `http://<mysite.com>/Lists/Workflow%20History`.
 
@@ -464,23 +464,23 @@ The option `includeWorkflowHistory` is `true` by default but you may override an
 
 The option `workflowHistoryListName` is "Workflow History" by default since all SharePoint sites feature this list. You may override this list name if you've created another custom workflow history list but it must be of the same list template.
 
-##Error Logging
+## Error Logging
 This feature allows you to track and fix any errors your users experience. The default options are `enableErrorLog: true`, `errorLogListName: 'Error Log'`, and `errorLogSiteUrl: '/'`. 
 
 Your Error Log list must have 2 fields: "Title" (text) and "Error" (multiple lines of text - rich HTML). 
 
 It's recommended to set a workflow or an alert on this list to notify you as soon as an error is logged.   
 
-##Supported Browsers
+## Supported Browsers
 Shockout has been successfully tested with IE 10-11 (*should* work with Edge) and the latest versions of Chrome and FireFox. Support for IE9 was dropped in favor of the new HTML 5 file uploader. Plus we want to discourage Win XP stalwarts.
 
-##Static Data Access Methods
+## Static Data Access Methods
  * Read the JavaDoc comments above each method for usage.
   * SharePoint 2010/13 REST methods: <https://github.com/jbonfardeci/ShockoutForms/blob/master/TypeScript/e_spApi.ts>
   * SharePoint 2013 REST API methods: <https://github.com/jbonfardeci/ShockoutForms/blob/master/TypeScript/f_spApi15.ts>
   * SharePoint SOAP methods: <https://github.com/jbonfardeci/ShockoutForms/blob/master/TypeScript/g_spSoap.ts>
 
-###Copyright
+### Copyright
 The MIT License (MIT)
     
 <https://tldrlegal.com/license/mit-license>
