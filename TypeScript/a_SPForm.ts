@@ -274,6 +274,8 @@ module Shockout {
 
         private cafe: ICafe;
 
+        public listItemType: string;
+
         constructor(listName: string, formId: string, options: Object = undefined) {
             var self = this;
             var error;
@@ -333,7 +335,7 @@ module Shockout {
 
             // try to parse the form ID from the hash or querystring
             this.itemId = Utils.getIdFromHash();
-            var idFromQs = Utils.getQueryParam(this.queryStringId);
+            var idFromQs = Utils.getQueryParam(this.queryStringId) || Utils.getQueryParam('ID');
 
             if (!!!this.itemId && /\d/.test(idFromQs)) {
                 // get the SP list item ID of the form in the querystring
@@ -439,9 +441,8 @@ module Shockout {
                 console.info('Testing for SP 2013 API...');
             }
 
-            // If this is SP 2013, it will return thre current user's account.
+            // If this is SP 2013+, it will return thre current user's account.
             SpApi15.getCurrentUser(/*callback:*/ function (user: ICurrentUser, error: number) {
-
                 if (error == 404) {
                     getSp2010User();
                 } else {
@@ -457,7 +458,7 @@ module Shockout {
 
                     self.nextAsync(true, success);
                 }
-            }, /*expandGroups:*/ true);
+            }, /*expandGroups:*/ true, self.siteUrl);
 
             function getSp2010User() {
                 SpSoap.getCurrentUser(function (user: ICurrentUser, error: string) {
@@ -505,7 +506,6 @@ module Shockout {
                 setupList(xmlDoc);
             });
 
-
             function setupList(xmlDoc: XMLDocument): void {
                 try {
                     var $list = $(xmlDoc).find('List').first();
@@ -520,6 +520,9 @@ module Shockout {
 
                     self.defaultViewUrl = $list.attr('DefaultViewUrl');
                     self.defaultMobileViewUrl = $list.attr('MobileDefaultViewUrl');
+
+                    var rootFolder = $list.attr('RootFolder');
+                    self.listItemType = Utils.tail(rootFolder.split('/')).toString();
 
                     $(xmlDoc).find('Field').filter(function (i: number, el: any) {
                         return !!($(el).attr('DisplayName')) && $(el).attr('Hidden') != 'TRUE' && !rxExcludeNames.test($(el).attr('Name'));
@@ -793,6 +796,15 @@ module Shockout {
                 expand.push('Attachments');
             }
 
+            /*
+            // Can't use the SP 2013 API until we figure out the issues with expanding CreatedBy and ModifiedBy. SP 2013 API no longer provides
+            // this info in a list item.
+            if(self.isSp2013){
+                SpApi15.GetListItem(self.listName, self.itemId, self.siteUrl, false, (expand.length > 0 ? expand.join(',') : null)).done(callback);
+            }
+            else{
+                SpApi.getListItem(self.listName, self.itemId, callback, self.siteUrl, false, (expand.length > 0 ? expand.join(',') : null));
+            }*/
             SpApi.getListItem(self.listName, self.itemId, callback, self.siteUrl, false, (expand.length > 0 ? expand.join(',') : null));
 
             function callback(data: ISpItem, error: string) {
@@ -839,7 +851,8 @@ module Shockout {
                 }
 
                 self.nextAsync(true, "Retrieved your groups.");
-            });         
+
+            }, self.siteUrl);         
         }
 
         /**
@@ -1110,13 +1123,12 @@ module Shockout {
         * @return void
         */
         saveListItem(vm: IViewModel, isSubmit: boolean = false, customMsg: string = undefined, callback: Function = undefined): void {
-            var self: SPForm = vm.parent;
-            var isNew = !!(self.itemId == null)
-                , data = []
+            let self: SPForm = vm.parent;
+            let isNew = !!(self.itemId == null)
                 , timeout = 3000
                 , saveMsg = customMsg || '<p>Your form has been saved.</p>'
                 , fields: Array<Array<any>> = []
-                ;
+                , payload = {};
 
             try {
 
@@ -1155,35 +1167,77 @@ module Shockout {
                 var isSubmitted: KnockoutObservable<boolean> = vm[ViewModel.isSubmittedKey];
                 if (typeof (isSubmitted) != "undefined" && (isSubmitted() == null || isSubmitted() == false)) {
                     fields.push([ViewModel.isSubmittedKey, (isSubmit ? 1 : 0)]);
+                    payload[ViewModel.isSubmittedKey] = isSubmit;
                 }
 
-                $(self.editableFields).each(function (i: number, key: any): void {
-                    if (!('_metadata' in vm[key])) { return; }
+                const $fields = $(self.editableFields);
 
-                    var val: any = vm[key]();
-                    var spType = vm[key]._type || vm[key]._metadata.type;
-                    spType = !!spType ? spType.toLowerCase() : null;
+                if(self.isSp2013){
+                    // Use SP 2013 REST method
+                    $fields.each(function (i: number, key: any): void {
+                        if (!('_metadata' in vm[key])) { return; }
 
-                    if (typeof (val) == "undefined" || key == ViewModel.isSubmittedKey) { return; }
+                        let val: any = vm[key]();
+                        let keyName: string = vm[key]._name;
+                        let spType = vm[key]._type || vm[key]._metadata.type;
+                        spType = !!spType ? spType.toLowerCase() : null;
 
-                    if (val != null && val.constructor === Array) {
-                        if (val.length > 0) {
-                            val = val.join(';#') + ';#';
+                        if (typeof(val) == "undefined" || key == ViewModel.isSubmittedKey) { return; }
+
+                        if (spType == 'datetime') {
+                            const d: Date = Utils.parseDate(val);
+                            if(!!d){
+                                val = d;
+                            }
                         }
-                    }
-                    else if (spType == 'datetime' && Utils.parseDate(val) != null) {
-                        val = Utils.parseDate(val).toISOString();
-                    }
-                    else if (val != null && spType == 'note') {
-                        val = '<![CDATA[' + $('<div>').html(val).html() + ']]>';
-                    }
+                        else if (val != null && spType == 'note') {
+                            // Clean html/text
+                            val = $('<div>').html(val).html();
+                        }
 
-                    val = val == null ? '' : val;
+                        payload[keyName] = val;
+                    });
+                    SpApi15.SaveListItem(self.siteUrl, self.listName, self.listItemType, payload, self.itemId).then((data: any) => {
+                        self.itemId = data.Id;
+                        vm.Id(self.itemId);
 
-                    fields.push([vm[key]._name, val]);
-                });
+                        saveListItemCallback();
+                    });
+                }
+                else{
+                    // Use the old SOAP API.
+                    $fields.each(function (i: number, key: any): void {
+                        if (!('_metadata' in vm[key])) { return; }
 
-                SpSoap.updateListItem(self.itemId, self.listName, fields, isNew, self.siteUrl, cb);
+                        let val: any = vm[key]();
+                        let keyName: string = vm[key]._name;
+                        let spType = vm[key]._type || vm[key]._metadata.type;
+                        spType = !!spType ? spType.toLowerCase() : null;
+
+                        if (typeof (val) == "undefined" || key == ViewModel.isSubmittedKey) { return; }
+
+                        if (val != null && val.constructor === Array) {
+                            if (val.length > 0) {
+                                val = val.join(';#') + ';#';
+                            }
+                        }
+                        else if (spType == 'datetime') {
+                            const d: Date = Utils.parseDate(val);
+                            if(!!d){
+                                val = d.toISOString();
+                            }
+                        }
+                        else if (val != null && spType == 'note') {
+                            val = '<![CDATA[' + $('<div>').html(val).html() + ']]>';
+                        }
+
+                        val = val == null ? '' : val;
+
+                        fields.push([keyName, val]);
+                    });
+
+                    SpSoap.updateListItem(self.itemId, self.listName, fields, isNew, self.siteUrl, soapCallback);
+                }
                  
             }
             catch (e) {
@@ -1191,8 +1245,7 @@ module Shockout {
                 self.logError('Error in SpForm.saveListItem(): ', e);                             
             }
 
-            function cb(xmlDoc: any, status: string, jqXhr: any): void {
-
+            function soapCallback(xmlDoc: any, status: string, jqXhr: any): void {
                 var itemId: number;
 
                 if (self.debug) {
@@ -1231,18 +1284,19 @@ module Shockout {
                     return Utils.isZrow(this);
                 }).each(function (i: number, el: any): void {
                     itemId = parseInt($(el).attr('ows_ID'));
-
-                    if (self.itemId == null) {
-                        self.itemId = itemId;
-                        vm.Id(itemId);
-                    }
+                    self.itemId = itemId;
+                    vm.Id(itemId);
 
                     if (self.debug) {
                         console.info('Item ID returned...');
                         console.info(itemId);
                     }
-                });       
+                });    
                 
+                saveListItemCallback();
+            }    
+            
+            function saveListItemCallback(){
                 if (Utils.getIdFromHash() == null && self.itemId != null) {
                     Utils.setIdHash(self.itemId);
                 }      
@@ -1275,7 +1329,7 @@ module Shockout {
                         setTimeout(function () { self.getHistoryAsync(self); }, 5000);
                     }
                 }
-            };     
+            }
         }
 
         /**

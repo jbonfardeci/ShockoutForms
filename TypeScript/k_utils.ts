@@ -9,6 +9,26 @@
     export class Utils {
     
         /**
+         * Return the last element in an array.
+         * @param array
+         * @returns any
+         */
+        public static tail(array: Array<any>): any{
+            if(array == null || array == undefined){
+                return array;
+            }
+            else if(array.constructor !== Array){
+                return array;
+            }
+
+            const len = array.length;
+            if(len > 0){
+                return array[len-1];
+            }
+            return undefined;
+        }
+
+        /**
         * Returns the index of a value in an array. Returns -1 if not found. Use for IE8 browser compatibility.
         * @param a: Array<any>
         * @param value: any
@@ -55,12 +75,18 @@
 
         /**
         * Parse a form ID from window.location.hash
+        * example: parse ID from a URI `http://<mysite>/Forms/form.aspx/#/id/1`
         * @return number
         */
         public static getIdFromHash(): number {
-            // example: parse ID from a URI `http://<mysite>/Forms/form.aspx/#/id/1`
-            var rxHash: RegExp = /\/id\/\d+/i;
-            var exec: Array<any> = rxHash.exec(window.location.hash);
+
+            // Get parent URL if in iframe.
+            var url = (window.location != window.parent.location)
+                ? document.referrer
+                : document.location.href
+
+            var rxHash = /#\/id\/\d+/i;
+            var exec: Array<string> = rxHash.exec(url);
             var id: any = !!exec ? exec[0].replace(/\D/g, '') : null;
             return /\d/.test(id) ? parseInt(id) : null;
         }
@@ -283,10 +309,22 @@
         }
 
         public static getQueryParam(p): string {
+
+            var search = '';
+
+            // Get parent URL if in iframe.
+            var url = (window.location != window.parent.location)
+                ? document.referrer
+                : document.location.href
+
+            if(url.indexOf('?') > -1){
+                search = '?' + url.split('?')[1];
+            }
+
             var escape: Function = window["escape"], unescape: Function = window["unescape"];
             p = escape(unescape(p));
             var regex = new RegExp("[?&]" + p + "(?:=([^&]*))?", "i");
-            var match = regex.exec(window.location.search);
+            var match = regex.exec(search);
             return match != null ? match[1] : null;
         }
 

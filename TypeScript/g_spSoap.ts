@@ -52,7 +52,7 @@
          * @param {string} loginName (DOMAIN\loginName)
          * @param {Function} callback
          */
-        public static getUsersGroups(loginName: string, callback: Function) {
+        public static getUsersGroups(loginName: string, callback: Function, siteUrl: string = '') {
             var packet = '<soap:Envelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">' +
                 '<soap:Body>' +
                 '<GetGroupCollectionFromUser xmlns="http://schemas.microsoft.com/sharepoint/soap/directory/">' +
@@ -62,7 +62,7 @@
                 '</soap:Envelope>';
 
             var $jqXhr: JQueryXHR = $.ajax({
-                url: '/_vti_bin/usergroup.asmx',
+                url: Utils.formatSubsiteUrl(siteUrl) + '_vti_bin/usergroup.asmx',
                 type: 'POST',
                 dataType: 'xml',
                 data: packet,

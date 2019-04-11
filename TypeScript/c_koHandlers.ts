@@ -402,7 +402,7 @@
                     var date: Date = Utils.parseDate(ko.unwrap(modelValue));
                     if (element.tagName.toLowerCase() == 'input') {
                         var model: IDateTimeModel = element['$$model'];
-                        if (!!model && model.constructor == DateTimeModel) {
+                        if (!!model) {
                             model.setDisplayValue(modelValue);
                         }
                     }

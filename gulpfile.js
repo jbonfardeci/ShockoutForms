@@ -3,7 +3,7 @@ var gulp = require('gulp'),
     uglify = require("gulp-uglify"),
     concat = require('gulp-concat'),
     typescript = require('gulp-typescript'),
-    sass = require('gulp-sass'),
+    //sass = require('gulp-sass'),
     replace = require('gulp-replace'),
     util = require('gulp-util');
 
@@ -49,19 +49,19 @@ gulp.task('min', ['ver'], function(){
 });
 
 // Compile all SASS (.scss) files to www/css/
-gulp.task('sass', function () {
-  return gulp.src('scss/**/*.scss')
-    .pipe(sass({
-        outputStyle: 'compressed'
-    }))
-    .pipe(sass().on('error', sass.logError))   
-    .pipe(gulp.dest('css/'));
-});
+// gulp.task('sass', function () {
+//   return gulp.src('scss/**/*.scss')
+//     .pipe(sass({
+//         outputStyle: 'compressed'
+//     }))
+//     .pipe(sass().on('error', sass.logError))   
+//     .pipe(gulp.dest('css/'));
+// });
 
 gulp.task('watch', function(){
     gulp.watch(tsFiles, ['ts']);
 });
 
-gulp.task('default', ['min', 'sass'], function(){
-   console.log('--------------the build of Shockout is complete ------------>');
-});
+// gulp.task('default', ['min', 'sass'], function(){
+//    console.log('--------------the build of Shockout is complete ------------>');
+// });

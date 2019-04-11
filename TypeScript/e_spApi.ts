@@ -97,7 +97,7 @@
          * @param {boolean = false} cache
          * @param {string = 'GET'} type
          */
-        public static executeRestRequest(url: string, callback: JQueryPromiseCallback<any>, cache: boolean = false, type: string = 'GET'): void {
+        public static executeRestRequest(url: string, callback: Function, cache: boolean = false, type: string = 'GET'): void {
 
             var $jqXhr: JQueryXHR = $.ajax({
                 url: url,
