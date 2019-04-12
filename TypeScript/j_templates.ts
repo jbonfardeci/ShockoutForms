@@ -156,7 +156,7 @@
             <!-- /ko -->
             <div data-bind="foreach: attachments" style="margin:1em auto;">
                 <div class="so-attachment">
-                    <a href="" data-bind="attr: {href: __metadata.media_src}"><span class="glyphicon glyphicon-paperclip"></span>&nbsp;<span data-bind="text: Name"></span></a>
+                    <a href="" data-bind="attr: {href: ServerRelativeUrl}"><span class="glyphicon glyphicon-paperclip"></span>&nbsp;<span data-bind="text: FileName"></span></a>
                     <!-- ko ifnot: $parent.readOnly() -->
                     <button data-bind="event: {click: $parent.deleteAttachment}" class="btn btn-sm btn-danger delete" title="Delete Attachment"><span class="glyphicon glyphicon-remove"></span></button>
                     <!-- /ko -->
@@ -378,12 +378,12 @@
                     <div class="user-profile-card">
                         <h4 data-bind="text: header"></h4>
                         <!-- ko with: profile -->
-                            <img data-bind="attr: {src: Picture, alt: Name}" />
+                            <img data-bind="attr: {src: Picture, alt: Name}" style="width:90px;" />
                             <ul>
                                 <li><label>Name</label><span data-bind="text: Name"></span><li>
-                                <li><label>Job Title</label><span data-bind="text: JobTitle"></span></li>
+                                <li><label>Job Title</label><span data-bind="text: Title"></span></li>
                                 <li><label>Department</label><span data-bind="text: Department"></span></li>
-                                <li><label>Email</label><a data-bind="text: WorkEMail, attr: {href: (\'mailto:\' + WorkEMail)}"></a></li>
+                                <li><label>Email</label><a data-bind="text: WorkEmail, attr: {href: (\'mailto:\' + WorkEmail)}"></a></li>
                                 <li><label>Phone</label><span data-bind="text: WorkPhone"></span></li>
                                 <li><label>Office</label><span data-bind="text: Office"></span></li>
                             </ul>
@@ -394,11 +394,11 @@
         <!-- /ko -->
         <div class="row">
             <!-- ko with: CreatedBy -->
-                <div class="col-md-3"><label>Created By</label> <a data-bind="text: Name, attr: {href: \'mailto:\' + WorkEMail}" class="email"> </a></div>
+                <div class="col-md-3"><label>Created By</label> <a data-bind="text: Name, attr: {href: \'mailto:\' + WorkEmail}" class="email"> </a></div>
             <!-- /ko -->
             <div class="col-md-3"><label>Created</label> <span data-bind="spDateTime: Created"></span></div>
             <!-- ko with: ModifiedBy -->
-                <div class="col-md-3"><label>Modified By</label> <a data-bind="text: Name, attr: {href: \'mailto:\' + WorkEMail}" class="email"></a></div>
+                <div class="col-md-3"><label>Modified By</label> <a data-bind="text: Name, attr: {href: \'mailto:\' + WorkEmail}" class="email"></a></div>
             <!-- /ko -->
             <div class="col-md-3"><label>Modified</label> <span data-bind="spDateTime: Modified"></span></div>
         </div>`;

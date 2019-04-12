@@ -32,7 +32,8 @@ module Shockout {
         deleteItem(): void;
         cancel(): void;
         print(): void;
-        deleteAttachment(obj: any, event: any): boolean;
+        deleteAttachment(obj: ISpAttachment, event: any): boolean;
+        getAttachments(self: SPForm, callback: Function): void;
         save(model: ViewModel, btn: HTMLElement): void;
         submit(model: ViewModel, btn: HTMLElement): void;
     }
@@ -64,6 +65,7 @@ module Shockout {
         public isMember: KnockoutComputed<boolean>;
 
         public deleteAttachment;
+        public getAttachments;
 
         constructor(instance: Shockout.SPForm) {
             var self = this;
@@ -75,6 +77,7 @@ module Shockout {
             });
 
             this.deleteAttachment = instance.deleteAttachment;
+            this.getAttachments = instance.getAttachments;
             this.currentUser = ko.observable(instance.getCurrentUser());
             this.attachments.getViewModel = function(){
                 return self;

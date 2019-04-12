@@ -159,7 +159,6 @@ var Shockout;
             this.sourceUrl = null;
             this.version = '1.0.1';
             this.queryStringId = 'formid';
-            this.isSp2013 = false;
             var self = this;
             var error;
             // sanity check
@@ -235,7 +234,6 @@ var Shockout;
             // Don't change the order of these unless you know what you're doing.
             this.asyncFns = [
                 self.getCurrentUserAsync,
-                self.getUsersGroupsAsync,
                 function (self) {
                     if (self.preRender) {
                         self.preRender(self, self.viewModel);
@@ -321,6 +319,9 @@ var Shockout;
         * @return string
         */
         SPForm.prototype.getVersion = function () { return this.version; };
+        SPForm.prototype.getListItemMetadata = function () {
+            return this.listItemMetadata;
+        };
         /**
         * Execute the next asynchronous function from `asyncFns`.
         * @param success?: boolean = undefined
@@ -363,37 +364,15 @@ var Shockout;
             }
             // If this is SP 2013+, it will return thre current user's account.
             Shockout.SpApi15.getCurrentUser(/*callback:*/ function (user, error) {
-                if (error == 404) {
-                    getSp2010User();
+                self.currentUser = user;
+                self.viewModel.currentUser(user);
+                if (self.debug) {
+                    console.info('This is the SP 2013 API.');
+                    console.info('Current user is...');
+                    console.info(self.viewModel.currentUser());
                 }
-                else {
-                    self.isSp2013 = true;
-                    self.currentUser = user;
-                    self.viewModel.currentUser(user);
-                    if (self.debug) {
-                        console.info('This is the SP 2013 API.');
-                        console.info('Current user is...');
-                        console.info(self.viewModel.currentUser());
-                    }
-                    self.nextAsync(true, success);
-                }
+                self.nextAsync(true, success);
             }, /*expandGroups:*/ true, self.siteUrl);
-            function getSp2010User() {
-                Shockout.SpSoap.getCurrentUser(function (user, error) {
-                    if (!!error) {
-                        self.nextAsync(false, 'Failed to retrieve your account. ' + error);
-                        return;
-                    }
-                    self.currentUser = user;
-                    self.viewModel.currentUser(user);
-                    if (self.debug) {
-                        console.info('This is SP 2010 REST services.');
-                        console.info('Current user is...');
-                        console.info(self.viewModel.currentUser());
-                    }
-                    self.nextAsync(true, success);
-                });
-            }
         };
         /**
         * Get metadata about an SP list and the fields to build the Knockout model.
@@ -656,30 +635,8 @@ var Shockout;
             }
             self.updateStatus("Retrieving form values...", true, self);
             var vm = self.viewModel;
-            // expand the REST query for MultiChoice types
-            // MAXIMUM is 7!!!
-            var expand = [];
-            //for (var i = 0; i < self.fieldNames.length; i++) {
-            //    var key = self.fieldNames[i];
-            //    if (!(key in vm) || !('_type' in vm[key])) { continue; }
-            //    if (vm[key]._type == 'MultiChoice') {
-            //        expand.push(key);
-            //    }
-            //}
-            if (self.enableAttachments) {
-                expand.push('Attachments');
-            }
-            /*
-            // Can't use the SP 2013 API until we figure out the issues with expanding CreatedBy and ModifiedBy. SP 2013 API no longer provides
-            // this info in a list item.
-            if(self.isSp2013){
-                SpApi15.GetListItem(self.listName, self.itemId, self.siteUrl, false, (expand.length > 0 ? expand.join(',') : null)).done(callback);
-            }
-            else{
-                SpApi.getListItem(self.listName, self.itemId, callback, self.siteUrl, false, (expand.length > 0 ? expand.join(',') : null));
-            }*/
-            Shockout.SpApi.getListItem(self.listName, self.itemId, callback, self.siteUrl, false, (expand.length > 0 ? expand.join(',') : null));
-            function callback(data, error) {
+            Shockout.SpApi15.GetListItem(self.listName, self.itemId, self.siteUrl, false, 'AttachmentFiles').done(function (data, error) {
+                if (error === void 0) { error = undefined; }
                 if (!!error) {
                     if (/not found/i.test(error + '')) {
                         self.showDialog("The form with ID " + self.itemId + " doesn't exist or it was deleted.");
@@ -688,36 +645,10 @@ var Shockout;
                     return;
                 }
                 self.listItem = data;
+                self.listItemMetadata = data.__metadata;
                 self.bindListItemValues(self);
                 self.nextAsync(true, "Retrieved form data.");
-            }
-        };
-        /**
-        * Get the SP user groups this user is a member of for removing/showing protected form sections.
-        * @param self: SPForm
-        * @param args?: any = undefined
-        * @return void
-        */
-        SPForm.prototype.getUsersGroupsAsync = function (self, args) {
-            if (args === void 0) { args = undefined; }
-            if (self.isSp2013) {
-                // We already have the groups from the SP 2013 CurrentUser call; return
-                self.nextAsync(true);
-                return;
-            }
-            self.updateStatus("Retrieving your groups...", true, self);
-            Shockout.SpSoap.getUsersGroups(self.currentUser.login, function callback(groups, error) {
-                if (error) {
-                    self.nextAsync(false, "Failed to retrieve your groups. " + error);
-                    return;
-                }
-                self.currentUser.groups = groups;
-                if (self.debug) {
-                    console.info("Retrieved current user's groups...");
-                    console.info(self.currentUser.groups);
-                }
-                self.nextAsync(true, "Retrieved your groups.");
-            }, self.siteUrl);
+            });
         };
         /**
         * Removes form sections the user doesn't have access to from the DOM.
@@ -809,7 +740,7 @@ var Shockout;
                 var item = self.listItem;
                 var vm = self.viewModel;
                 // Exclude these read-only metadata fields from the Knockout view model.
-                var rxExclude = /\b(__metadata|ContentTypeID|ContentType|Owshiddenversion|Version|Attachments|Path)\b/;
+                var rxExclude = /\b(__metadata|ContentTypeID|ContentType|Owshiddenversion|Version|Attachments|AttachmentFiles|Path)\b/;
                 var rxExcludeTypes = /(MultiChoice|User|Choice)/;
                 var isObj = /Object/;
                 self.itemId = item.Id;
@@ -828,32 +759,29 @@ var Shockout;
                         vm[key](item[key] || null);
                     }
                 }
-                if (self.enableAttachments) {
-                    self.viewModel.attachments(item.Attachments['results']);
-                    self.viewModel.attachments.valueHasMutated();
+                if (!!item.AuthorId || !!item.Author) {
+                    if (!isNaN(item.Author)) {
+                        item.AuthorId = item.Author;
+                    }
+                    Shockout.SpApi15.GetUserById(self.siteUrl, item.AuthorId).done(function (user) {
+                        if (!!!user.Picture) {
+                            user.Picture = Shockout.SpApi15.GetGenericPersonPng();
+                        }
+                        item.CreatedBy = user;
+                        vm.CreatedBy(item.CreatedBy);
+                    });
                 }
-                // Created/Modified
-                var createdBy = item.CreatedBy;
-                var modifiedBy = item.ModifiedBy;
-                // createdBy or modifiedBy can be null in rare cases
-                if (!!createdBy && !!modifiedBy) {
-                    item.CreatedBy.Picture = Shockout.Utils.formatPictureUrl(item.CreatedBy.Picture); //format picture urls
-                    item.ModifiedBy.Picture = Shockout.Utils.formatPictureUrl(item.ModifiedBy.Picture);
-                    // Property name shims for variations among SP 2010 & 2013 and User Info List vs. UPS.
-                    // Email 
-                    item.CreatedBy.WorkEMail = item.CreatedBy.WorkEMail || item.CreatedBy.EMail || '';
-                    item.ModifiedBy.WorkEMail = item.ModifiedBy.WorkEMail || item.ModifiedBy.EMail || '';
-                    // Job Title
-                    item.CreatedBy.JobTitle = item.CreatedBy.JobTitle || item.CreatedBy.Title || null;
-                    item.ModifiedBy.JobTitle = item.ModifiedBy.JobTitle || item.ModifiedBy.Title || null;
-                    // Phone 
-                    item.CreatedBy.WorkPhone = item.CreatedBy.WorkPhone || createdBy.MobileNumber || null;
-                    item.ModifiedBy.WorkPhone = item.ModifiedBy.WorkPhone || modifiedBy.MobileNumber || null;
-                    // Office 
-                    item.CreatedBy.Office = item.CreatedBy.Office || null;
-                    item.ModifiedBy.Office = item.ModifiedBy.Office || null;
-                    vm.CreatedBy(item.CreatedBy);
-                    vm.ModifiedBy(item.ModifiedBy);
+                if (!!item.EditorId || !!item.Editor) {
+                    if (!isNaN(item.Editor)) {
+                        item.EditorId = item.Editor;
+                    }
+                    Shockout.SpApi15.GetUserById(self.siteUrl, item.EditorId).done(function (user) {
+                        if (!!!user.Picture) {
+                            user.Picture = Shockout.SpApi15.GetGenericPersonPng();
+                        }
+                        item.ModifiedBy = user;
+                        vm.ModifiedBy(item.ModifiedBy);
+                    });
                 }
                 vm.Created(Shockout.Utils.parseDate(item.Created));
                 vm.Modified(Shockout.Utils.parseDate(item.Modified));
@@ -993,68 +921,45 @@ var Shockout;
                     payload[Shockout.ViewModel.isSubmittedKey] = isSubmit;
                 }
                 var $fields = $(self.editableFields);
-                if (self.isSp2013) {
-                    // Use SP 2013 REST method
-                    $fields.each(function (i, key) {
-                        if (!('_metadata' in vm[key])) {
-                            return;
+                $fields.each(function (i, key) {
+                    if (!('_metadata' in vm[key])) {
+                        return;
+                    }
+                    var val = vm[key]();
+                    var keyName = vm[key]._name;
+                    var spType = vm[key]._type || vm[key]._metadata.type;
+                    spType = !!spType ? spType.toLowerCase() : null;
+                    if (self.debug) {
+                        console.info('saving: ', keyName, spType);
+                    }
+                    if (typeof (val) == "undefined" || key == Shockout.ViewModel.isSubmittedKey) {
+                        return;
+                    }
+                    if (spType == 'datetime') {
+                        var d = Shockout.Utils.parseDate(val);
+                        if (!!d) {
+                            val = d;
                         }
-                        var val = vm[key]();
-                        var keyName = vm[key]._name;
-                        var spType = vm[key]._type || vm[key]._metadata.type;
-                        spType = !!spType ? spType.toLowerCase() : null;
-                        if (typeof (val) == "undefined" || key == Shockout.ViewModel.isSubmittedKey) {
-                            return;
-                        }
-                        if (spType == 'datetime') {
-                            var d = Shockout.Utils.parseDate(val);
-                            if (!!d) {
-                                val = d;
-                            }
-                        }
-                        else if (val != null && spType == 'note') {
-                            // Clean html/text
-                            val = $('<div>').html(val).html();
-                        }
-                        payload[keyName] = val;
-                    });
-                    Shockout.SpApi15.SaveListItem(self.siteUrl, self.listName, self.listItemType, payload, self.itemId).then(function (data) {
-                        self.itemId = data.Id;
-                        vm.Id(self.itemId);
-                        saveListItemCallback();
+                    }
+                    else if (val != null && spType == 'note') {
+                        // Clean html/text
+                        val = $('<div>').html(val).html();
+                    }
+                    else if (spType == 'user') {
+                        payload[keyName + 'Id'] = !!val ? parseInt(val.split(';')[0]) : null;
+                        return;
+                    }
+                    payload[keyName] = val;
+                });
+                if (isNew) {
+                    Shockout.SpApi15.AddListItem(self.siteUrl, self.listName, self.listItemType, payload).done(function (data) {
+                        saveListItemCallback(vm, self, data.Id);
                     });
                 }
                 else {
-                    // Use the old SOAP API.
-                    $fields.each(function (i, key) {
-                        if (!('_metadata' in vm[key])) {
-                            return;
-                        }
-                        var val = vm[key]();
-                        var keyName = vm[key]._name;
-                        var spType = vm[key]._type || vm[key]._metadata.type;
-                        spType = !!spType ? spType.toLowerCase() : null;
-                        if (typeof (val) == "undefined" || key == Shockout.ViewModel.isSubmittedKey) {
-                            return;
-                        }
-                        if (val != null && val.constructor === Array) {
-                            if (val.length > 0) {
-                                val = val.join(';#') + ';#';
-                            }
-                        }
-                        else if (spType == 'datetime') {
-                            var d = Shockout.Utils.parseDate(val);
-                            if (!!d) {
-                                val = d.toISOString();
-                            }
-                        }
-                        else if (val != null && spType == 'note') {
-                            val = '<![CDATA[' + $('<div>').html(val).html() + ']]>';
-                        }
-                        val = val == null ? '' : val;
-                        fields.push([keyName, val]);
+                    Shockout.SpApi15.UpdateListItem(self.siteUrl, self.listItem.__metadata, payload).then(function (data) {
+                        saveListItemCallback(vm, self, self.itemId);
                     });
-                    Shockout.SpSoap.updateListItem(self.itemId, self.listName, fields, isNew, self.siteUrl, soapCallback);
                 }
             }
             catch (e) {
@@ -1063,51 +968,13 @@ var Shockout;
                 }
                 self.logError('Error in SpForm.saveListItem(): ', e);
             }
-            function soapCallback(xmlDoc, status, jqXhr) {
-                var itemId;
+            function saveListItemCallback(vm, self, itemId) {
                 if (self.debug) {
-                    console.log('Callback from saveListItem()...');
-                    console.log(status);
-                    console.log(xmlDoc);
+                    console.info('saveListItemCallback(): ');
+                    console.info(self.itemId);
                 }
-                /*
-                // Error response example
-                <?xml version="1.0" encoding="utf-8"?>
-                <soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
-                    <soap:Body>
-                        <UpdateListItemsResponse xmlns="http://schemas.microsoft.com/sharepoint/soap/">
-                            <UpdateListItemsResult>
-                                <Results>
-                                    <Result ID="1,New">
-                                        <ErrorCode>0x80020005</ErrorCode>
-                                        <ErrorText>The operation failed because an unexpected error occurred. (Result Code: 0x80020005)</ErrorText>
-                                    </Result>
-                                </Results>
-                            </UpdateListItemsResult>
-                        </UpdateListItemsResponse>
-                    </soap:Body>
-                </soap:Envelope>
-                */
-                var $errorText = $(xmlDoc).find('ErrorText');
-                // catch and handle returned error
-                if (!!$errorText && $errorText.text() != "") {
-                    self.logError($errorText.text());
-                    return;
-                }
-                $(xmlDoc).find('*').filter(function () {
-                    return Shockout.Utils.isZrow(this);
-                }).each(function (i, el) {
-                    itemId = parseInt($(el).attr('ows_ID'));
-                    self.itemId = itemId;
-                    vm.Id(itemId);
-                    if (self.debug) {
-                        console.info('Item ID returned...');
-                        console.info(itemId);
-                    }
-                });
-                saveListItemCallback();
-            }
-            function saveListItemCallback() {
+                self.itemId = itemId;
+                vm.Id(itemId);
                 if (Shockout.Utils.getIdFromHash() == null && self.itemId != null) {
                     Shockout.Utils.setIdHash(self.itemId);
                 }
@@ -1129,9 +996,6 @@ var Shockout;
                     self.showDialog(saveMsg, 'The form has been saved.', timeout);
                     // refresh data from the server
                     self.getListItemAsync(self);
-                    if (callback) {
-                        callback(self.itemId);
-                    }
                     //give WF History list 5 seconds to update
                     if (self.includeWorkflowHistory) {
                         setTimeout(function () { self.getHistoryAsync(self); }, 5000);
@@ -1150,6 +1014,12 @@ var Shockout;
                 self.setupNavigation(self);
                 // Setup Datepickers.
                 self.setupDatePickers(self);
+                var attachments = self.listItem.AttachmentFiles.results;
+                if (!!!attachments) {
+                    attachments = [];
+                }
+                self.viewModel.attachments(attachments);
+                self.viewModel.attachments.valueHasMutated();
                 self.nextAsync(true, 'Finalized form controls.');
             }
             catch (e) {
@@ -1164,18 +1034,25 @@ var Shockout;
         * Delete an attachment.
         */
         SPForm.prototype.deleteAttachment = function (att, event) {
-            if (!confirm('Are you sure you want to delete ' + att.Name + '? This can\'t be undone.')) {
-                return;
-            }
             var self = Shockout.ViewModel.parent;
             var vm = self.viewModel;
-            Shockout.SpApi.deleteAttachment(att, function (data, error) {
-                if (!!error) {
-                    alert("Failed to delete attachment: " + error);
-                    return;
+            if (self.debug) {
+                console.info('deleting file: ', att);
+            }
+            if (!confirm('Are you sure you want to delete ' + att.FileName + '? This can\'t be undone.')) {
+                return;
+            }
+            Shockout.SpApi.deleteAttachment(att)
+                .done(function (data, status, jqXhr) {
+                if (self.debug) {
+                    console.info('deleted file: ', att);
                 }
                 var attachments = vm.attachments;
                 attachments.remove(att);
+                attachments.valueHasMutated();
+            })
+                .fail(function (jqXhr, status, error) {
+                alert("Failed to delete attachment: " + status + ': ' + error);
             });
         };
         /**
@@ -1188,16 +1065,17 @@ var Shockout;
             if (self === void 0) { self = undefined; }
             if (callback === void 0) { callback = undefined; }
             self = self || this;
-            if (!!!self.listItem || !self.enableAttachments) {
+            if (!!!self.listItem || !self.enableAttachments || !self.listItem.Attachments) {
                 if (callback) {
                     callback();
                 }
                 return;
             }
             var attachments = [];
-            Shockout.SpApi.executeRestRequest(self.listItem.__metadata.uri + '/Attachments', function (data, status, jqXhr) {
+            var path = self.listItem.__metadata.uri + "/AttachmentFiles";
+            Shockout.SpApi15.Get(path, false).done(function (data, status, jqXhr) {
                 try {
-                    self.viewModel.attachments(data.d.results);
+                    self.viewModel.attachments(data.results);
                     self.viewModel.attachments.valueHasMutated();
                     if (callback) {
                         callback(attachments);
@@ -1544,6 +1422,7 @@ var Shockout;
                 return self.parent.formIsValid(self);
             });
             this.deleteAttachment = instance.deleteAttachment;
+            this.getAttachments = instance.getAttachments;
             this.currentUser = ko.observable(instance.getCurrentUser());
             this.attachments.getViewModel = function () {
                 return self;
@@ -2133,6 +2012,8 @@ var Shockout;
                 this.editable = !!koObj._koName; // if `_koName` is a prop of our KO var, it's a field we can update in theSharePoint list.
                 this.koName = koObj._koName; // include the name of the KO var in case we need to reference it.
                 this.options = params.options || koObj._options;
+                console.info('logging options for:', this.koName);
+                console.info(this.options);
                 this.required = (typeof params.required == 'function') ? params.required : ko.observable(!!params.required || false);
                 this.inline = params.inline || false;
                 this.multiline = params.multiline || false;
@@ -2172,7 +2053,10 @@ var Shockout;
                 this.title = params.title || 'Attachments';
                 this.description = params.description;
                 this.readOnly = (typeof params.readOnly == 'function') ? params.readOnly : ko.observable(params.readOnly || false); // allow for static bool or ko observable
-                this.length = ko.pureComputed(function () { return self.attachments().length; });
+                this.length = ko.pureComputed(function () {
+                    var att = self.attachments();
+                    return !!att ? att.length : 0;
+                });
                 this.fileUploads = ko.observableArray();
                 //check for compatibility
                 this.hasFileReader = ko.observable(w.File && w.FileReader && w.FileList && w.Blob);
@@ -2181,7 +2065,7 @@ var Shockout;
                 }
                 this.id = params.id || 'so_fileUploader_' + uniqueId();
                 this.deleteAttachment = function (att, event) {
-                    if (!confirm('Are you sure you want to delete ' + att.Name + '? This can\'t be undone.')) {
+                    if (!confirm('Are you sure you want to delete ' + att.FileName + '? This can\'t be undone.')) {
                         return;
                     }
                     Shockout.SpApi.deleteAttachment(att, function (data, error) {
@@ -2189,7 +2073,9 @@ var Shockout;
                             alert("Failed to delete attachment: " + error);
                             return;
                         }
+                        console.info('deleted attachment: ', data, error);
                         self.attachments.remove(att);
+                        self.attachments.valueHasMutated();
                     });
                 };
                 // event handler for input[type='file']
@@ -2254,6 +2140,9 @@ var Shockout;
                         console.info('uploading file...');
                         console.info(file);
                     }
+                    if (!!!self.attachments()) {
+                        self.attachments([]);
+                    }
                     var fileName = file.name.replace(/[^a-zA-Z0-9_\-\.]/g, ''); // clean the filename
                     var ext = /\.\w{2,4}$/.exec(fileName)[0]; //extract extension from filename, e.g. '.docx'
                     var rootName = fileName.replace(new RegExp(ext + '$'), ''); // e.g. 'test.docx' becomes 'test'
@@ -2306,7 +2195,12 @@ var Shockout;
                         // Ensure that the progress bar displays 100% at the end.
                         fileUpload.progress(100);
                         // Send the base64 string to the AddAttachment service for upload.
-                        Shockout.SpSoap.addAttachment(event.target.result, fileName, spForm.listName, spForm.viewModel.Id(), spForm.siteUrl, callback);
+                        Shockout.SpSoap.addAttachment(event.target.result, fileName, spForm.listName, spForm.viewModel.Id(), spForm.siteUrl, function () {
+                            spForm.getAttachments(spForm);
+                            setTimeout(function () {
+                                self.fileUploads.remove(fileUpload);
+                            }, 1000);
+                        });
                     };
                     reader.onloadend = function (loadend) {
                         /*loadend = {
@@ -2351,7 +2245,7 @@ var Shockout;
                         */
                         if (!!!status && status == 'error') {
                             var jqXhr = arguments[0];
-                            var responseXml = jqXhr.responseXML;
+                            //var responseXml: Document = jqXhr.responseXML;
                             var errorString = $(jqXhr.responseXML).find('errorstring').text();
                             if (!!errorString) {
                                 spForm.$dialog.html('Error on file upload. Message from server: ' + (errorString || jqXhr.statusText)).dialog('open');
@@ -2361,7 +2255,7 @@ var Shockout;
                         }
                         else if (status == 'success') {
                             // push a new SP attachment instance to the view model's `attachments` collection
-                            var att = new Shockout.SpAttachment(spForm.getRootUrl(), spForm.siteUrl, spForm.listName, spForm.getItemId(), fileName);
+                            var att = new Shockout.SpAttachment(spForm.getRootUrl(), spForm.siteUrl, spForm.getListId(), spForm.listName, spForm.getItemId(), fileName);
                             self.attachments().push(att);
                             self.attachments.valueHasMutated();
                             cafe.next(true); //execute the next file read
@@ -2766,6 +2660,7 @@ var Shockout;
          * @param {Function} callback
          */
         SpApi.deleteAttachment = function (att, callback) {
+            if (callback === void 0) { callback = undefined; }
             var $jqXhr = $.ajax({
                 url: att.__metadata.uri,
                 type: 'POST',
@@ -2774,14 +2669,20 @@ var Shockout;
                 headers: {
                     'Accept': 'application/json;odata=verbose',
                     'X-HTTP-Method': 'DELETE'
+                },
+                success: function (data, status, jqXhr) {
+                    if (callback) {
+                        callback({ data: data, status: status, jqXhr: jqXhr });
+                    }
+                },
+                error: function (jqXhr, status, error) {
+                    if (callback) {
+                        callback({ status: status, jqXhr: jqXhr, error: error });
+                    }
+                    console.warn(error);
                 }
             });
-            $jqXhr.done(function (data, status, jqXhr) {
-                callback(data);
-            });
-            $jqXhr.fail(function (jqXhr, status, error) {
-                callback(null, status + ': ' + error);
-            });
+            return $jqXhr;
         };
         return SpApi;
     }());
@@ -2934,11 +2835,16 @@ var Shockout;
                     type: 'POST',
                     data: json,
                     headers: hdrs,
-                    success: function (data, status, xhr) {
-                        deferred.resolve(data.d || data);
+                    success: function (data, status, jqXhr) {
+                        if (!!data) {
+                            deferred.resolve(data.d || data);
+                        }
+                        else {
+                            deferred.resolve({ status: status, jqXhr: jqXhr });
+                        }
                     },
-                    error: function (xhr, status, error) {
-                        deferred.reject({ xhr: xhr, status: status, error: error });
+                    error: function (jqXhr, status, error) {
+                        deferred.reject({ jqXhr: jqXhr, status: status, error: error });
                         console.warn(error);
                     }
                 });
@@ -2960,7 +2866,12 @@ var Shockout;
                 }
             });
             $jqXhr.done(function (data, status, jqXhr) {
-                deferred.resolve(data.d || data);
+                if (!!data) {
+                    deferred.resolve(data.d || data);
+                }
+                else {
+                    deferred.resolve({ status: status, jqXhr: jqXhr });
+                }
             });
             $jqXhr.fail(function (jqXhr, status, error) {
                 if (!!status && parseInt(status) == 404) {
@@ -3001,17 +2912,8 @@ var Shockout;
          * @param itemId
          * @returns JQueryPromise<any>
          */
-        SpApi15.SaveListItem = function (siteUrl, listName, listItemType, data, itemId) {
-            if (itemId === void 0) { itemId = undefined; }
-            var methodUrl = Shockout.Utils.formatSubsiteUrl(siteUrl) + "_api/web/lists/GetByTitle('" + listName + "')/items" + (!!itemId ? '(' + itemId + ')' : '');
-            var headers = undefined;
-            // If updating a list item.
-            if (!!itemId) {
-                headers = {
-                    'X-HTTP-Method': 'MERGE',
-                    'If-Match': '*'
-                };
-            }
+        SpApi15.AddListItem = function (siteUrl, listName, listItemType, data) {
+            var methodUrl = Shockout.Utils.formatSubsiteUrl(siteUrl) + "_api/web/lists/GetByTitle('" + listName + "')/items";
             var payload = {
                 __metadata: {
                     type: formatListItemType(listItemType)
@@ -3029,7 +2931,7 @@ var Shockout;
                     payload[p] = o;
                 }
             }
-            return SpApi15.Post(siteUrl, methodUrl, payload, headers);
+            return SpApi15.Post(siteUrl, methodUrl, payload);
             function getSpRestArrayTemplate(array) {
                 return {
                     "__metadata": {
@@ -3047,6 +2949,71 @@ var Shockout;
                 }
                 return ptrn;
             }
+        };
+        SpApi15.UpdateListItem = function (siteUrl, metadata, data) {
+            var methodUrl = metadata.uri;
+            var deferred = $.Deferred(), self = this;
+            var payload = {
+                __metadata: {
+                    type: metadata.type
+                }
+            };
+            for (var p in data) {
+                var o = data[p];
+                if (o == null || o == undefined) {
+                    payload[p] = null;
+                }
+                else if (o.constructor === Array) {
+                    payload[p] = getSpRestArrayTemplate(o);
+                }
+                else {
+                    payload[p] = o;
+                }
+            }
+            var json = JSON.stringify(payload);
+            SpApi15.GetFormDigest(siteUrl).then(function (digest) {
+                var hdrs = {
+                    'Accept': 'application/json;odata=verbose',
+                    'X-RequestDigest': digest.d.GetContextWebInformation.FormDigestValue,
+                    'X-HTTP-Method': 'MERGE',
+                    'If-Match': metadata.etag
+                };
+                $.ajax({
+                    contentType: 'application/json;odata=verbose',
+                    url: methodUrl,
+                    type: 'POST',
+                    data: json,
+                    headers: hdrs,
+                    success: function (data, status, xhr) {
+                        if (!!data) {
+                            deferred.resolve(data.d || data);
+                        }
+                        else {
+                            deferred.resolve({ success: true });
+                        }
+                    },
+                    error: function (xhr, status, error) {
+                        deferred.reject({ xhr: xhr, status: status, error: error });
+                        console.warn(error);
+                    }
+                });
+            });
+            return deferred.promise();
+            function getSpRestArrayTemplate(array) {
+                return {
+                    "__metadata": {
+                        "type": "Collection(Edm.String)"
+                    },
+                    "results": array
+                };
+            }
+        };
+        SpApi15.GetUserById = function (siteUrl, userId) {
+            var url = Shockout.Utils.formatSubsiteUrl(siteUrl) + "_vti_bin/ListData.svc/UserInformationList(" + userId + ")";
+            return SpApi15.Get(url, false);
+        };
+        SpApi15.GetGenericPersonPng = function () {
+            return "data:image/png;base64,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";
         };
         return SpApi15;
     }());
@@ -3448,7 +3415,7 @@ var Shockout;
         Templates.soNavMenu = "<nav class=\"navbar navbar-default no-print\" id=\"TOP\">\n            <div class=\"navbar-header\">\n                <button type=\"button\" class=\"navbar-toggle collapsed\" data-toggle=\"collapse\" data-target=\"#bs-example-navbar-collapse-1\" aria-expanded=\"false\">\n                <span class=\"sr-only\">Toggle navigation</span>\n                <span class=\"icon-bar\"></span>\n                <span class=\"icon-bar\"></span>\n                <span class=\"icon-bar\"></span>\n                </button>\n            </div>\n            <div class=\"collapse navbar-collapse\" id=\"bs-example-navbar-collapse-1\">\n                <ul class=\"nav navbar-nav\" data-bind=\"foreach: navMenuItems\">\n                    <li><a href=\"#\" data-bind=\"html: title, attr: {'href': '#' + anchorName }\"></a></li>\n                </ul>\n            </div>\n        </nav>";
         Templates.soStaticField = "<div class=\"form-group\">\n            <div class=\"row\">\n                <!-- ko if: !!label -->\n                    <div class=\"col-sm-3\" data-bind=\"attr:{'class': labelColWidth}\"><label data-bind=\"html: label\"></label></div>\n                <!-- /ko -->\n                <div class=\"col-sm-9\" data-bind=\"text: modelValue, attr:{'class': fieldColWidth}\"></div>\n            </div>\n            <!-- ko if: description -->\n            <div class=\"so-field-description\"><p data-bind=\"html: description\"></p></div>\n            <!-- /ko -->\n        </div>";
         Templates.soTextField = Templates.hasErrorCssDiv + "\n        <div class=\"row\">\n\t        <!-- ko if: !!label -->\n\t\t        <div class=\"col-sm-3\" data-bind=\"attr:{'class': labelColWidth}\"><label data-bind=\"html: label, attr: {for: id}\"></label></div>\n\t        <!-- /ko -->\n\t        <div class=\"col-sm-9\" data-bind=\"attr:{'class': fieldColWidth}\">\n\t\t        <!-- ko if: readOnly() -->\n\t\t\t        <div data-bind=\"text: modelValue\"></div>\n\t\t        <!-- /ko -->\n\t\t        <!-- ko ifnot: readOnly() -->\n\t\t\t        <!-- ko if: multiline -->\n\t\t\t\t        <textarea data-bind=\"value: modelValue, css: {'so-editable': editable}, attr: {id: id, placeholder: placeholder, title: title, required: required, 'ko-name': koName }\" class=\"form-control\"></textarea>\n\t\t\t        <!-- /ko -->\n\t\t\t        <!-- ko ifnot: multiline -->\n\t\t\t\t        <input type=\"text\" data-bind=\"value: modelValue, css: {'so-editable': editable}, attr: {id: id, placeholder: placeholder, title: title, required: required, maxlength: maxlength, 'ko-name': koName }\" class=\"form-control\" />\n\t\t\t        <!-- /ko -->\n\t\t\t        <!-- ko if: !!required() -->\n\t\t\t\t        " + Templates.requiredFeedbackSpan + "\n\t\t\t        <!-- /ko -->\n\t\t        <!-- /ko -->\n\t        </div>\n\t        <!-- ko if: description -->\n\t\t    <div class=\"so-field-description\"><p data-bind=\"html: description\"></p></div>\n\t        <!-- /ko -->\n        </div>";
-        Templates.soAttachments = "<section class=\"nav-section\">\n            <h4><span data-bind=\"text: title\"></span> &ndash; <span data-bind=\"text: length\" class=\"badge\"></span></h4>\n            <div data-bind=\"visible: !!errorMsg()\" class=\"alert alert-danger alert-dismissable\">\n                <button type=\"button\" class=\"close\" data-dismiss=\"alert\" aria-label=\"Close\"><span aria-hidden=\"true\">&times;</span></button>\n                <span class=\"glyphicon glyphicon-exclamation-sign\"></span>&nbsp;<span data-bind=\"text: errorMsg\"></span>\n            </div>\n            <!-- ko ifnot: hasFileReader() -->\n            <div data-bind=\"visible: !!!readOnly(), attr: {id: this.qqFileUploaderId}\"></div>\n            <!-- /ko -->\n            <!-- ko if: !readOnly() && hasFileReader() -->\n                <div class=\"row\">\n                    <div class=\"col-md-2 so-attach-files-btn\">\n                        <input type=\"file\" data-bind=\"attr: {'id': id}, event: {'change': fileHandler}\" multiple class=\"form-control\" style=\"display:none;\" />\n                        <div data-bind=\"attr:{'class': className}, event: {'click': onSelect}\"><span class=\"glyphicon glyphicon-paperclip\"></span>&nbsp;<span data-bind=\"text: label\"></span></div>\n                    </div>\n                    <div class=\"col-md-10\">\n                        <!-- ko if: drop -->\n                            <div class=\"so-file-dropzone\" data-bind=\"event: {'dragenter': onDragenter, 'dragover': onDragover, 'drop': onDrop}\">\n                                <div><span data-bind=\"text: dropLabel\"></span> <span class=\"glyphicon glyphicon-upload\"></span></div>\n                            </div>\n                        <!-- /ko -->\n                    </div>\n                </div>\n                <!-- ko foreach: fileUploads -->\n                    <div class=\"progress\">\n                        <div data-bind=\"attr: {'aria-valuenow': progress(), 'style': 'width:' + progress() + '%;', 'class': className() }\" role=\"progressbar\" aria-valuemin=\"0\" aria-valuemax=\"100\">\n                            <span data-bind=\"text: fileName\"></span>\n                        </div>\n                    </div>\n                <!-- /ko -->\n            <!-- /ko -->\n            <div data-bind=\"foreach: attachments\" style=\"margin:1em auto;\">\n                <div class=\"so-attachment\">\n                    <a href=\"\" data-bind=\"attr: {href: __metadata.media_src}\"><span class=\"glyphicon glyphicon-paperclip\"></span>&nbsp;<span data-bind=\"text: Name\"></span></a>\n                    <!-- ko ifnot: $parent.readOnly() -->\n                    <button data-bind=\"event: {click: $parent.deleteAttachment}\" class=\"btn btn-sm btn-danger delete\" title=\"Delete Attachment\"><span class=\"glyphicon glyphicon-remove\"></span></button>\n                    <!-- /ko -->\n                </div>\n            </div>\n            <!-- ko if: length() == 0 && readOnly() -->\n                <p>No attachments have been included.</p>\n            <!-- /ko -->\n            <!-- ko if: description -->\n                <div data-bind=\"text: description\"></div>\n            <!-- /ko -->\n        </section>";
+        Templates.soAttachments = "<section class=\"nav-section\">\n            <h4><span data-bind=\"text: title\"></span> &ndash; <span data-bind=\"text: length\" class=\"badge\"></span></h4>\n            <div data-bind=\"visible: !!errorMsg()\" class=\"alert alert-danger alert-dismissable\">\n                <button type=\"button\" class=\"close\" data-dismiss=\"alert\" aria-label=\"Close\"><span aria-hidden=\"true\">&times;</span></button>\n                <span class=\"glyphicon glyphicon-exclamation-sign\"></span>&nbsp;<span data-bind=\"text: errorMsg\"></span>\n            </div>\n            <!-- ko ifnot: hasFileReader() -->\n            <div data-bind=\"visible: !!!readOnly(), attr: {id: this.qqFileUploaderId}\"></div>\n            <!-- /ko -->\n            <!-- ko if: !readOnly() && hasFileReader() -->\n                <div class=\"row\">\n                    <div class=\"col-md-2 so-attach-files-btn\">\n                        <input type=\"file\" data-bind=\"attr: {'id': id}, event: {'change': fileHandler}\" multiple class=\"form-control\" style=\"display:none;\" />\n                        <div data-bind=\"attr:{'class': className}, event: {'click': onSelect}\"><span class=\"glyphicon glyphicon-paperclip\"></span>&nbsp;<span data-bind=\"text: label\"></span></div>\n                    </div>\n                    <div class=\"col-md-10\">\n                        <!-- ko if: drop -->\n                            <div class=\"so-file-dropzone\" data-bind=\"event: {'dragenter': onDragenter, 'dragover': onDragover, 'drop': onDrop}\">\n                                <div><span data-bind=\"text: dropLabel\"></span> <span class=\"glyphicon glyphicon-upload\"></span></div>\n                            </div>\n                        <!-- /ko -->\n                    </div>\n                </div>\n                <!-- ko foreach: fileUploads -->\n                    <div class=\"progress\">\n                        <div data-bind=\"attr: {'aria-valuenow': progress(), 'style': 'width:' + progress() + '%;', 'class': className() }\" role=\"progressbar\" aria-valuemin=\"0\" aria-valuemax=\"100\">\n                            <span data-bind=\"text: fileName\"></span>\n                        </div>\n                    </div>\n                <!-- /ko -->\n            <!-- /ko -->\n            <div data-bind=\"foreach: attachments\" style=\"margin:1em auto;\">\n                <div class=\"so-attachment\">\n                    <a href=\"\" data-bind=\"attr: {href: ServerRelativeUrl}\"><span class=\"glyphicon glyphicon-paperclip\"></span>&nbsp;<span data-bind=\"text: FileName\"></span></a>\n                    <!-- ko ifnot: $parent.readOnly() -->\n                    <button data-bind=\"event: {click: $parent.deleteAttachment}\" class=\"btn btn-sm btn-danger delete\" title=\"Delete Attachment\"><span class=\"glyphicon glyphicon-remove\"></span></button>\n                    <!-- /ko -->\n                </div>\n            </div>\n            <!-- ko if: length() == 0 && readOnly() -->\n                <p>No attachments have been included.</p>\n            <!-- /ko -->\n            <!-- ko if: description -->\n                <div data-bind=\"text: description\"></div>\n            <!-- /ko -->\n        </section>";
         Templates.soHtmlFieldTemplate = Templates.hasErrorCssDiv + "\n        <div class=\"row\">\n            <!-- ko if: !!label -->\n                <div class=\"col-sm-3\" data-bind=\"attr:{'class': labelColWidth}\"><label data-bind=\"html: label, attr: {for: id}\"></label></div>\n            <!-- /ko -->\n            <div class=\"col-sm-9\" data-bind=\"attr:{'class': fieldColWidth}\">\n                <!-- ko if: readOnly() -->\n                    <div data-bind=\"html: modelValue\"></div>\n                <!-- /ko -->\n                <!-- ko ifnot: readOnly() -->\n                    <div data-bind=\"spHtmlEditor: modelValue\" contenteditable=\"true\" class=\"form-control content-editable\"></div>\n                    <textarea data-bind=\"value: modelValue, css: {'so-editable': editable}, attr: {id: id, required: required, 'ko-name': koName }\" data-sp-html=\"\" style=\"display:none;\"></textarea>\n                    <!-- ko if: !!required() -->\n                        " + Templates.requiredFeedbackSpan + "\n                    <!-- /ko -->\n                <!-- /ko -->\n                </div>\n            </div>\n            <!-- ko if: description -->\n                <div class=\"so-field-description\"><p data-bind=\"html: description\"></p></div>\n            <!-- /ko -->\n        </div>";
         Templates.soCheckboxField = "<div class=\"form-group\">\n            <div class=\"row\">\n                <div class=\"col-sm-3\" data-bind=\"attr:{'class': labelColWidth}\">\n                    <!-- ko if: readOnly() -->\n                    <label data-bind=\"html: label, attr: {for: id}\"></label>\n                    <!-- /ko -->\n                </div>\n                <div class=\"col-sm-9\" data-bind=\"attr:{'class': fieldColWidth}\">\n                    <!-- ko if: readOnly() -->\n                        <div data-bind=\"text: !!modelValue() ? 'Yes' : 'No'\"></div>\n                    <!-- /ko -->\n                    <!-- ko ifnot: readOnly() -->\n                        <label class=\"checkbox\">\n                            <input type=\"checkbox\" data-bind=\"checked: modelValue, css: {'so-editable': editable}, attr: {id: id, 'ko-name': koName}, valueUpdate: valueUpdate\" />\n                            <span data-bind=\"html: label\" style=\"margin-left:1em;\"></span>\n                        </label>\n                    <!-- /ko -->\n                </div>\n            </div>\n            <!-- ko if: description -->\n                <div class=\"so-field-description\"><p data-bind=\"html: description\"></p></div>\n            <!-- /ko -->\n        </div>";
         Templates.soSelectField = Templates.hasErrorCssDiv + "<div class=\"row\">\n                <!-- ko if: !!label -->\n                    <div class=\"col-sm-3\" data-bind=\"attr:{'class': labelColWidth}\"><label data-bind=\"html: label, attr: {for: id}\"></label></div>\n                <!-- /ko -->\n                <div class=\"col-sm-9\" data-bind=\"attr:{'class': fieldColWidth}\">\n                    <!-- ko if: readOnly() -->\n                        <div data-bind=\"text: modelValue\"></div>\n                    <!-- /ko -->\n                    <!-- ko ifnot: readOnly() -->\n                        <select data-bind=\"value: modelValue, options: options, optionsCaption: caption, css: {'so-editable': editable}, attr: {id: id, title: title, required: required, 'ko-name': koName}\" class=\"form-control\"></select>\n                        <!-- ko if: !!required() -->\n                            " + Templates.requiredFeedbackSpan + "\n                        <!-- /ko -->\n                    <!-- /ko -->\n                </div>\n            </div>\n            <!-- ko if: description -->\n                <div class=\"so-field-description\"><p data-bind=\"html: description\"></p></div>\n            <!-- /ko -->\n        </div>";
@@ -3458,7 +3425,7 @@ var Shockout;
         Templates.soWorkflowHistoryControl = "<!-- ko if: !!Id() && historyItems().length > 0 -->\n            <section id=\"workflowHistory\" class=\"nav-section\">\n                <h4>Workflow History</h4>\n                <so-workflow-history params=\"val: historyItems\"></so-workflow-history>\n            </section>\n        <!-- /ko -->";
         Templates.soWorkflowHistory = "<div class=\"row\">\n            <div class=\"col-sm-8\"><strong>Description</strong></div>\n            <div class=\"col-sm-4\"><strong>Date</strong></div>\n        </div>\n        <!-- ko foreach: historyItems -->\n            <div class=\"row\">\n                <div class=\"col-sm-8\"><span data-bind=\"text: _description\"></span></div>\n                <div class=\"col-sm-4\"><span data-bind=\"spDateTime: _dateOccurred\"></span></div>\n            </div>\n        <!-- /ko -->";
         Templates.soCreatedModifiedInfoControl = "<!-- ko if: !!CreatedBy && CreatedBy() != null -->\n            <section class=\"nav-section\">\n                <h4>Created/Modified By</h4>\n                <so-created-modified-info params=\"created: Created, createdBy: CreatedBy, modified: Modified, modifiedBy: ModifiedBy, showUserProfiles: showUserProfiles\"></so-created-modified-info>\n            </section>\n        <!-- /ko -->";
-        Templates.soCreatedModifiedInfo = "<!-- ko if: showUserProfiles() -->\n            <div class=\"create-mod-info no-print hidden-xs\">\n                <!-- ko foreach: profiles -->\n                    <div class=\"user-profile-card\">\n                        <h4 data-bind=\"text: header\"></h4>\n                        <!-- ko with: profile -->\n                            <img data-bind=\"attr: {src: Picture, alt: Name}\" />\n                            <ul>\n                                <li><label>Name</label><span data-bind=\"text: Name\"></span><li>\n                                <li><label>Job Title</label><span data-bind=\"text: JobTitle\"></span></li>\n                                <li><label>Department</label><span data-bind=\"text: Department\"></span></li>\n                                <li><label>Email</label><a data-bind=\"text: WorkEMail, attr: {href: ('mailto:' + WorkEMail)}\"></a></li>\n                                <li><label>Phone</label><span data-bind=\"text: WorkPhone\"></span></li>\n                                <li><label>Office</label><span data-bind=\"text: Office\"></span></li>\n                            </ul>\n                        <!-- /ko -->\n                    </div>\n                <!-- /ko -->\n            </div>\n        <!-- /ko -->\n        <div class=\"row\">\n            <!-- ko with: CreatedBy -->\n                <div class=\"col-md-3\"><label>Created By</label> <a data-bind=\"text: Name, attr: {href: 'mailto:' + WorkEMail}\" class=\"email\"> </a></div>\n            <!-- /ko -->\n            <div class=\"col-md-3\"><label>Created</label> <span data-bind=\"spDateTime: Created\"></span></div>\n            <!-- ko with: ModifiedBy -->\n                <div class=\"col-md-3\"><label>Modified By</label> <a data-bind=\"text: Name, attr: {href: 'mailto:' + WorkEMail}\" class=\"email\"></a></div>\n            <!-- /ko -->\n            <div class=\"col-md-3\"><label>Modified</label> <span data-bind=\"spDateTime: Modified\"></span></div>\n        </div>";
+        Templates.soCreatedModifiedInfo = "<!-- ko if: showUserProfiles() -->\n            <div class=\"create-mod-info no-print hidden-xs\">\n                <!-- ko foreach: profiles -->\n                    <div class=\"user-profile-card\">\n                        <h4 data-bind=\"text: header\"></h4>\n                        <!-- ko with: profile -->\n                            <img data-bind=\"attr: {src: Picture, alt: Name}\" style=\"width:90px;\" />\n                            <ul>\n                                <li><label>Name</label><span data-bind=\"text: Name\"></span><li>\n                                <li><label>Job Title</label><span data-bind=\"text: Title\"></span></li>\n                                <li><label>Department</label><span data-bind=\"text: Department\"></span></li>\n                                <li><label>Email</label><a data-bind=\"text: WorkEmail, attr: {href: ('mailto:' + WorkEmail)}\"></a></li>\n                                <li><label>Phone</label><span data-bind=\"text: WorkPhone\"></span></li>\n                                <li><label>Office</label><span data-bind=\"text: Office\"></span></li>\n                            </ul>\n                        <!-- /ko -->\n                    </div>\n                <!-- /ko -->\n            </div>\n        <!-- /ko -->\n        <div class=\"row\">\n            <!-- ko with: CreatedBy -->\n                <div class=\"col-md-3\"><label>Created By</label> <a data-bind=\"text: Name, attr: {href: 'mailto:' + WorkEmail}\" class=\"email\"> </a></div>\n            <!-- /ko -->\n            <div class=\"col-md-3\"><label>Created</label> <span data-bind=\"spDateTime: Created\"></span></div>\n            <!-- ko with: ModifiedBy -->\n                <div class=\"col-md-3\"><label>Modified By</label> <a data-bind=\"text: Name, attr: {href: 'mailto:' + WorkEmail}\" class=\"email\"></a></div>\n            <!-- /ko -->\n            <div class=\"col-md-3\"><label>Modified</label> <span data-bind=\"spDateTime: Modified\"></span></div>\n        </div>";
         return Templates;
     }());
     Shockout.Templates = Templates;
@@ -4052,21 +4019,16 @@ var Shockout;
 (function (Shockout) {
     // recreate the SP REST object for an attachment
     var SpAttachment = /** @class */ (function () {
-        function SpAttachment(rootUrl, siteUrl, listName, itemId, fileName) {
-            var entitySet = listName.replace(/\s/g, '');
+        function SpAttachment(rootUrl, siteUrl, listGuid, listName, itemId, fileName) {
             siteUrl = Shockout.Utils.formatSubsiteUrl(siteUrl);
-            var uri = rootUrl + siteUrl + "_vti_bin/listdata.svc/Attachments(EntitySet='" + entitySet + "',ItemId=" + itemId + ",Name='" + fileName + "')";
+            var uri = rootUrl + siteUrl + "_api/Web/Lists(guid'" + listGuid + "')/Items(" + itemId + ")/AttachmentFiles('" + fileName + "')";
             this.__metadata = {
                 uri: uri,
-                content_type: "application/octetstream",
-                edit_media: uri + "/$value",
-                media_etag: null,
-                media_src: rootUrl + siteUrl + "/Lists/" + listName + "/Attachments/" + itemId + "/" + fileName,
-                type: "Microsoft.SharePoint.DataService.AttachmentsItem"
+                id: uri,
+                type: "SP.Attachment"
             };
-            this.EntitySet = entitySet;
-            this.ItemId = itemId;
-            this.Name = fileName;
+            this.FileName = fileName;
+            this.ServerRelativeUrl = "/" + siteUrl + "Lists/" + listName + "/Attachments/" + itemId + "/" + fileName;
         }
         return SpAttachment;
     }());

@@ -33,7 +33,7 @@
         Title: string;
         PrincipalType: number;
         Email: string;
-        WorkEMail: string; //compatible with SP2010 name
+        WorkEmail: string;
         IsSiteAdmin: boolean;
         UserId: ISpApiUserId;
     }

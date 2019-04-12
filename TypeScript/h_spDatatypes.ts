@@ -73,15 +73,6 @@
         type: string;
     }
 
-    export interface ISpAttachmentMetadata {
-        uri: string;
-        type: string;
-        edit_media: string;
-        media_src: string;
-        content_type: string;
-        media_etag: string;
-    }
-
     export interface ISpCollection<T> {
         results: Array<T>;
     }
@@ -91,7 +82,7 @@
         Id: number;
         Account: string;
         Name: string;
-        WorkEMail: string;
+        WorkEmail: string;
     }
 
     export interface ISpPerson {
@@ -99,8 +90,7 @@
         ContentTypeID: string;
         Name: string;
         Account: string;
-        WorkEMail: string;
-        EMail: string; //SP 2013 compat
+        WorkEmail: string;
         AboutMe: string;
         SIPAddress: string;
         IsSiteAdmin: boolean;
@@ -108,7 +98,6 @@
         Picture: string;
         Department: string;
         Title: string;
-        JobTitle: string; //SP 2013 compat
         MobilePhone: string;
         FirstName: string;
         LastName: string;
@@ -130,11 +119,32 @@
         Path: string;
     }
 
+    export interface ISp15User {
+        __metadata: any,
+        Groups: ISpDeferred,
+        Id: number;
+        LoginName: string;
+        Title: string;
+        PrincipalType: number;
+        Email: string;
+        IsSiteAdmin: boolean;
+        UserId: any;
+    }
+
+    export interface ISpAttachmentMetadata {
+        uri?: string;
+        type?: string;
+        id?: string;
+    }
+
     export interface ISpAttachment {
-        __metadata: ISpAttachmentMetadata;
-        EntitySet: string;
-        ItemId: number;
-        Name: string;
+        __metadata?: ISpAttachmentMetadata;
+        FileName?: string;
+        ServerRelativeUrl?: string;
+    }
+
+    export interface ISpAttachmentFilesWrapper {
+        results: ISpAttachment[];
     }
 
     export interface ISpItem {
@@ -143,15 +153,20 @@
         ContentTypeID: string;
         Id: number;
         ContentType: string;
-        Modified: any;
-        Created: any;
-        CreatedBy: ISpPerson;
-        CreatedById: number;
-        ModifiedBy: ISpPerson;
-        ModifiedById: number;
+        Modified?: any;
+        Created?: any;
+        CreatedBy?: ISpPerson;
+        CreatedById?: number;
+        ModifiedBy?: ISpPerson;
+        ModifiedById?: number;
+        AuthorId?: number;
+        EditorId?: number;
+        Author?: any;
+        Editor?: any;
         Owshiddenversion: number;
         Version: string;
-        Attachments: ISpDeferred;
+        Attachments?: boolean;
+        AttachmentFiles?: ISpAttachmentFilesWrapper;
         Path: string;
     }
 
@@ -161,15 +176,20 @@
         ContentTypeID: string;
         Id: number;
         ContentType: string;
-        Modified: any;
-        Created: any;
-        CreatedBy: ISpPerson;
-        CreatedById: number;
-        ModifiedBy: ISpPerson;
-        ModifiedById: number;
+        Modified?: any;
+        Created?: any;
+        CreatedBy?: ISpPerson;
+        CreatedById?: number;
+        ModifiedBy?: ISpPerson;
+        ModifiedById?: number;
+        AuthorId?: number;
+        EditorId?: number;
+        Author?: any;
+        Editor?: any;
         Owshiddenversion: number;
         Version: string;
-        Attachments: ISpDeferred;
+        AttachmentFiles: ISpAttachmentFilesWrapper;
+        Attachments: boolean;
         Path: string;
         constructor() { }
     }

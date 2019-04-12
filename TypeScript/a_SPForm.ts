@@ -270,11 +270,14 @@ module Shockout {
 
         public queryStringId: string = 'formid';
 
-        public isSp2013: Boolean = false;
-
         private cafe: ICafe;
 
         public listItemType: string;
+
+        private listItemMetadata: ISpMetadata;
+        public getListItemMetadata(): ISpMetadata{
+            return this.listItemMetadata;
+        }
 
         constructor(listName: string, formId: string, options: Object = undefined) {
             var self = this;
@@ -367,7 +370,6 @@ module Shockout {
             // Don't change the order of these unless you know what you're doing.
             this.asyncFns = [            
                 self.getCurrentUserAsync
-                , self.getUsersGroupsAsync
                 , function (self: SPForm) {
                     if (self.preRender) {
                         self.preRender(self, self.viewModel);
@@ -442,44 +444,19 @@ module Shockout {
             }
 
             // If this is SP 2013+, it will return thre current user's account.
-            SpApi15.getCurrentUser(/*callback:*/ function (user: ICurrentUser, error: number) {
-                if (error == 404) {
-                    getSp2010User();
-                } else {
-                    self.isSp2013 = true;
-                    self.currentUser = user;
-                    self.viewModel.currentUser(user);
+            SpApi15.getCurrentUser(/*callback:*/ function (user: ICurrentUser, error: number) {            
+                self.currentUser = user;
+                self.viewModel.currentUser(user);
 
-                    if (self.debug) {
-                        console.info('This is the SP 2013 API.');
-                        console.info('Current user is...');
-                        console.info(self.viewModel.currentUser());
-                    }
-
-                    self.nextAsync(true, success);
+                if (self.debug) {
+                    console.info('This is the SP 2013 API.');
+                    console.info('Current user is...');
+                    console.info(self.viewModel.currentUser());
                 }
+
+                self.nextAsync(true, success);              
             }, /*expandGroups:*/ true, self.siteUrl);
 
-            function getSp2010User() {
-                SpSoap.getCurrentUser(function (user: ICurrentUser, error: string) {
-
-                    if (!!error) {
-                        self.nextAsync(false, 'Failed to retrieve your account. ' + error);
-                        return;
-                    }
-
-                    self.currentUser = user;
-                    self.viewModel.currentUser(user);
-
-                    if (self.debug) {
-                        console.info('This is SP 2010 REST services.');
-                        console.info('Current user is...');
-                        console.info(self.viewModel.currentUser());
-                    }
-
-                    self.nextAsync(true, success);
-                });
-            }
         }
 
         /**
@@ -779,35 +756,7 @@ module Shockout {
 
             var vm = self.viewModel;
 
-            // expand the REST query for MultiChoice types
-            // MAXIMUM is 7!!!
-            var expand: Array<string> = [];
-            //for (var i = 0; i < self.fieldNames.length; i++) {
-            //    var key = self.fieldNames[i];
-
-            //    if (!(key in vm) || !('_type' in vm[key])) { continue; }
-
-            //    if (vm[key]._type == 'MultiChoice') {
-            //        expand.push(key);
-            //    }
-            //}
-
-            if (self.enableAttachments) {
-                expand.push('Attachments');
-            }
-
-            /*
-            // Can't use the SP 2013 API until we figure out the issues with expanding CreatedBy and ModifiedBy. SP 2013 API no longer provides
-            // this info in a list item.
-            if(self.isSp2013){
-                SpApi15.GetListItem(self.listName, self.itemId, self.siteUrl, false, (expand.length > 0 ? expand.join(',') : null)).done(callback);
-            }
-            else{
-                SpApi.getListItem(self.listName, self.itemId, callback, self.siteUrl, false, (expand.length > 0 ? expand.join(',') : null));
-            }*/
-            SpApi.getListItem(self.listName, self.itemId, callback, self.siteUrl, false, (expand.length > 0 ? expand.join(',') : null));
-
-            function callback(data: ISpItem, error: string) {
+            SpApi15.GetListItem(self.listName, self.itemId, self.siteUrl, false, 'AttachmentFiles').done((data: ISpItem, error: string = undefined) => {
                 if (!!error) {
                     if (/not found/i.test(error + '')) {
                         self.showDialog("The form with ID " + self.itemId + " doesn't exist or it was deleted.");
@@ -816,43 +765,10 @@ module Shockout {
                     return;
                 }
                 self.listItem = data;
+                self.listItemMetadata = data.__metadata;
                 self.bindListItemValues(self);
                 self.nextAsync(true, "Retrieved form data.");
-            }
-        }
-
-        /**
-        * Get the SP user groups this user is a member of for removing/showing protected form sections.
-        * @param self: SPForm
-        * @param args?: any = undefined
-        * @return void
-        */
-        getUsersGroupsAsync(self: SPForm, args: any = undefined): void {
-            
-            if (self.isSp2013) {
-                // We already have the groups from the SP 2013 CurrentUser call; return
-                self.nextAsync(true);
-                return;
-            }
-
-            self.updateStatus("Retrieving your groups...", true, self);
-
-            SpSoap.getUsersGroups(self.currentUser.login, function callback(groups: Array<any>, error: string) {
-                if (error) {
-                    self.nextAsync(false, "Failed to retrieve your groups. " + error);
-                    return;
-                }
-
-                self.currentUser.groups = groups;
-
-                if (self.debug) {
-                    console.info("Retrieved current user's groups...");
-                    console.info(self.currentUser.groups);
-                }
-
-                self.nextAsync(true, "Retrieved your groups.");
-
-            }, self.siteUrl);         
+            });
         }
 
         /**
@@ -959,7 +875,7 @@ module Shockout {
                 var vm: IViewModel = self.viewModel;
                 
                 // Exclude these read-only metadata fields from the Knockout view model.
-                var rxExclude: RegExp = /\b(__metadata|ContentTypeID|ContentType|Owshiddenversion|Version|Attachments|Path)\b/;
+                var rxExclude: RegExp = /\b(__metadata|ContentTypeID|ContentType|Owshiddenversion|Version|Attachments|AttachmentFiles|Path)\b/;
                 var rxExcludeTypes: RegExp = /(MultiChoice|User|Choice)/;
                 var isObj: RegExp = /Object/;
 
@@ -981,41 +897,32 @@ module Shockout {
                     }
                 }
 
-                if (self.enableAttachments) {
-                    self.viewModel.attachments(item.Attachments['results']);
-                    self.viewModel.attachments.valueHasMutated();
+                if(!!item.AuthorId || !!item.Author){
+                    if(!isNaN(item.Author)){
+                        item.AuthorId = item.Author;
+                    }
+                    Shockout.SpApi15.GetUserById(self.siteUrl, item.AuthorId).done((user: ISpPerson) => {
+                        if(!!!user.Picture){
+                            user.Picture = Shockout.SpApi15.GetGenericPersonPng();
+                        }
+                        item.CreatedBy = user;
+                        vm.CreatedBy(item.CreatedBy);
+                    });
                 }
 
-                // Created/Modified
-                var createdBy: any = item.CreatedBy;
-                var modifiedBy: any = item.ModifiedBy;
-
-                // createdBy or modifiedBy can be null in rare cases
-                if(!!createdBy && !!modifiedBy){
-                    item.CreatedBy.Picture = Utils.formatPictureUrl(item.CreatedBy.Picture); //format picture urls
-                    item.ModifiedBy.Picture = Utils.formatPictureUrl(item.ModifiedBy.Picture);
-                    
-                    // Property name shims for variations among SP 2010 & 2013 and User Info List vs. UPS.
-                    // Email 
-                    item.CreatedBy.WorkEMail = item.CreatedBy.WorkEMail || item.CreatedBy.EMail || '';
-                    item.ModifiedBy.WorkEMail = item.ModifiedBy.WorkEMail || item.ModifiedBy.EMail || '';
-
-                    // Job Title
-                    item.CreatedBy.JobTitle = item.CreatedBy.JobTitle || item.CreatedBy.Title || null;
-                    item.ModifiedBy.JobTitle = item.ModifiedBy.JobTitle || item.ModifiedBy.Title || null;
-
-                    // Phone 
-                    item.CreatedBy.WorkPhone = item.CreatedBy.WorkPhone || createdBy.MobileNumber || null;
-                    item.ModifiedBy.WorkPhone = item.ModifiedBy.WorkPhone || modifiedBy.MobileNumber || null;
-
-                    // Office 
-                    item.CreatedBy.Office = item.CreatedBy.Office || null;
-                    item.ModifiedBy.Office = item.ModifiedBy.Office || null;
-
-                    vm.CreatedBy(item.CreatedBy);
-                    vm.ModifiedBy(item.ModifiedBy);
+                if(!!item.EditorId || !!item.Editor){
+                    if(!isNaN(item.Editor)){
+                        item.EditorId = item.Editor;
+                    }
+                    Shockout.SpApi15.GetUserById(self.siteUrl, item.EditorId).done((user: ISpPerson) => {
+                        if(!!!user.Picture){
+                            user.Picture = Shockout.SpApi15.GetGenericPersonPng();
+                        }
+                        item.ModifiedBy = user;
+                        vm.ModifiedBy(item.ModifiedBy);
+                    });
                 }
-                
+
                 vm.Created(Utils.parseDate(item.Created));
                 vm.Modified(Utils.parseDate(item.Modified));
 
@@ -1172,131 +1079,63 @@ module Shockout {
 
                 const $fields = $(self.editableFields);
 
-                if(self.isSp2013){
-                    // Use SP 2013 REST method
-                    $fields.each(function (i: number, key: any): void {
-                        if (!('_metadata' in vm[key])) { return; }
+                $fields.each(function (i: number, key: any): void {
+                    if (!('_metadata' in vm[key])) { return; }
 
-                        let val: any = vm[key]();
-                        let keyName: string = vm[key]._name;
-                        let spType = vm[key]._type || vm[key]._metadata.type;
-                        spType = !!spType ? spType.toLowerCase() : null;
+                    let val: any = vm[key]();
+                    let keyName: string = vm[key]._name;
+                    let spType = vm[key]._type || vm[key]._metadata.type;
+                    spType = !!spType ? spType.toLowerCase() : null;
 
-                        if (typeof(val) == "undefined" || key == ViewModel.isSubmittedKey) { return; }
+                    if(self.debug){
+                        console.info('saving: ', keyName, spType);
+                    }
 
-                        if (spType == 'datetime') {
-                            const d: Date = Utils.parseDate(val);
-                            if(!!d){
-                                val = d;
-                            }
+                    if (typeof(val) == "undefined" || key == ViewModel.isSubmittedKey) { return; }
+
+                    if (spType == 'datetime') {
+                        const d: Date = Utils.parseDate(val);
+                        if(!!d){
+                            val = d;
                         }
-                        else if (val != null && spType == 'note') {
-                            // Clean html/text
-                            val = $('<div>').html(val).html();
-                        }
+                    }
+                    else if (val != null && spType == 'note') {
+                        // Clean html/text
+                        val = $('<div>').html(val).html();
+                    }
+                    else if(spType == 'user'){
+                        payload[keyName+'Id'] = !!val ? parseInt( val.split(';')[0] ) : null;
+                        return;
+                    }
 
-                        payload[keyName] = val;
-                    });
-                    SpApi15.SaveListItem(self.siteUrl, self.listName, self.listItemType, payload, self.itemId).then((data: any) => {
-                        self.itemId = data.Id;
-                        vm.Id(self.itemId);
+                    payload[keyName] = val;
+                });
 
-                        saveListItemCallback();
+                if(isNew){
+                    SpApi15.AddListItem(self.siteUrl, self.listName, self.listItemType, payload).done((data: any) => {
+                        saveListItemCallback(vm, self, data.Id);
                     });
                 }
                 else{
-                    // Use the old SOAP API.
-                    $fields.each(function (i: number, key: any): void {
-                        if (!('_metadata' in vm[key])) { return; }
-
-                        let val: any = vm[key]();
-                        let keyName: string = vm[key]._name;
-                        let spType = vm[key]._type || vm[key]._metadata.type;
-                        spType = !!spType ? spType.toLowerCase() : null;
-
-                        if (typeof (val) == "undefined" || key == ViewModel.isSubmittedKey) { return; }
-
-                        if (val != null && val.constructor === Array) {
-                            if (val.length > 0) {
-                                val = val.join(';#') + ';#';
-                            }
-                        }
-                        else if (spType == 'datetime') {
-                            const d: Date = Utils.parseDate(val);
-                            if(!!d){
-                                val = d.toISOString();
-                            }
-                        }
-                        else if (val != null && spType == 'note') {
-                            val = '<![CDATA[' + $('<div>').html(val).html() + ']]>';
-                        }
-
-                        val = val == null ? '' : val;
-
-                        fields.push([keyName, val]);
+                    SpApi15.UpdateListItem(self.siteUrl, self.listItem.__metadata, payload).then((data: any) => {
+                        saveListItemCallback(vm, self, self.itemId);
                     });
-
-                    SpSoap.updateListItem(self.itemId, self.listName, fields, isNew, self.siteUrl, soapCallback);
-                }
-                 
+                }  
             }
             catch (e) {
                 if (self.debug) { throw e; }  
                 self.logError('Error in SpForm.saveListItem(): ', e);                             
             }
 
-            function soapCallback(xmlDoc: any, status: string, jqXhr: any): void {
-                var itemId: number;
-
-                if (self.debug) {
-                    console.log('Callback from saveListItem()...');
-                    console.log(status);
-                    console.log(xmlDoc);
+            function saveListItemCallback(vm: IViewModel, self: SPForm, itemId: number){
+                if(self.debug){
+                    console.info('saveListItemCallback(): ');
+                    console.info(self.itemId);
                 }
 
-                /*
-                // Error response example
-                <?xml version="1.0" encoding="utf-8"?>
-                <soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
-                    <soap:Body>
-                        <UpdateListItemsResponse xmlns="http://schemas.microsoft.com/sharepoint/soap/">
-                            <UpdateListItemsResult>
-                                <Results>
-                                    <Result ID="1,New">
-                                        <ErrorCode>0x80020005</ErrorCode>
-                                        <ErrorText>The operation failed because an unexpected error occurred. (Result Code: 0x80020005)</ErrorText>
-                                    </Result>
-                                </Results>
-                            </UpdateListItemsResult>
-                        </UpdateListItemsResponse>
-                    </soap:Body>
-                </soap:Envelope>
-                */
+                self.itemId = itemId;
+                vm.Id(itemId);
 
-                var $errorText = $(xmlDoc).find('ErrorText');
-                // catch and handle returned error
-                if (!!$errorText && $errorText.text() != "") {
-                    self.logError($errorText.text());
-                    return;
-                }
-
-                $(xmlDoc).find('*').filter(function (): boolean {
-                    return Utils.isZrow(this);
-                }).each(function (i: number, el: any): void {
-                    itemId = parseInt($(el).attr('ows_ID'));
-                    self.itemId = itemId;
-                    vm.Id(itemId);
-
-                    if (self.debug) {
-                        console.info('Item ID returned...');
-                        console.info(itemId);
-                    }
-                });    
-                
-                saveListItemCallback();
-            }    
-            
-            function saveListItemCallback(){
                 if (Utils.getIdFromHash() == null && self.itemId != null) {
                     Utils.setIdHash(self.itemId);
                 }      
@@ -1319,10 +1158,6 @@ module Shockout {
 
                     // refresh data from the server
                     self.getListItemAsync(self);
-
-                    if (callback) {
-                        callback(self.itemId);
-                    }
 
                     //give WF History list 5 seconds to update
                     if (self.includeWorkflowHistory) {
@@ -1347,6 +1182,13 @@ module Shockout {
                 // Setup Datepickers.
                 self.setupDatePickers(self);
 
+                let attachments: any = self.listItem.AttachmentFiles.results;
+                if(!!!attachments){
+                    attachments = [];
+                }
+                self.viewModel.attachments(attachments);
+                self.viewModel.attachments.valueHasMutated();
+
                 self.nextAsync(true, 'Finalized form controls.');
             }
             catch (e) {
@@ -1360,21 +1202,28 @@ module Shockout {
         * Delete an attachment.
         */
         deleteAttachment(att: ISpAttachment, event: any): void {
-
-            if (!confirm('Are you sure you want to delete ' + att.Name + '? This can\'t be undone.')) { return; }
             var self: SPForm = ViewModel.parent;
             var vm: IViewModel = self.viewModel;
 
-            SpApi.deleteAttachment(att, function (data, error) {
-                if (!!error) {
-                    alert("Failed to delete attachment: " + error);
-                    return;
-                }
+            if(self.debug){
+                console.info('deleting file: ', att);
+            }
 
-                var attachments: any = vm.attachments;
-                attachments.remove(att);
-            });
+            if (!confirm('Are you sure you want to delete ' + att.FileName + '? This can\'t be undone.')) { return; }
+            
 
+            SpApi.deleteAttachment(att)
+                .done(function (data: any, status: string, jqXhr: JQueryXHR) {
+                    if(self.debug){
+                        console.info('deleted file: ', att);
+                    }
+                    const attachments: any = vm.attachments;
+                    attachments.remove(att);
+                    attachments.valueHasMutated();
+                })
+                .fail(function (jqXhr: JQueryXHR, status: string, error: string) {
+                    alert("Failed to delete attachment: " + status + ': ' + error);
+                });
         }
 
         /**
@@ -1386,7 +1235,7 @@ module Shockout {
         getAttachments(self: SPForm = undefined, callback: Function = undefined): void {
             self = self || this;
 
-            if (!!!self.listItem || !self.enableAttachments) {
+            if (!!!self.listItem || !self.enableAttachments || !self.listItem.Attachments) {
                 if (callback) {
                     callback();
                 }
@@ -1395,9 +1244,11 @@ module Shockout {
 
             var attachments: Array<ISpAttachment> = [];
 
-            SpApi.executeRestRequest(self.listItem.__metadata.uri +'/Attachments', function (data: ISpCollectionWrapper<ISpAttachment>, status: string, jqXhr: any): void {
+            let path = `${self.listItem.__metadata.uri}/AttachmentFiles`;
+
+            SpApi15.Get(path, false).done((data: any, status: string, jqXhr: any) => {
                 try {
-                    self.viewModel.attachments(data.d.results);
+                    self.viewModel.attachments(data.results);
                     self.viewModel.attachments.valueHasMutated();
                     if (callback) {
                         callback(attachments);

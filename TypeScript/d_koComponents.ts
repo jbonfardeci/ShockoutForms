@@ -197,6 +197,7 @@
                 this.editable = !!koObj._koName; // if `_koName` is a prop of our KO var, it's a field we can update in theSharePoint list.
                 this.koName = koObj._koName; // include the name of the KO var in case we need to reference it.
                 this.options = params.options || koObj._options;
+
                 this.required = (typeof params.required == 'function') ? params.required : ko.observable(!!params.required || false);
                 this.inline = params.inline || false;
                 this.multiline = params.multiline || false;
@@ -240,7 +241,10 @@
                 this.title = params.title || 'Attachments';
                 this.description = params.description;
                 this.readOnly = (typeof params.readOnly == 'function') ? params.readOnly : ko.observable(params.readOnly || false); // allow for static bool or ko observable
-                this.length = ko.pureComputed(function () { return self.attachments().length; });
+                this.length = ko.pureComputed(function () {
+                    let att = self.attachments(); 
+                    return !!att ? att.length : 0; 
+                });
                 this.fileUploads = <KnockoutObservableArray<any>>ko.observableArray();
 
                 //check for compatibility
@@ -252,16 +256,20 @@
 
                 this.id = params.id || 'so_fileUploader_' + uniqueId();
 
-                this.deleteAttachment = function (att, event) {
-                    if (!confirm('Are you sure you want to delete ' + att.Name + '? This can\'t be undone.')) {
+                this.deleteAttachment = function (att: ISpAttachment, event) {
+                    if (!confirm('Are you sure you want to delete ' + att.FileName + '? This can\'t be undone.')) {
                         return;
                     }
-                    Shockout.SpApi.deleteAttachment(att, function (data, error) {
+
+                    Shockout.SpApi.deleteAttachment(att, function(data, error){
                         if (!!error) {
                             alert("Failed to delete attachment: " + error);
                             return;
                         }
+                        
+                        console.info('deleted attachment: ', data, error);
                         self.attachments.remove(att);
+                        self.attachments.valueHasMutated();
                     });
                 };
 
@@ -336,6 +344,10 @@
                         console.info(file);
                     }
 
+                    if(!!!self.attachments()){
+                        self.attachments([]);
+                    }
+
                     var fileName: string = file.name.replace(/[^a-zA-Z0-9_\-\.]/g, ''); // clean the filename
                     var ext: string = /\.\w{2,4}$/.exec(fileName)[0]; //extract extension from filename, e.g. '.docx'
                     var rootName = fileName.replace(new RegExp(ext + '$'), ''); // e.g. 'test.docx' becomes 'test'
@@ -390,7 +402,12 @@
                         // Ensure that the progress bar displays 100% at the end.
                         fileUpload.progress(100);
                         // Send the base64 string to the AddAttachment service for upload.
-                        Shockout.SpSoap.addAttachment(event.target.result, fileName, spForm.listName, spForm.viewModel.Id(), spForm.siteUrl, callback);
+                        Shockout.SpSoap.addAttachment(event.target.result, fileName, spForm.listName, spForm.viewModel.Id(), spForm.siteUrl, function(){
+                            spForm.getAttachments(spForm);
+                            setTimeout(function () {
+                                self.fileUploads.remove(fileUpload);
+                            }, 1000);
+                        });
                     }
                     reader.onloadend = function (loadend) {
                         /*loadend = { 
@@ -440,7 +457,7 @@
                         */
                         if (!!!status && status == 'error') {
                             var jqXhr: JQueryXHR = arguments[0];
-                            var responseXml: Document = jqXhr.responseXML;
+                            //var responseXml: Document = jqXhr.responseXML;
                             var errorString = $(jqXhr.responseXML).find('errorstring').text();
                             if (!!errorString) {
                                 spForm.$dialog.html('Error on file upload. Message from server: ' + (errorString || jqXhr.statusText)).dialog('open');
@@ -450,7 +467,7 @@
                         }
                         else if (status == 'success') {
                             // push a new SP attachment instance to the view model's `attachments` collection
-                            var att: ISpAttachment = new SpAttachment(spForm.getRootUrl(), spForm.siteUrl, spForm.listName, spForm.getItemId(), fileName);
+                            var att: ISpAttachment = new SpAttachment(spForm.getRootUrl(), spForm.siteUrl, spForm.getListId(), spForm.listName, spForm.getItemId(), fileName);
                             self.attachments().push(att);
                             self.attachments.valueHasMutated();
                             cafe.next(true); //execute the next file read

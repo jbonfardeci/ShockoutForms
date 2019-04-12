@@ -285,9 +285,9 @@
          * @param {ISpAttachment} att
          * @param {Function} callback
          */
-        public static deleteAttachment(att: ISpAttachment, callback: Function): void {
+        public static deleteAttachment(att: ISpAttachment, callback: Function = undefined): JQueryXHR {
 
-            var $jqXhr: JQueryXHR = $.ajax({
+            const $jqXhr: JQueryXHR = $.ajax({
                 url: att.__metadata.uri,
                 type: 'POST',
                 dataType: 'json',
@@ -295,16 +295,21 @@
                 headers: {
                     'Accept': 'application/json;odata=verbose',
                     'X-HTTP-Method': 'DELETE'
+                },
+                success: function(data, status, jqXhr){
+                    if(callback){
+                        callback({data: data, status: status, jqXhr: jqXhr});
+                    }
+                },
+                error: function(jqXhr, status, error) {
+                    if(callback){
+                        callback({status: status, jqXhr: jqXhr, error: error});
+                    }
+                    console.warn(error);
                 }
             });
 
-            $jqXhr.done(function (data: any, status: string, jqXhr: JQueryXHR) {
-                callback(data);
-            });
-
-            $jqXhr.fail(function (jqXhr: JQueryXHR, status: string, error: string) {
-                callback(null, status + ': ' + error);
-            });
+            return $jqXhr;
         }
 
     }
