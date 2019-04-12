@@ -261,16 +261,19 @@
                         return;
                     }
 
-                    Shockout.SpApi.deleteAttachment(att, function(data, error){
-                        if (!!error) {
-                            alert("Failed to delete attachment: " + error);
-                            return;
+                    Shockout.SpApi15.DeleteAttachment(spForm.siteUrl, att)
+                    .done(function (data: any, status: string, jqXhr: JQueryXHR) {
+                        if(self.debug){
+                            console.info('deleted file: ', att);
                         }
-                        
-                        console.info('deleted attachment: ', data, error);
-                        self.attachments.remove(att);
-                        self.attachments.valueHasMutated();
+                        const attachments: any = vm.attachments;
+                        attachments.remove(att);
+                        attachments.valueHasMutated();
+                    })
+                    .fail(function (jqXhr: JQueryXHR, status: string, error: string) {
+                        alert("Failed to delete attachment: " + status + ': ' + error);
                     });
+
                 };
 
                 // event handler for input[type='file']

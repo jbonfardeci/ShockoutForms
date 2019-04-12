@@ -388,6 +388,12 @@ module Shockout {
                 }            
                 , self.getListItemAsync
                 , self.getHistoryAsync
+                , function(self: SPForm){
+                    if(self.enableAttachments){
+                        self.getAttachments(self);
+                    }
+                    self.nextAsync(true);
+                }
                 , function (self: SPForm) {
                     if (self.postRender) {
                         self.postRender(self, self.viewModel);
@@ -502,7 +508,7 @@ module Shockout {
                     self.listItemType = Utils.tail(rootFolder.split('/')).toString();
 
                     $(xmlDoc).find('Field').filter(function (i: number, el: any) {
-                        return !!($(el).attr('DisplayName')) && $(el).attr('Hidden') != 'TRUE' && !rxExcludeNames.test($(el).attr('Name'));
+                        return !!($(el).attr('StaticName')) && $(el).attr('Hidden') != 'TRUE' && !rxExcludeNames.test($(el).attr('Name'));
                     }).each(setupKoVar);
 
                     // sort the field names alpha
@@ -532,7 +538,7 @@ module Shockout {
                     var $el = $(el);
                     var displayName: string = $el.attr('DisplayName');
                     var spType: string = $el.attr('Type');
-                    var spName: string = $el.attr('Name');
+                    var spName: string = $el.attr('StaticName');
                     var spFormat: string = $el.attr('Format');
                     var spRequired: boolean = !!($el.attr('Required')) ? $el.attr('Required').toLowerCase() == 'true' : false;
                     var spReadOnly: boolean = !!($el.attr('ReadOnly')) ? $el.attr('ReadOnly').toLowerCase() == 'true' : false;
@@ -541,7 +547,7 @@ module Shockout {
 
                     // Convert the Display Name to equal REST field name conventions.
                     // For example, convert 'Computer Name (if applicable)' to 'ComputerNameIfApplicable'.
-                    var koName = Utils.toCamelCase(displayName);
+                    var koName = Utils.toCamelCase(spName);
 
                     // stop and return if it's already a Knockout object
                     if (koName in self.viewModel) { return; }
@@ -873,10 +879,14 @@ module Shockout {
 
                 var item: ISpItem = self.listItem;
                 var vm: IViewModel = self.viewModel;
+
+                if(self.debug){
+                    console.info('binding values from list item: ', item);
+                }
                 
                 // Exclude these read-only metadata fields from the Knockout view model.
                 var rxExclude: RegExp = /\b(__metadata|ContentTypeID|ContentType|Owshiddenversion|Version|Attachments|AttachmentFiles|Path)\b/;
-                var rxExcludeTypes: RegExp = /(MultiChoice|User|Choice)/;
+                var rxExcludeTypes: RegExp = /(User|Choice)/;
                 var isObj: RegExp = /Object/;
 
                 self.itemId = item.Id;
@@ -884,12 +894,18 @@ module Shockout {
                 
                 for (var key in self.viewModel) {
 
-                    if (!(key in item) || !('_type' in vm[key]) || rxExclude.test(key) || rxExcludeTypes.test(vm[key]._type)){ continue; }
+                    if (!item[key] || !vm[key]._type || rxExclude.test(key)){ 
+                        continue; 
+                    } //|| rxExcludeTypes.test(vm[key]._type)
+
+                    if(self.debug){
+                        console.info('binding ko value: ', key, item[key]);
+                    }
 
                     if ((item[key] != null && vm[key]._type == 'DateTime')) {
                         vm[key](Utils.parseDate(item[key]));
                     }
-                    else if (vm[key]._type == 'MultiChoice' && 'results' in item[key]) {
+                    else if (vm[key]._type == 'MultiChoice') { //&& 'results' in item[key]                     
                         vm[key](item[key].results);
                     }
                     else {
@@ -928,7 +944,7 @@ module Shockout {
 
                 // Object types `Choice` and `User` will have a corresponding key name plus the suffix `Value` or `Id` for lookups.
                 // For example: `SupervisorApproval` is an object container for `__deferred` that corresponds to `SupervisorApprovalValue` which is an ID or string value.
-
+                /*
                 // query values for the `User` types
                 $(self.fieldNames).filter(function (i: number, key: any): boolean {
                     if (!!!self.viewModel[key]) { return false; }
@@ -947,7 +963,7 @@ module Shockout {
 
                 // query values for MultiChoice types
                 $(self.fieldNames).filter(function (i: number, key: any): boolean {
-                    return !!self.viewModel[key] && self.viewModel[key]._type == 'MultiChoice' && '__deferred' in item[key];
+                    return !!item[key] && !!self.viewModel[key] && self.viewModel[key]._type == 'MultiChoice' && '__deferred' in item[key];
                 }).each(function (i: number, key: any) {
                     Shockout.SpApi.executeRestRequest(item[key].__deferred.uri, function (data: ISpCollectionWrapper<ISpMultichoiceValue>, status, jqXhr) {
                         if (self.debug) {
@@ -980,7 +996,7 @@ module Shockout {
                         });
                         vm[key](values);
                     });
-                });
+                });*/
 
 
             }
@@ -1182,13 +1198,6 @@ module Shockout {
                 // Setup Datepickers.
                 self.setupDatePickers(self);
 
-                let attachments: any = self.listItem.AttachmentFiles.results;
-                if(!!!attachments){
-                    attachments = [];
-                }
-                self.viewModel.attachments(attachments);
-                self.viewModel.attachments.valueHasMutated();
-
                 self.nextAsync(true, 'Finalized form controls.');
             }
             catch (e) {
@@ -1211,19 +1220,18 @@ module Shockout {
 
             if (!confirm('Are you sure you want to delete ' + att.FileName + '? This can\'t be undone.')) { return; }
             
-
-            SpApi.deleteAttachment(att)
-                .done(function (data: any, status: string, jqXhr: JQueryXHR) {
-                    if(self.debug){
-                        console.info('deleted file: ', att);
-                    }
-                    const attachments: any = vm.attachments;
-                    attachments.remove(att);
-                    attachments.valueHasMutated();
-                })
-                .fail(function (jqXhr: JQueryXHR, status: string, error: string) {
-                    alert("Failed to delete attachment: " + status + ': ' + error);
-                });
+            SpApi15.DeleteAttachment(self.siteUrl, att)
+            .done(function (data: any, status: string, jqXhr: JQueryXHR) {
+                if(self.debug){
+                    console.info('deleted file: ', att);
+                }
+                const attachments: any = vm.attachments;
+                attachments.remove(att);
+                attachments.valueHasMutated();
+            })
+            .fail(function (jqXhr: JQueryXHR, status: string, error: string) {
+                alert("Failed to delete attachment: " + status + ': ' + error);
+            });
         }
 
         /**

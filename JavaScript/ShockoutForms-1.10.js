@@ -254,6 +254,12 @@ var Shockout;
                 self.getListItemAsync,
                 self.getHistoryAsync,
                 function (self) {
+                    if (self.enableAttachments) {
+                        self.getAttachments(self);
+                    }
+                    self.nextAsync(true);
+                },
+                function (self) {
                     if (self.postRender) {
                         self.postRender(self, self.viewModel);
                     }
@@ -409,7 +415,7 @@ var Shockout;
                     var rootFolder = $list.attr('RootFolder');
                     self.listItemType = Shockout.Utils.tail(rootFolder.split('/')).toString();
                     $(xmlDoc).find('Field').filter(function (i, el) {
-                        return !!($(el).attr('DisplayName')) && $(el).attr('Hidden') != 'TRUE' && !rxExcludeNames.test($(el).attr('Name'));
+                        return !!($(el).attr('StaticName')) && $(el).attr('Hidden') != 'TRUE' && !rxExcludeNames.test($(el).attr('Name'));
                     }).each(setupKoVar);
                     // sort the field names alpha
                     self.fieldNames.sort();
@@ -437,7 +443,7 @@ var Shockout;
                     var $el = $(el);
                     var displayName = $el.attr('DisplayName');
                     var spType = $el.attr('Type');
-                    var spName = $el.attr('Name');
+                    var spName = $el.attr('StaticName');
                     var spFormat = $el.attr('Format');
                     var spRequired = !!($el.attr('Required')) ? $el.attr('Required').toLowerCase() == 'true' : false;
                     var spReadOnly = !!($el.attr('ReadOnly')) ? $el.attr('ReadOnly').toLowerCase() == 'true' : false;
@@ -445,7 +451,7 @@ var Shockout;
                     var vm = self.viewModel;
                     // Convert the Display Name to equal REST field name conventions.
                     // For example, convert 'Computer Name (if applicable)' to 'ComputerNameIfApplicable'.
-                    var koName = Shockout.Utils.toCamelCase(displayName);
+                    var koName = Shockout.Utils.toCamelCase(spName);
                     // stop and return if it's already a Knockout object
                     if (koName in self.viewModel) {
                         return;
@@ -739,20 +745,26 @@ var Shockout;
                 }
                 var item = self.listItem;
                 var vm = self.viewModel;
+                if (self.debug) {
+                    console.info('binding values from list item: ', item);
+                }
                 // Exclude these read-only metadata fields from the Knockout view model.
                 var rxExclude = /\b(__metadata|ContentTypeID|ContentType|Owshiddenversion|Version|Attachments|AttachmentFiles|Path)\b/;
-                var rxExcludeTypes = /(MultiChoice|User|Choice)/;
+                var rxExcludeTypes = /(User|Choice)/;
                 var isObj = /Object/;
                 self.itemId = item.Id;
                 vm.Id(item.Id);
                 for (var key in self.viewModel) {
-                    if (!(key in item) || !('_type' in vm[key]) || rxExclude.test(key) || rxExcludeTypes.test(vm[key]._type)) {
+                    if (!item[key] || !vm[key]._type || rxExclude.test(key)) {
                         continue;
+                    } //|| rxExcludeTypes.test(vm[key]._type)
+                    if (self.debug) {
+                        console.info('binding ko value: ', key, item[key]);
                     }
                     if ((item[key] != null && vm[key]._type == 'DateTime')) {
                         vm[key](Shockout.Utils.parseDate(item[key]));
                     }
-                    else if (vm[key]._type == 'MultiChoice' && 'results' in item[key]) {
+                    else if (vm[key]._type == 'MultiChoice') { //&& 'results' in item[key]                     
                         vm[key](item[key].results);
                     }
                     else {
@@ -787,56 +799,59 @@ var Shockout;
                 vm.Modified(Shockout.Utils.parseDate(item.Modified));
                 // Object types `Choice` and `User` will have a corresponding key name plus the suffix `Value` or `Id` for lookups.
                 // For example: `SupervisorApproval` is an object container for `__deferred` that corresponds to `SupervisorApprovalValue` which is an ID or string value.
+                /*
                 // query values for the `User` types
-                $(self.fieldNames).filter(function (i, key) {
-                    if (!!!self.viewModel[key]) {
-                        return false;
-                    }
-                    return self.viewModel[key]._type == 'User' && (key + 'Id') in item;
-                }).each(function (i, key) {
-                    self.getPersonById(parseInt(item[key + 'Id']), vm[key]);
+                $(self.fieldNames).filter(function (i: number, key: any): boolean {
+                    if (!!!self.viewModel[key]) { return false; }
+                    return self.viewModel[key]._type == 'User' && (key+'Id') in item;
+                }).each(function (i: number, key: any) {
+                    self.getPersonById(parseInt(item[key+'Id']), vm[key]);
                 });
+
                 // query values for `Choice` types
-                $(self.fieldNames).filter(function (i, key) {
-                    if (!!!self.viewModel[key]) {
-                        return false;
-                    }
-                    return self.viewModel[key]._type == 'Choice' && (key + 'Value' in item);
-                }).each(function (i, key) {
-                    vm[key](item[key + 'Value']);
-                });
+                $(self.fieldNames).filter(function (i: number, key: any): boolean {
+                    if (!!!self.viewModel[key]) { return false; }
+                    return self.viewModel[key]._type == 'Choice' && (key+'Value' in item);
+                }).each(function (i: number, key: any) {
+                    vm[key](item[key+'Value']);
+                    });
+
                 // query values for MultiChoice types
-                $(self.fieldNames).filter(function (i, key) {
-                    return !!self.viewModel[key] && self.viewModel[key]._type == 'MultiChoice' && '__deferred' in item[key];
-                }).each(function (i, key) {
-                    Shockout.SpApi.executeRestRequest(item[key].__deferred.uri, function (data, status, jqXhr) {
+                $(self.fieldNames).filter(function (i: number, key: any): boolean {
+                    return !!item[key] && !!self.viewModel[key] && self.viewModel[key]._type == 'MultiChoice' && '__deferred' in item[key];
+                }).each(function (i: number, key: any) {
+                    Shockout.SpApi.executeRestRequest(item[key].__deferred.uri, function (data: ISpCollectionWrapper<ISpMultichoiceValue>, status, jqXhr) {
                         if (self.debug) {
                             console.info('Retrieved MultiChoice data for ' + key + '...');
                             console.info(data);
                         }
                         var values = [];
-                        $.each(data.d.results, function (i, choice) {
+                        $.each(data.d.results, function (i: number, choice: ISpMultichoiceValue) {
                             values.push(choice.Value);
                         });
                         vm[key](values);
                     });
                 });
+
                 // query values for UserMulti types
-                $(self.fieldNames).filter(function (i, key) {
+                $(self.fieldNames).filter(function (i: number, key: any): boolean {
                     return !!self.viewModel[key] && self.viewModel[key]._type == 'UserMulti' && '__deferred' in item[key];
-                }).each(function (i, key) {
-                    Shockout.SpApi.executeRestRequest(item[key].__deferred.uri, function (data, status, jqXhr) {
+                }).each(function (i: number, key: any) {
+
+                    SpApi.executeRestRequest(item[key].__deferred.uri, function (data: ISpCollectionWrapper<ISpPerson>, status: string, jqXhr: any) {
+
                         //if (self.debug) {
                         //    console.info('Retrieved UserMulti data for ' + key + '...');
                         //    console.info(data);
                         //}
-                        var values = [];
-                        $.each(data.d.results, function (i, p) {
+
+                        var values: Array<any> = [];
+                        $.each(data.d.results, function (i: number, p: ISpPerson) {
                             values.push(p.Id + ';#' + p.Account);
                         });
                         vm[key](values);
                     });
-                });
+                });*/
             }
             catch (e) {
                 if (self.debug) {
@@ -1014,12 +1029,6 @@ var Shockout;
                 self.setupNavigation(self);
                 // Setup Datepickers.
                 self.setupDatePickers(self);
-                var attachments = self.listItem.AttachmentFiles.results;
-                if (!!!attachments) {
-                    attachments = [];
-                }
-                self.viewModel.attachments(attachments);
-                self.viewModel.attachments.valueHasMutated();
                 self.nextAsync(true, 'Finalized form controls.');
             }
             catch (e) {
@@ -1042,7 +1051,7 @@ var Shockout;
             if (!confirm('Are you sure you want to delete ' + att.FileName + '? This can\'t be undone.')) {
                 return;
             }
-            Shockout.SpApi.deleteAttachment(att)
+            Shockout.SpApi15.DeleteAttachment(self.siteUrl, att)
                 .done(function (data, status, jqXhr) {
                 if (self.debug) {
                     console.info('deleted file: ', att);
@@ -2012,8 +2021,6 @@ var Shockout;
                 this.editable = !!koObj._koName; // if `_koName` is a prop of our KO var, it's a field we can update in theSharePoint list.
                 this.koName = koObj._koName; // include the name of the KO var in case we need to reference it.
                 this.options = params.options || koObj._options;
-                console.info('logging options for:', this.koName);
-                console.info(this.options);
                 this.required = (typeof params.required == 'function') ? params.required : ko.observable(!!params.required || false);
                 this.inline = params.inline || false;
                 this.multiline = params.multiline || false;
@@ -2068,14 +2075,17 @@ var Shockout;
                     if (!confirm('Are you sure you want to delete ' + att.FileName + '? This can\'t be undone.')) {
                         return;
                     }
-                    Shockout.SpApi.deleteAttachment(att, function (data, error) {
-                        if (!!error) {
-                            alert("Failed to delete attachment: " + error);
-                            return;
+                    Shockout.SpApi15.DeleteAttachment(spForm.siteUrl, att)
+                        .done(function (data, status, jqXhr) {
+                        if (self.debug) {
+                            console.info('deleted file: ', att);
                         }
-                        console.info('deleted attachment: ', data, error);
-                        self.attachments.remove(att);
-                        self.attachments.valueHasMutated();
+                        var attachments = vm.attachments;
+                        attachments.remove(att);
+                        attachments.valueHasMutated();
+                    })
+                        .fail(function (jqXhr, status, error) {
+                        alert("Failed to delete attachment: " + status + ': ' + error);
                     });
                 };
                 // event handler for input[type='file']
@@ -3011,6 +3021,41 @@ var Shockout;
         SpApi15.GetUserById = function (siteUrl, userId) {
             var url = Shockout.Utils.formatSubsiteUrl(siteUrl) + "_vti_bin/ListData.svc/UserInformationList(" + userId + ")";
             return SpApi15.Get(url, false);
+        };
+        /**
+         * Delete an attachment with REST service.
+         * @param {ISpAttachment} att
+         * @param {Function} callback
+         */
+        SpApi15.DeleteAttachment = function (siteUrl, att, callback) {
+            if (callback === void 0) { callback = undefined; }
+            var deferred = $.Deferred(), self = this;
+            SpApi15.GetFormDigest(siteUrl).then(function (digest) {
+                var hdrs = {
+                    'Accept': 'application/json;odata=verbose',
+                    'X-RequestDigest': digest.d.GetContextWebInformation.FormDigestValue,
+                    'X-HTTP-Method': 'DELETE',
+                };
+                $.ajax({
+                    contentType: 'application/json;odata=verbose',
+                    url: att.__metadata.uri,
+                    type: 'POST',
+                    headers: hdrs,
+                    success: function (data, status, xhr) {
+                        if (!!data) {
+                            deferred.resolve(data.d || data);
+                        }
+                        else {
+                            deferred.resolve({ success: true });
+                        }
+                    },
+                    error: function (xhr, status, error) {
+                        deferred.reject({ xhr: xhr, status: status, error: error });
+                        console.warn(error);
+                    }
+                });
+            });
+            return deferred.promise();
         };
         SpApi15.GetGenericPersonPng = function () {
             return "data:image/png;base64,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";
