@@ -233,7 +233,7 @@
                 var cafe: ICafe;
                 var asyncFns: Array<Function>;
 
-                this.attachments = <IViewModelAttachments>params.val;
+                this.attachments = <IViewModelAttachments>params.val || ko.observableArray([]);
                 this.label = params.label || 'Attach Files';
                 this.drop = params.drop || true;
                 this.dropLabel = params.dropLabel || '...or Drag and Drop Files Here';
@@ -266,6 +266,7 @@
                         if(self.debug){
                             console.info('deleted file: ', att);
                         }
+
                         const attachments: any = vm.attachments;
                         attachments.remove(att);
                         attachments.valueHasMutated();
@@ -311,36 +312,44 @@
 
                 // read files array
                 function readFiles(files: Array<File>): void {
-                    asyncFns = [];
-
-                    // build the cascading function execution array
-                    var fileArray: Array<File> = Array.prototype.slice.call(files, 0);
-                    fileArray.map(function (file: File, i: number) {
-                        asyncFns.push(function () {
-                            readFile(file);
+                    
+                    // Update the files array after all have been uploaded.
+                    cafe = Cafe.create()
+                    .finally(function(msg: string, success: boolean, args: any){
+                        let vm = spForm.getViewModel();
+                        spForm.getAttachments(spForm).done((attachments: ISpAttachment[]) => {
+                            vm.attachments(attachments);
+                            vm.attachments.valueHasMutated();
                         });
                     });
 
-                    cafe = new Cafe(asyncFns);
+                    asyncFns = [];
+
+                    // build the cascading function execution array
+                    let fileArray: Array<File> = Array.prototype.slice.call(files, 0);
+
+                    fileArray.map(function(file: File, i: number) {
+                        asyncFns.push(function(cafe: Cafe, args: any) {
+                            readFile(file, cafe, args);
+                        });
+                    });  
+                    
+                    cafe.asyncFns = asyncFns;
 
                     // If this is a new form, save it first; you can't attach a file unless the list item already exists.
-                    if (vm.Id() == null) {
-                        spForm.saveListItem(vm, false, undefined, function (itemId: number) {
-                            // catch-all if for some reason vm.Id is still null or lost reference of vm and we're referencing a local copy of the actual view model?
-                            if (vm.Id() == null && !!itemId && itemId.toFixed) {
-                                vm.Id(itemId);
-                            }
-                            setTimeout(function () {
-                                cafe.next(true); //start the async function execution cascade
-                            }, 1000);
+                    if (!!!vm.Id()) {
+                        spForm.saveListItem(vm, false, undefined, false).done((listItem: ISpItem) => {
+                            spForm.listItem = listItem;
+                        }).then(() => {
+                            cafe.start(); //start the async function execution cascade
                         });
                     } else {
-                        cafe.next(true); //start the async function execution cascade
+                        cafe.start(); //start the async function execution cascade
                     }
                 };
 
                 // upload a File object
-                function readFile(file: File): void {
+                function readFile(file: File, cafe: Cafe, args: any): void {
 
                     if (spForm.debug) {
                         console.info('uploading file...');
@@ -363,8 +372,8 @@
 
                     // Check for duplicate filename. If found, append a number.
                     for (var i = 0; i < self.attachments().length; i++) {
-                        if (new RegExp(fileName, 'i').test(self.attachments()[i].Name)) {
-                            fileName = rootName + '-1' + ext;
+                        if (new RegExp(fileName, 'i').test(self.attachments()[i].FileName)) {
+                            fileName = rootName + '-' + new Date().getTime() + ext;
                             break;
                         }
                     }
@@ -404,12 +413,11 @@
                         var event: any = e;
                         // Ensure that the progress bar displays 100% at the end.
                         fileUpload.progress(100);
+
                         // Send the base64 string to the AddAttachment service for upload.
                         Shockout.SpSoap.addAttachment(event.target.result, fileName, spForm.listName, spForm.viewModel.Id(), spForm.siteUrl, function(){
-                            spForm.getAttachments(spForm);
-                            setTimeout(function () {
-                                self.fileUploads.remove(fileUpload);
-                            }, 1000);
+                            self.fileUploads.remove(fileUpload);
+                            cafe.next(true);
                         });
                     }
                     reader.onloadend = function (loadend) {
@@ -431,55 +439,6 @@
 
                     // read as base64 string
                     reader.readAsDataURL(file);
-
-                    function callback() {
-
-                        // on error: jqXhr: JQueryXHR, status: string, error: string
-                        // success: xmlDoc: any, status: string, jqXhr: JQueryXHR
-                        var status: string = arguments[1];
-
-                        if (spForm.debug) {
-                            console.info('so-html5-attachments.onFileUploadComplete()...');
-                            console.info(arguments);
-                        }
-
-                        /* error XML: 
-                        <?xml version="1.0" encoding="utf-8"?>
-                        <soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
-                            <soap:Body>
-                                <soap:Fault>
-                                    <faultcode>soap:Server</faultcode>
-                                    <faultstring>Exception of type 'Microsoft.SharePoint.SoapServer.SoapServerException' was thrown.</faultstring>
-                                    <detail>
-                                        <errorstring xmlns="http://schemas.microsoft.com/sharepoint/soap/">Parameter listItemID is missing or invalid.</errorstring>
-                                        <errorcode xmlns="http://schemas.microsoft.com/sharepoint/soap/">0x82000001</errorcode>
-                                    </detail>
-                                </soap:Fault>
-                            </soap:Body>
-                        </soap:Envelope>                       
-                        */
-                        if (!!!status && status == 'error') {
-                            var jqXhr: JQueryXHR = arguments[0];
-                            //var responseXml: Document = jqXhr.responseXML;
-                            var errorString = $(jqXhr.responseXML).find('errorstring').text();
-                            if (!!errorString) {
-                                spForm.$dialog.html('Error on file upload. Message from server: ' + (errorString || jqXhr.statusText)).dialog('open');
-                            }
-                            fileUpload.className(fileUpload.className().replace('-success', '-danger'));
-                            cafe.next(false); // will cause Cafe to stop execution of all async functions
-                        }
-                        else if (status == 'success') {
-                            // push a new SP attachment instance to the view model's `attachments` collection
-                            var att: ISpAttachment = new SpAttachment(spForm.getRootUrl(), spForm.siteUrl, spForm.getListId(), spForm.listName, spForm.getItemId(), fileName);
-                            self.attachments().push(att);
-                            self.attachments.valueHasMutated();
-                            cafe.next(true); //execute the next file read
-                        }
-
-                        setTimeout(function () {
-                            self.fileUploads.remove(fileUpload);
-                        }, 1000);
-                    }
                 };
 
                 this.onDragenter = cancel;

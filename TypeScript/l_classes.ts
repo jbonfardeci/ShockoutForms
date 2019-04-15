@@ -44,6 +44,10 @@
 
         public asyncFns: Array<Function>;
 
+        public static create(asyncFns: Array<Function> = undefined): ICafe{
+            return new Cafe(asyncFns);
+        }
+
         constructor(asyncFns: Array<Function> = undefined) {
             if (asyncFns) {
                 this.asyncFns = asyncFns;

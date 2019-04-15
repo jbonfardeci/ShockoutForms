@@ -318,7 +318,7 @@ module Shockout {
                     'Accept': 'application/json;odata=verbose',
                     'X-RequestDigest': digest.d.GetContextWebInformation.FormDigestValue,
                     'X-HTTP-Method': 'MERGE',
-                    'If-Match': metadata.etag
+                    'If-Match': '*' //metadata.etag
                 };
 
                 $.ajax({

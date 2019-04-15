@@ -254,12 +254,14 @@ var Shockout;
                 self.getListItemAsync,
                 self.getHistoryAsync,
                 function (self) {
-                    if (self.enableAttachments) {
-                        self.getAttachments(self);
+                    if (self.listItem) {
+                        if (self.listItem.AttachmentFiles) {
+                            if (self.listItem.AttachmentFiles.results) {
+                                self.viewModel.attachments(self.listItem.AttachmentFiles.results);
+                                self.viewModel.attachments.valueHasMutated();
+                            }
+                        }
                     }
-                    self.nextAsync(true);
-                },
-                function (self) {
                     if (self.postRender) {
                         self.postRender(self, self.viewModel);
                     }
@@ -365,9 +367,6 @@ var Shockout;
             if (args === void 0) { args = undefined; }
             self.updateStatus('Retrieving your account...', true, self);
             var success = 'Retrieved your account.';
-            if (self.debug) {
-                console.info('Testing for SP 2013 API...');
-            }
             // If this is SP 2013+, it will return thre current user's account.
             Shockout.SpApi15.getCurrentUser(/*callback:*/ function (user, error) {
                 self.currentUser = user;
@@ -640,8 +639,8 @@ var Shockout;
                 return;
             }
             self.updateStatus("Retrieving form values...", true, self);
-            var vm = self.viewModel;
-            Shockout.SpApi15.GetListItem(self.listName, self.itemId, self.siteUrl, false, 'AttachmentFiles').done(function (data, error) {
+            Shockout.SpApi15.GetListItem(self.listName, self.itemId, self.siteUrl, false, 'AttachmentFiles')
+                .done(function (data, error) {
                 if (error === void 0) { error = undefined; }
                 if (!!error) {
                     if (/not found/i.test(error + '')) {
@@ -653,7 +652,13 @@ var Shockout;
                 self.listItem = data;
                 self.listItemMetadata = data.__metadata;
                 self.bindListItemValues(self);
+            }).then(function () {
+                if (self.includeWorkflowHistory) {
+                    self.getHistoryAsync(self);
+                }
                 self.nextAsync(true, "Retrieved form data.");
+            }).fail(function () {
+                self.nextAsync(false, "Failed to retrieve form data.");
             });
         };
         /**
@@ -674,14 +679,6 @@ var Shockout;
                     }
                     $(el).before('<!-- ko if: !!$root.isMember(' + groups + ') -->')
                         .after('<!-- /ko -->');
-                    //var isMember: boolean = self.currentUserIsMemberOfGroups(groups);
-                    //if (self.debug) {
-                    //    console.info('element is restricted to groups...');
-                    //    console.info(groups);
-                    //}
-                    //if (!isMember) {
-                    //    $(el).remove();
-                    //}
                 });
                 self.nextAsync(true, "Retrieved your permissions.");
             }
@@ -750,14 +747,12 @@ var Shockout;
                 }
                 // Exclude these read-only metadata fields from the Knockout view model.
                 var rxExclude = /\b(__metadata|ContentTypeID|ContentType|Owshiddenversion|Version|Attachments|AttachmentFiles|Path)\b/;
-                var rxExcludeTypes = /(User|Choice)/;
-                var isObj = /Object/;
                 self.itemId = item.Id;
                 vm.Id(item.Id);
                 for (var key in self.viewModel) {
                     if (!item[key] || !vm[key]._type || rxExclude.test(key)) {
                         continue;
-                    } //|| rxExcludeTypes.test(vm[key]._type)
+                    }
                     if (self.debug) {
                         console.info('binding ko value: ', key, item[key]);
                     }
@@ -797,61 +792,6 @@ var Shockout;
                 }
                 vm.Created(Shockout.Utils.parseDate(item.Created));
                 vm.Modified(Shockout.Utils.parseDate(item.Modified));
-                // Object types `Choice` and `User` will have a corresponding key name plus the suffix `Value` or `Id` for lookups.
-                // For example: `SupervisorApproval` is an object container for `__deferred` that corresponds to `SupervisorApprovalValue` which is an ID or string value.
-                /*
-                // query values for the `User` types
-                $(self.fieldNames).filter(function (i: number, key: any): boolean {
-                    if (!!!self.viewModel[key]) { return false; }
-                    return self.viewModel[key]._type == 'User' && (key+'Id') in item;
-                }).each(function (i: number, key: any) {
-                    self.getPersonById(parseInt(item[key+'Id']), vm[key]);
-                });
-
-                // query values for `Choice` types
-                $(self.fieldNames).filter(function (i: number, key: any): boolean {
-                    if (!!!self.viewModel[key]) { return false; }
-                    return self.viewModel[key]._type == 'Choice' && (key+'Value' in item);
-                }).each(function (i: number, key: any) {
-                    vm[key](item[key+'Value']);
-                    });
-
-                // query values for MultiChoice types
-                $(self.fieldNames).filter(function (i: number, key: any): boolean {
-                    return !!item[key] && !!self.viewModel[key] && self.viewModel[key]._type == 'MultiChoice' && '__deferred' in item[key];
-                }).each(function (i: number, key: any) {
-                    Shockout.SpApi.executeRestRequest(item[key].__deferred.uri, function (data: ISpCollectionWrapper<ISpMultichoiceValue>, status, jqXhr) {
-                        if (self.debug) {
-                            console.info('Retrieved MultiChoice data for ' + key + '...');
-                            console.info(data);
-                        }
-                        var values = [];
-                        $.each(data.d.results, function (i: number, choice: ISpMultichoiceValue) {
-                            values.push(choice.Value);
-                        });
-                        vm[key](values);
-                    });
-                });
-
-                // query values for UserMulti types
-                $(self.fieldNames).filter(function (i: number, key: any): boolean {
-                    return !!self.viewModel[key] && self.viewModel[key]._type == 'UserMulti' && '__deferred' in item[key];
-                }).each(function (i: number, key: any) {
-
-                    SpApi.executeRestRequest(item[key].__deferred.uri, function (data: ISpCollectionWrapper<ISpPerson>, status: string, jqXhr: any) {
-
-                        //if (self.debug) {
-                        //    console.info('Retrieved UserMulti data for ' + key + '...');
-                        //    console.info(data);
-                        //}
-
-                        var values: Array<any> = [];
-                        $.each(data.d.results, function (i: number, p: ISpPerson) {
-                            values.push(p.Id + ';#' + p.Account);
-                        });
-                        vm[key](values);
-                    });
-                });*/
             }
             catch (e) {
                 if (self.debug) {
@@ -897,10 +837,11 @@ var Shockout;
         * @param customMsg?: string = undefined
         * @return void
         */
-        SPForm.prototype.saveListItem = function (vm, isSubmit, customMsg, callback) {
+        SPForm.prototype.saveListItem = function (vm, isSubmit, customMsg, showDialog) {
             if (isSubmit === void 0) { isSubmit = false; }
             if (customMsg === void 0) { customMsg = undefined; }
-            if (callback === void 0) { callback = undefined; }
+            if (showDialog === void 0) { showDialog = true; }
+            var d = $.Deferred();
             var self = vm.parent;
             var isNew = !!(self.itemId == null), timeout = 3000, saveMsg = customMsg || '<p>Your form has been saved.</p>', fields = [], payload = {};
             try {
@@ -951,9 +892,9 @@ var Shockout;
                         return;
                     }
                     if (spType == 'datetime') {
-                        var d = Shockout.Utils.parseDate(val);
-                        if (!!d) {
-                            val = d;
+                        var d_1 = Shockout.Utils.parseDate(val);
+                        if (!!d_1) {
+                            val = d_1;
                         }
                     }
                     else if (val != null && spType == 'note') {
@@ -968,12 +909,16 @@ var Shockout;
                 });
                 if (isNew) {
                     Shockout.SpApi15.AddListItem(self.siteUrl, self.listName, self.listItemType, payload).done(function (data) {
-                        saveListItemCallback(vm, self, data.Id);
+                        saveListItemCallback(vm, self, data.Id).done(function (listItem) {
+                            d.resolve(listItem);
+                        });
                     });
                 }
                 else {
                     Shockout.SpApi15.UpdateListItem(self.siteUrl, self.listItem.__metadata, payload).then(function (data) {
-                        saveListItemCallback(vm, self, self.itemId);
+                        saveListItemCallback(vm, self, self.itemId).done(function (listItem) {
+                            d.resolve(listItem);
+                        });
                     });
                 }
             }
@@ -982,8 +927,11 @@ var Shockout;
                     throw e;
                 }
                 self.logError('Error in SpForm.saveListItem(): ', e);
+                d.reject(e);
             }
+            return d.promise();
             function saveListItemCallback(vm, self, itemId) {
+                var d = $.Deferred();
                 if (self.debug) {
                     console.info('saveListItemCallback(): ');
                     console.info(self.itemId);
@@ -994,29 +942,58 @@ var Shockout;
                     Shockout.Utils.setIdHash(self.itemId);
                 }
                 if (isSubmit) { //submitting form
-                    self.showDialog('<p>Your form has been submitted. You will be redirected in ' + timeout / 1000 + ' seconds.</p>', 'Form Submission Successful');
-                    if (callback) {
-                        callback(self.itemId);
+                    if (showDialog) {
+                        self.showDialog('<p>Your form has been submitted. You will be redirected in ' + timeout / 1000 + ' seconds.</p>', 'Form Submission Successful');
                     }
                     if (self.debug) {
                         console.warn('DEBUG MODE: Would normally redirect user to confirmation page: ' + self.confirmationUrl);
+                        self._getListItem(self).done(function (listItem) {
+                            d.resolve(listItem);
+                        });
                     }
                     else {
+                        d.resolve(self.listItem);
                         setTimeout(function () {
                             window.location.href = self.sourceUrl != null ? self.sourceUrl : self.confirmationUrl;
                         }, timeout);
                     }
+                    return d.promise();
                 }
-                else { //saving form
+                //saving form
+                if (showDialog) {
                     self.showDialog(saveMsg, 'The form has been saved.', timeout);
-                    // refresh data from the server
-                    self.getListItemAsync(self);
-                    //give WF History list 5 seconds to update
-                    if (self.includeWorkflowHistory) {
-                        setTimeout(function () { self.getHistoryAsync(self); }, 5000);
-                    }
                 }
-            }
+                self._getListItem(self).done(function (listItem) {
+                    d.resolve(listItem);
+                });
+                return d.promise();
+            } // function saveListItemCallback
+        };
+        SPForm.prototype._getListItem = function (self) {
+            self = self || this;
+            var d = $.Deferred();
+            Shockout.SpApi15.GetListItem(self.listName, self.itemId, self.siteUrl, false, 'AttachmentFiles')
+                .done(function (data, error) {
+                if (error === void 0) { error = undefined; }
+                if (!!error) {
+                    if (/not found/i.test(error + '')) {
+                        self.showDialog("The form with ID " + self.itemId + " doesn't exist or it was deleted.");
+                    }
+                    self.nextAsync(false, error);
+                    return;
+                }
+                self.listItem = data;
+                self.listItemMetadata = data.__metadata;
+                self.bindListItemValues(self);
+            }).then(function () {
+                if (self.includeWorkflowHistory) {
+                    self.getHistoryAsync(self);
+                }
+                d.resolve(self.listItem);
+            }).fail(function () {
+                d.reject(false);
+            });
+            return d.promise();
         };
         /**
         * Add a navigation menu to the form based on parent elements with class `nav-section`
@@ -1070,33 +1047,18 @@ var Shockout;
         * @param callback: Function (optional)
         * @return void
         */
-        SPForm.prototype.getAttachments = function (self, callback) {
+        SPForm.prototype.getAttachments = function (self) {
             if (self === void 0) { self = undefined; }
-            if (callback === void 0) { callback = undefined; }
             self = self || this;
-            if (!!!self.listItem || !self.enableAttachments || !self.listItem.Attachments) {
-                if (callback) {
-                    callback();
-                }
-                return;
-            }
-            var attachments = [];
+            var d = $.Deferred();
             var path = self.listItem.__metadata.uri + "/AttachmentFiles";
             Shockout.SpApi15.Get(path, false).done(function (data, status, jqXhr) {
-                try {
-                    self.viewModel.attachments(data.results);
-                    self.viewModel.attachments.valueHasMutated();
-                    if (callback) {
-                        callback(attachments);
-                    }
-                }
-                catch (e) {
-                    if (self.debug) {
-                        throw e;
-                    }
-                    self.showDialog("Failed to retrieve attachments in SpForm.getAttachments(): ", e);
-                }
+                d.resolve(data.results);
+            }).fail(function () {
+                self.showDialog("Failed to retrieve attachments in SpForm.getAttachments()");
+                d.resolve([]);
             });
+            return d.promise();
         };
         /**
         * Log to console in degug mode.
@@ -1420,7 +1382,7 @@ var Shockout;
             this.allowSave = ko.observable(false);
             this.allowPrint = ko.observable(false);
             this.allowDelete = ko.observable(false);
-            this.attachments = ko.observableArray();
+            this.attachments = ko.observableArray([]);
             this.historyItems = ko.observableArray();
             this.showUserProfiles = ko.observable(false);
             this.navMenuItems = ko.observableArray();
@@ -1459,6 +1421,11 @@ var Shockout;
             this.parent.deleteListItem(this);
         };
         ViewModel.prototype.cancel = function () {
+            var spForm = this.parent;
+            if (spForm.onCloseAction) {
+                spForm.onCloseAction();
+                return;
+            }
             var src = this.parent.getSourceUrl();
             window.location.href = !!src ? src : this.parent.getRootUrl();
         };
@@ -2052,7 +2019,7 @@ var Shockout;
                 // Required to let SharePoint only write one file at a time, otherwise you'll get a 'changes conflict with another user's changes...' when attempting to write multiple files at once
                 var cafe;
                 var asyncFns;
-                this.attachments = params.val;
+                this.attachments = params.val || ko.observableArray([]);
                 this.label = params.label || 'Attach Files';
                 this.drop = params.drop || true;
                 this.dropLabel = params.dropLabel || '...or Drag and Drop Files Here';
@@ -2118,34 +2085,39 @@ var Shockout;
                 };
                 // read files array
                 function readFiles(files) {
+                    // Update the files array after all have been uploaded.
+                    cafe = Shockout.Cafe.create()
+                        .finally(function (msg, success, args) {
+                        var vm = spForm.getViewModel();
+                        spForm.getAttachments(spForm).done(function (attachments) {
+                            vm.attachments(attachments);
+                            vm.attachments.valueHasMutated();
+                        });
+                    });
                     asyncFns = [];
                     // build the cascading function execution array
                     var fileArray = Array.prototype.slice.call(files, 0);
                     fileArray.map(function (file, i) {
-                        asyncFns.push(function () {
-                            readFile(file);
+                        asyncFns.push(function (cafe, args) {
+                            readFile(file, cafe, args);
                         });
                     });
-                    cafe = new Shockout.Cafe(asyncFns);
+                    cafe.asyncFns = asyncFns;
                     // If this is a new form, save it first; you can't attach a file unless the list item already exists.
-                    if (vm.Id() == null) {
-                        spForm.saveListItem(vm, false, undefined, function (itemId) {
-                            // catch-all if for some reason vm.Id is still null or lost reference of vm and we're referencing a local copy of the actual view model?
-                            if (vm.Id() == null && !!itemId && itemId.toFixed) {
-                                vm.Id(itemId);
-                            }
-                            setTimeout(function () {
-                                cafe.next(true); //start the async function execution cascade
-                            }, 1000);
+                    if (!!!vm.Id()) {
+                        spForm.saveListItem(vm, false, undefined, false).done(function (listItem) {
+                            spForm.listItem = listItem;
+                        }).then(function () {
+                            cafe.start(); //start the async function execution cascade
                         });
                     }
                     else {
-                        cafe.next(true); //start the async function execution cascade
+                        cafe.start(); //start the async function execution cascade
                     }
                 }
                 ;
                 // upload a File object
-                function readFile(file) {
+                function readFile(file, cafe, args) {
                     if (spForm.debug) {
                         console.info('uploading file...');
                         console.info(file);
@@ -2164,8 +2136,8 @@ var Shockout;
                     }
                     // Check for duplicate filename. If found, append a number.
                     for (var i = 0; i < self.attachments().length; i++) {
-                        if (new RegExp(fileName, 'i').test(self.attachments()[i].Name)) {
-                            fileName = rootName + '-1' + ext;
+                        if (new RegExp(fileName, 'i').test(self.attachments()[i].FileName)) {
+                            fileName = rootName + '-' + new Date().getTime() + ext;
                             break;
                         }
                     }
@@ -2206,10 +2178,8 @@ var Shockout;
                         fileUpload.progress(100);
                         // Send the base64 string to the AddAttachment service for upload.
                         Shockout.SpSoap.addAttachment(event.target.result, fileName, spForm.listName, spForm.viewModel.Id(), spForm.siteUrl, function () {
-                            spForm.getAttachments(spForm);
-                            setTimeout(function () {
-                                self.fileUploads.remove(fileUpload);
-                            }, 1000);
+                            self.fileUploads.remove(fileUpload);
+                            cafe.next(true);
                         });
                     };
                     reader.onloadend = function (loadend) {
@@ -2230,50 +2200,6 @@ var Shockout;
                     };
                     // read as base64 string
                     reader.readAsDataURL(file);
-                    function callback() {
-                        // on error: jqXhr: JQueryXHR, status: string, error: string
-                        // success: xmlDoc: any, status: string, jqXhr: JQueryXHR
-                        var status = arguments[1];
-                        if (spForm.debug) {
-                            console.info('so-html5-attachments.onFileUploadComplete()...');
-                            console.info(arguments);
-                        }
-                        /* error XML:
-                        <?xml version="1.0" encoding="utf-8"?>
-                        <soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
-                            <soap:Body>
-                                <soap:Fault>
-                                    <faultcode>soap:Server</faultcode>
-                                    <faultstring>Exception of type 'Microsoft.SharePoint.SoapServer.SoapServerException' was thrown.</faultstring>
-                                    <detail>
-                                        <errorstring xmlns="http://schemas.microsoft.com/sharepoint/soap/">Parameter listItemID is missing or invalid.</errorstring>
-                                        <errorcode xmlns="http://schemas.microsoft.com/sharepoint/soap/">0x82000001</errorcode>
-                                    </detail>
-                                </soap:Fault>
-                            </soap:Body>
-                        </soap:Envelope>
-                        */
-                        if (!!!status && status == 'error') {
-                            var jqXhr = arguments[0];
-                            //var responseXml: Document = jqXhr.responseXML;
-                            var errorString = $(jqXhr.responseXML).find('errorstring').text();
-                            if (!!errorString) {
-                                spForm.$dialog.html('Error on file upload. Message from server: ' + (errorString || jqXhr.statusText)).dialog('open');
-                            }
-                            fileUpload.className(fileUpload.className().replace('-success', '-danger'));
-                            cafe.next(false); // will cause Cafe to stop execution of all async functions
-                        }
-                        else if (status == 'success') {
-                            // push a new SP attachment instance to the view model's `attachments` collection
-                            var att = new Shockout.SpAttachment(spForm.getRootUrl(), spForm.siteUrl, spForm.getListId(), spForm.listName, spForm.getItemId(), fileName);
-                            self.attachments().push(att);
-                            self.attachments.valueHasMutated();
-                            cafe.next(true); //execute the next file read
-                        }
-                        setTimeout(function () {
-                            self.fileUploads.remove(fileUpload);
-                        }, 1000);
-                    }
                 }
                 ;
                 this.onDragenter = cancel;
@@ -2986,7 +2912,7 @@ var Shockout;
                     'Accept': 'application/json;odata=verbose',
                     'X-RequestDigest': digest.d.GetContextWebInformation.FormDigestValue,
                     'X-HTTP-Method': 'MERGE',
-                    'If-Match': metadata.etag
+                    'If-Match': '*' //metadata.etag
                 };
                 $.ajax({
                     contentType: 'application/json;odata=verbose',
@@ -4093,6 +4019,10 @@ var Shockout;
             }
             return this;
         }
+        Cafe.create = function (asyncFns) {
+            if (asyncFns === void 0) { asyncFns = undefined; }
+            return new Cafe(asyncFns);
+        };
         Cafe.prototype.start = function (msg) {
             if (msg === void 0) { msg = undefined; }
             this.next(true, msg);

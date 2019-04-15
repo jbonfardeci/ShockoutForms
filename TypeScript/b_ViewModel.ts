@@ -56,7 +56,7 @@ module Shockout {
         public allowSave: KnockoutObservable<boolean> = ko.observable(false);
         public allowPrint: KnockoutObservable<boolean> = ko.observable(false);
         public allowDelete: KnockoutObservable<boolean> = ko.observable(false);
-        public attachments: IViewModelAttachments = <any>ko.observableArray();
+        public attachments: IViewModelAttachments = <any>ko.observableArray([]);
         public currentUser: KnockoutObservable<ICurrentUser>;
         public historyItems: KnockoutObservableArray<any> = ko.observableArray();
         public isValid: KnockoutComputed<boolean>;
@@ -106,6 +106,11 @@ module Shockout {
         }
 
         public cancel(): void {
+            let spForm: SPForm = this.parent;
+            if(spForm.onCloseAction){
+                spForm.onCloseAction();
+                return;
+            }
             var src: string = this.parent.getSourceUrl();
             window.location.href = !!src ? src : this.parent.getRootUrl();
         }

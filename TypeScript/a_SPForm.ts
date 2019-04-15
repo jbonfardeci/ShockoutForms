@@ -41,6 +41,8 @@ module Shockout {
 
         public static DEBUG: boolean = false;
 
+        public onCloseAction: Function;
+
         ///////////////////////////////////////////
         // Minimum Required Constructor Parameters
         ///////////////////////////////////////////
@@ -232,7 +234,7 @@ module Shockout {
         * @return ISpItem
         */
         public getListItem(): ISpItem { return this.listItem; }
-        private listItem: ISpItem = null;
+        public listItem: ISpItem = null;
 
         /**
         * Requires user to checkout the list item?
@@ -388,13 +390,16 @@ module Shockout {
                 }            
                 , self.getListItemAsync
                 , self.getHistoryAsync
-                , function(self: SPForm){
-                    if(self.enableAttachments){
-                        self.getAttachments(self);
-                    }
-                    self.nextAsync(true);
-                }
                 , function (self: SPForm) {
+                    if(self.listItem){
+                        if(self.listItem.AttachmentFiles){
+                            if(self.listItem.AttachmentFiles.results){
+                                self.viewModel.attachments(self.listItem.AttachmentFiles.results);
+                                self.viewModel.attachments.valueHasMutated();
+                            }
+                        }
+                    }
+
                     if (self.postRender) {
                         self.postRender(self, self.viewModel);
                     }
@@ -445,10 +450,6 @@ module Shockout {
             self.updateStatus('Retrieving your account...', true, self);
             var success: string = 'Retrieved your account.';
 
-            if (self.debug) {
-                console.info('Testing for SP 2013 API...');
-            }
-
             // If this is SP 2013+, it will return thre current user's account.
             SpApi15.getCurrentUser(/*callback:*/ function (user: ICurrentUser, error: number) {            
                 self.currentUser = user;
@@ -462,7 +463,6 @@ module Shockout {
 
                 self.nextAsync(true, success);              
             }, /*expandGroups:*/ true, self.siteUrl);
-
         }
 
         /**
@@ -752,7 +752,6 @@ module Shockout {
        * @return void
        */
         getListItemAsync(self: SPForm, args: any = undefined): void {
-
             if (!!!self.itemId) {
                 self.nextAsync(true, "This is a New form.");
                 return;
@@ -760,9 +759,8 @@ module Shockout {
 
             self.updateStatus("Retrieving form values...", true, self);
 
-            var vm = self.viewModel;
-
-            SpApi15.GetListItem(self.listName, self.itemId, self.siteUrl, false, 'AttachmentFiles').done((data: ISpItem, error: string = undefined) => {
+            SpApi15.GetListItem(self.listName, self.itemId, self.siteUrl, false, 'AttachmentFiles')
+            .done((data: ISpItem, error: string = undefined) => {
                 if (!!error) {
                     if (/not found/i.test(error + '')) {
                         self.showDialog("The form with ID " + self.itemId + " doesn't exist or it was deleted.");
@@ -773,8 +771,17 @@ module Shockout {
                 self.listItem = data;
                 self.listItemMetadata = data.__metadata;
                 self.bindListItemValues(self);
+
+            }).then(() => {
+                if (self.includeWorkflowHistory) {
+                    self.getHistoryAsync(self);
+                }
                 self.nextAsync(true, "Retrieved form data.");
+
+            }).fail(() => {
+                self.nextAsync(false, "Failed to retrieve form data.");
             });
+            
         }
 
         /**
@@ -797,17 +804,6 @@ module Shockout {
 
                     $(el).before('<!-- ko if: !!$root.isMember(' + groups + ') -->')
                         .after('<!-- /ko -->');
-
-                    //var isMember: boolean = self.currentUserIsMemberOfGroups(groups);
-
-                    //if (self.debug) {
-                    //    console.info('element is restricted to groups...');
-                    //    console.info(groups);
-                    //}
-
-                    //if (!isMember) {
-                    //    $(el).remove();
-                    //}
                 });
 
                 self.nextAsync(true, "Retrieved your permissions.");
@@ -886,8 +882,6 @@ module Shockout {
                 
                 // Exclude these read-only metadata fields from the Knockout view model.
                 var rxExclude: RegExp = /\b(__metadata|ContentTypeID|ContentType|Owshiddenversion|Version|Attachments|AttachmentFiles|Path)\b/;
-                var rxExcludeTypes: RegExp = /(User|Choice)/;
-                var isObj: RegExp = /Object/;
 
                 self.itemId = item.Id;
                 vm.Id(item.Id);
@@ -896,7 +890,7 @@ module Shockout {
 
                     if (!item[key] || !vm[key]._type || rxExclude.test(key)){ 
                         continue; 
-                    } //|| rxExcludeTypes.test(vm[key]._type)
+                    }
 
                     if(self.debug){
                         console.info('binding ko value: ', key, item[key]);
@@ -941,64 +935,6 @@ module Shockout {
 
                 vm.Created(Utils.parseDate(item.Created));
                 vm.Modified(Utils.parseDate(item.Modified));
-
-                // Object types `Choice` and `User` will have a corresponding key name plus the suffix `Value` or `Id` for lookups.
-                // For example: `SupervisorApproval` is an object container for `__deferred` that corresponds to `SupervisorApprovalValue` which is an ID or string value.
-                /*
-                // query values for the `User` types
-                $(self.fieldNames).filter(function (i: number, key: any): boolean {
-                    if (!!!self.viewModel[key]) { return false; }
-                    return self.viewModel[key]._type == 'User' && (key+'Id') in item;
-                }).each(function (i: number, key: any) {
-                    self.getPersonById(parseInt(item[key+'Id']), vm[key]);
-                });
-
-                // query values for `Choice` types
-                $(self.fieldNames).filter(function (i: number, key: any): boolean {
-                    if (!!!self.viewModel[key]) { return false; }
-                    return self.viewModel[key]._type == 'Choice' && (key+'Value' in item);
-                }).each(function (i: number, key: any) {
-                    vm[key](item[key+'Value']);
-                    });
-
-                // query values for MultiChoice types
-                $(self.fieldNames).filter(function (i: number, key: any): boolean {
-                    return !!item[key] && !!self.viewModel[key] && self.viewModel[key]._type == 'MultiChoice' && '__deferred' in item[key];
-                }).each(function (i: number, key: any) {
-                    Shockout.SpApi.executeRestRequest(item[key].__deferred.uri, function (data: ISpCollectionWrapper<ISpMultichoiceValue>, status, jqXhr) {
-                        if (self.debug) {
-                            console.info('Retrieved MultiChoice data for ' + key + '...');
-                            console.info(data);
-                        }
-                        var values = [];
-                        $.each(data.d.results, function (i: number, choice: ISpMultichoiceValue) {
-                            values.push(choice.Value);
-                        });
-                        vm[key](values);
-                    });
-                });
-
-                // query values for UserMulti types
-                $(self.fieldNames).filter(function (i: number, key: any): boolean {
-                    return !!self.viewModel[key] && self.viewModel[key]._type == 'UserMulti' && '__deferred' in item[key];
-                }).each(function (i: number, key: any) {
-
-                    SpApi.executeRestRequest(item[key].__deferred.uri, function (data: ISpCollectionWrapper<ISpPerson>, status: string, jqXhr: any) {
-
-                        //if (self.debug) {
-                        //    console.info('Retrieved UserMulti data for ' + key + '...');
-                        //    console.info(data);
-                        //}
-
-                        var values: Array<any> = [];
-                        $.each(data.d.results, function (i: number, p: ISpPerson) {
-                            values.push(p.Id + ';#' + p.Account);
-                        });
-                        vm[key](values);
-                    });
-                });*/
-
-
             }
             catch (e) {
                 if (self.debug) { throw e; }
@@ -1045,7 +981,8 @@ module Shockout {
         * @param customMsg?: string = undefined
         * @return void
         */
-        saveListItem(vm: IViewModel, isSubmit: boolean = false, customMsg: string = undefined, callback: Function = undefined): void {
+        saveListItem(vm: IViewModel, isSubmit: boolean = false, customMsg: string = undefined, showDialog: boolean = true): JQueryPromise<any> {
+            let d = $.Deferred();
             let self: SPForm = vm.parent;
             let isNew = !!(self.itemId == null)
                 , timeout = 3000
@@ -1129,21 +1066,30 @@ module Shockout {
 
                 if(isNew){
                     SpApi15.AddListItem(self.siteUrl, self.listName, self.listItemType, payload).done((data: any) => {
-                        saveListItemCallback(vm, self, data.Id);
+                        saveListItemCallback(vm, self, data.Id).done((listItem) => {
+                            d.resolve(listItem);
+                        });
                     });
                 }
                 else{
                     SpApi15.UpdateListItem(self.siteUrl, self.listItem.__metadata, payload).then((data: any) => {
-                        saveListItemCallback(vm, self, self.itemId);
+                        saveListItemCallback(vm, self, self.itemId).done((listItem) => {
+                            d.resolve(listItem);
+                        });
                     });
-                }  
+                }
             }
             catch (e) {
                 if (self.debug) { throw e; }  
-                self.logError('Error in SpForm.saveListItem(): ', e);                             
+                self.logError('Error in SpForm.saveListItem(): ', e);
+                d.reject(e);                            
             }
 
-            function saveListItemCallback(vm: IViewModel, self: SPForm, itemId: number){
+            return d.promise();
+
+            function saveListItemCallback(vm: IViewModel, self: SPForm, itemId: number): JQueryPromise<any>{
+                let d = $.Deferred();
+
                 if(self.debug){
                     console.info('saveListItemCallback(): ');
                     console.info(self.itemId);
@@ -1154,33 +1100,68 @@ module Shockout {
 
                 if (Utils.getIdFromHash() == null && self.itemId != null) {
                     Utils.setIdHash(self.itemId);
-                }      
+                }
 
                 if (isSubmit) {//submitting form
-                    self.showDialog('<p>Your form has been submitted. You will be redirected in ' + timeout / 1000 + ' seconds.</p>', 'Form Submission Successful');
-                    if (callback) {
-                        callback(self.itemId);
+                    if(showDialog){
+                        self.showDialog('<p>Your form has been submitted. You will be redirected in ' + timeout / 1000 + ' seconds.</p>', 'Form Submission Successful');
                     }
+                    
                     if (self.debug) {
                         console.warn('DEBUG MODE: Would normally redirect user to confirmation page: ' + self.confirmationUrl);
+                        self._getListItem(self).done((listItem) => {
+                            d.resolve(listItem);
+                        });
+
                     } else {
+                        d.resolve(self.listItem);
                         setTimeout(function () {
                             window.location.href = self.sourceUrl != null ? self.sourceUrl : self.confirmationUrl;
-                        }, timeout);
+                        }, timeout);         
                     }
+
+                    return d.promise();
                 }
-                else {//saving form
+
+                //saving form
+                if(showDialog){
                     self.showDialog(saveMsg, 'The form has been saved.', timeout);
-
-                    // refresh data from the server
-                    self.getListItemAsync(self);
-
-                    //give WF History list 5 seconds to update
-                    if (self.includeWorkflowHistory) {
-                        setTimeout(function () { self.getHistoryAsync(self); }, 5000);
-                    }
                 }
-            }
+
+                self._getListItem(self).done((listItem) => {
+                    d.resolve(listItem);
+                });
+
+                return d.promise();
+            } // function saveListItemCallback
+        }
+
+        _getListItem(self): JQueryPromise<any> {
+            self = self || this;
+            let d = $.Deferred();
+
+            SpApi15.GetListItem(self.listName, self.itemId, self.siteUrl, false, 'AttachmentFiles')
+            .done((data: ISpItem, error: string = undefined) => {
+                if (!!error) {
+                    if (/not found/i.test(error + '')) {
+                        self.showDialog("The form with ID " + self.itemId + " doesn't exist or it was deleted.");
+                    }
+                    self.nextAsync(false, error);
+                    return;
+                }
+                self.listItem = data;
+                self.listItemMetadata = data.__metadata;
+                self.bindListItemValues(self);
+            }).then(() => {
+                if (self.includeWorkflowHistory) {
+                    self.getHistoryAsync(self);
+                }
+                d.resolve(self.listItem);
+            }).fail(() => {
+                d.reject(false);
+            });
+
+            return d.promise();
         }
 
         /**
@@ -1240,33 +1221,19 @@ module Shockout {
         * @param callback: Function (optional)
         * @return void
         */
-        getAttachments(self: SPForm = undefined, callback: Function = undefined): void {
+        getAttachments(self: SPForm = undefined): JQueryPromise<any> {
             self = self || this;
-
-            if (!!!self.listItem || !self.enableAttachments || !self.listItem.Attachments) {
-                if (callback) {
-                    callback();
-                }
-                return;
-            }
-
-            var attachments: Array<ISpAttachment> = [];
-
+            let d = $.Deferred();
             let path = `${self.listItem.__metadata.uri}/AttachmentFiles`;
 
             SpApi15.Get(path, false).done((data: any, status: string, jqXhr: any) => {
-                try {
-                    self.viewModel.attachments(data.results);
-                    self.viewModel.attachments.valueHasMutated();
-                    if (callback) {
-                        callback(attachments);
-                    }
-                }
-                catch (e) {
-                    if (self.debug) { throw e; }
-                    self.showDialog("Failed to retrieve attachments in SpForm.getAttachments(): ", e);
-                }
+                d.resolve(data.results);
+            }).fail(() => {
+                self.showDialog("Failed to retrieve attachments in SpForm.getAttachments()");
+                d.resolve([]);
             });
+
+            return d.promise();
         }
 
         /**
