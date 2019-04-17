@@ -314,7 +314,7 @@
             try {
                 var date = ko.unwrap(modelValue);
                 if (date == null || date.constructor != Date) { return; }
-                var dateTimeStr: string = Utils.toDateTimeLocaleString(date);
+                var dateTimeStr: string = date.toLocaleDateString() + ' ' + date.toLocaleTimeString(); //Utils.toDateTimeLocaleString(date);
                 // add time zone
                 var timeZone = /\b\s\(\w+\s\w+\s\w+\)/i.exec(date.toString());
                 if (!!timeZone) {

@@ -3823,11 +3823,14 @@ var Shockout;
             if (typeof val == 'object' && val.constructor == Date) {
                 return val;
             }
-            var rxSlash = /\d{1,2}\/\d{1,2}\/\d{2,4}/, // "09/29/2015" 
-            rxHyphen = /\d{1,2}-\d{1,2}-\d{2,4}/, // "09-29-2015"
-            rxIsoDate = /\d{4}-\d{1,2}-\d{1,2}/, // "2015-09-29"
+            var rxSlash = /^\d{1,2}\/\d{1,2}\/\d{2,4}$/, // "09/29/2015" 
+            rxHyphen = /^\d{1,2}-\d{1,2}-\d{2,4}$/, // "09-29-2015"
+            rxIsoDate = /^\d{4}-\d{1,2}-\d{1,2}$/, // "2015-09-29"
             rxTicks = /(\/|)\d{13}(\/|)/, // "/1442769001000/"
-            rxIsoDateTime = /\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z/, tmp, m, d, y, date = null;
+            rxIsoDateTime = /^\d{4}-\d{2}-\d{2}T\d{1,2}:\d{1,2}:\d{1,2}Z$/, tmp, m, d, y, date = null;
+            if (rxIsoDateTime.test(val)) {
+                return new Date(val);
+            }
             val = rxIsoDate.test(val) ? val : (val + '').replace(/[^0-9\/\-]/g, '');
             if (val == '') {
                 return null;
@@ -3847,9 +3850,6 @@ var Shockout;
                 d = parseInt(tmp[2]);
                 y = y < 100 ? 2000 + y : y;
                 date = new Date(y, m, d, 0, 0, 0, 0);
-            }
-            else if (rxIsoDateTime.test(val)) {
-                date = new Date(val);
             }
             else if (rxTicks.test(val)) {
                 date = new Date(parseInt(val.replace(/\D/g, '')));
@@ -4211,7 +4211,7 @@ var Shockout;
                 if (date == null || date.constructor != Date) {
                     return;
                 }
-                var dateTimeStr = Shockout.Utils.toDateTimeLocaleString(date);
+                var dateTimeStr = date.toLocaleDateString() + ' ' + date.toLocaleTimeString(); //Utils.toDateTimeLocaleString(date);
                 // add time zone
                 var timeZone = /\b\s\(\w+\s\w+\s\w+\)/i.exec(date.toString());
                 if (!!timeZone) {

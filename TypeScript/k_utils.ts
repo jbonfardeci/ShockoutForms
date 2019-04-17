@@ -484,18 +484,23 @@
 
             if (typeof val == 'object' && val.constructor == Date) { return val; }
 
-            var rxSlash: RegExp = /\d{1,2}\/\d{1,2}\/\d{2,4}/, // "09/29/2015" 
-                rxHyphen: RegExp = /\d{1,2}-\d{1,2}-\d{2,4}/, // "09-29-2015"
-                rxIsoDate: RegExp = /\d{4}-\d{1,2}-\d{1,2}/, // "2015-09-29"
+            var rxSlash: RegExp = /^\d{1,2}\/\d{1,2}\/\d{2,4}$/, // "09/29/2015" 
+                rxHyphen: RegExp = /^\d{1,2}-\d{1,2}-\d{2,4}$/, // "09-29-2015"
+                rxIsoDate: RegExp = /^\d{4}-\d{1,2}-\d{1,2}$/, // "2015-09-29"
                 rxTicks: RegExp = /(\/|)\d{13}(\/|)/, // "/1442769001000/"
-                rxIsoDateTime: RegExp = /\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z/,
+                rxIsoDateTime: RegExp = /^\d{4}-\d{2}-\d{2}T\d{1,2}:\d{1,2}:\d{1,2}Z$/,
                 tmp: Array<string>,
                 m: number,
                 d: number,
                 y: number,
                 date: Date = null;
 
+            if(rxIsoDateTime.test(val)){
+                return new Date(val);
+            }
+
             val = rxIsoDate.test(val) ? val : (val + '').replace(/[^0-9\/\-]/g, '');
+
             if (val == '') { return null; }
 
             if (rxSlash.test(val) || rxHyphen.test(val)) {
@@ -513,9 +518,6 @@
                 d = parseInt(tmp[2]);
                 y = y < 100 ? 2000 + y : y;
                 date = new Date(y, m, d, 0, 0, 0, 0);
-            }
-            else if (rxIsoDateTime.test(val)){
-                date = new Date(val);
             }
             else if (rxTicks.test(val)) {
                 date = new Date(parseInt(val.replace(/\D/g, '')));
