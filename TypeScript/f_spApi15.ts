@@ -41,7 +41,8 @@ module Shockout {
                 if (expandGroups) {
                     let groups: any = data.d.Groups;
                     $(groups.results).each(function (i: number, group: any) {
-                        currentUser.groups.push({id: group.Id, name: group.Title});
+                        var groupName = group.LoginName || group.Title;
+                        currentUser.groups.push({id: group.Id, name: groupName});
                     });
                 }
 
